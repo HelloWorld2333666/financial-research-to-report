@@ -1,8 +1,11 @@
 /* Financial slide preview & AI layout editor.
  *
- * Model: one project JSON (editor/slidemodel.py, editor/research.py). Slide
- * elements render as absolutely positioned DOM nodes in a 1280×720 stage;
- * change requests render in an overlay that is never exported.
+ * Model: one project JSON (editor/slidemodel.py, editor/research.py,
+ * editor/transfer.py) holding a few slides. The active slide's elements render
+ * as absolutely positioned DOM nodes in a 1280×720 stage; change requests
+ * render in an overlay that is never exported. Dragging modules onto another
+ * slide's thumbnail (or "New slide") opens the transfer menu: a literal move or
+ * copy, or an adaptive mode that stores a Transfer Request for a later AI step.
  * Libraries (MIT, vendored): Moveable (drag/resize/snap), Selecto (marquee),
  * html-to-image (PNG export). Interaction patterns (selection-anchored
  * toolbar, insert rail, inspector) follow Presenton's editor; no code reused.
@@ -18,9 +21,10 @@
   const projectName = new URLSearchParams(location.search).get("project") || "china_re_overview";
 
   const viewport = $("#viewport"), scaler = $("#stageScaler"), stage = $("#stage"), annotLayer = $("#annotLayer");
-  const ctxbar = $("#ctxbar"), popover = $("#popover");
-  const S = { project: null, saved: null, history: [], future: [], selected: [], mode: "select", scale: 1,
-              editing: null, activeReq: null, previews: {}, research: {}, integrity: [], evidence: {}, sources: {}, draft: null };
+  const ctxbar = $("#ctxbar"), popover = $("#popover"), strip = $("#strip");
+  const S = { project: null, saved: null, history: [], future: [], selected: [], mode: "select", scale: 1, slide: null,
+              editing: null, activeReq: null, previews: {}, research: {}, transfers: {}, integrity: [], evidence: {}, sources: {},
+              draft: null, dropTarget: null };
 
   // ------------------------------------------------------------------ API + feedback
   async function api(method, url, body) {
@@ -56,6 +60,11 @@
   // ------------------------------------------------------------------ model helpers
   const els = () => S.project.elements;
   const byId = (id) => els().find((e) => e.id === id);
+  const slides = () => S.project.slides;
+  const slideOf = (x) => x.slide_id || slides()[0].id;
+  const slideEls = (sid = S.slide) => els().filter((e) => slideOf(e) === sid);
+  const slideIndex = (sid) => slides().findIndex((s) => s.id === sid);
+  const slideName = (sid) => { const i = slideIndex(sid); return i < 0 ? `deleted slide ${sid}` : `Slide ${i + 1} · ${slides()[i].title}`; };
   const ev = (id) => S.evidence[id];
   function refreshEvidence() {  // bundle snapshot + accepted (non-reverted) research responses, as in slidemodel.evidence_map
     S.evidence = { ...S.project.evidence }; S.sources = { ...S.project.sources };
@@ -101,6 +110,7 @@
     return { x: x0, y: y0, w: Math.max(...list.map((e) => e.x + e.w)) - x0, h: Math.max(...list.map((e) => e.y + e.h)) - y0 };
   }
   const rr = (id) => S.project.research_requests.find((r) => r.id === id);
+  const tr = (id) => S.project.transfer_requests.find((t) => t.id === id);
 
   // ------------------------------------------------------------------ rendering
   const field = (path, html, cls = "") => `<div class="${cls}" data-field="${path}">${html}</div>`;
@@ -157,7 +167,7 @@
         break;
       case "sources":
         cls = "el-sources"; extra = `font-size:${st.fontSize || 8.5}px;color:${st.color || "#5b6b7f"};`;
-        inner = `<span data-field="prefix">${esc(el.prefix || "Sources:")}</span> ${esc(sourceLine())}`; break;
+        inner = `<span data-field="prefix">${esc(el.prefix || "Sources:")}</span> ${esc(sourceLine(slideOf(el)))}`; break;
       case "gap": {
         cls = "el-gap";
         const open = S.project.research_requests.find((r) => r.gap_id === el.gap_id && r.status === "open");
@@ -165,29 +175,34 @@
         inner = `<div class="gl">Data gap${open ? " · research request open" : ""}</div>` + field("text", esc(el.text), "txt"); break;
       }
       case "pending": {
-        const na = el.state === "not_available";
-        cls = `el-pending ${na ? "na" : ""}`;
+        const na = el.state === "not_available", adapt = el.state === "pending_adaptation";
+        cls = `el-pending ${na ? "na" : ""} ${adapt ? "adapt" : ""}`;
         inner = `<div class="pt">${esc(el.title)}</div><div class="pi">${esc(el.text)}</div>` +
-                `<div class="pi">${na ? "Status: not available · " : "Status: waiting for research · "}${esc(el.request_id)}</div>`;
+                `<div class="pi">${adapt ? `Status: waiting for AI adaptation · ${esc(el.transfer_id)}` : `${na ? "Status: not available · " : "Status: waiting for research · "}${esc(el.request_id)}`}</div>`;
         break;
       }
     }
-    return `<div class="el ${cls}" data-id="${esc(el.id)}" style="${box}${extra}">${inner}${cite}</div>`;
+    const flag = el.transfer_id && el.type !== "pending" ? `<span class="xflag no-export" title="Moved here for AI adaptation (${esc(el.transfer_id)})">✦ pending adaptation</span>` : "";
+    if (flag) cls += " flagged";
+    return `<div class="el ${cls}" data-id="${esc(el.id)}" style="${box}${extra}">${inner}${cite}${flag}</div>`;
   }
-  function sourceLine() {
+  function sourceLine(sid) {  // per slide: cites only what that slide shows
     const pages = {};
-    els().forEach((el) => allRefs(el).forEach((id) => { const e = ev(id); if (e) (pages[e.source_id] ||= new Set()).add(e.page); }));
-    return Object.entries(pages).map(([sid, set]) => {
+    slideEls(sid).forEach((el) => allRefs(el).forEach((id) => { const e = ev(id); if (e) (pages[e.source_id] ||= new Set()).add(e.page); }));
+    const cites = Object.entries(pages).map(([sid, set]) => {
       const s = S.sources[sid] || {};
       if (s.origin === "fixture") return `${s.title}`;
       const p = [...set].filter((x) => x).sort((a, b) => a - b), parts = [];
       for (let i = 0; i < p.length; i++) { let j = i; while (j + 1 < p.length && p[j + 1] === p[j] + 1) j++; parts.push(i === j ? `${p[i]}` : `${p[i]}–${p[j]}`); i = j; }
       const date = s.published_date ? new Date(s.published_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
       return `China Re, ${s.title} (HKEX, ${date}), PDF ${p.length > 1 ? "pp." : "p."} ${parts.join(", ")}`;
-    }).join("; ") + ".";
+    });
+    return cites.length ? cites.join("; ") + "." : "none yet (no evidence on this slide)";
   }
+  function annSlide(a) { if (a.kind === "element" && !a.slide_id) { const e = a.element_ids.map(byId).find(Boolean); if (e) return slideOf(e); } return slideOf(a); }
   function renderAnnotations() {
     const anns = S.project.annotations.map((a, i) => {
+      if (annSlide(a) !== S.slide) return "";
       const r = a.kind === "region" ? a.rect : bbox(a.element_ids.map(byId).filter(Boolean));
       if (!r) return "";
       return `<div class="ann ${a.kind} ${a.status === "applied" ? "applied" : ""} ${S.activeReq === a.id ? "active" : ""}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px">` +
@@ -198,14 +213,32 @@
   }
   function render() {
     refreshEvidence();
-    stage.innerHTML = els().map(renderEl).join("");
-    renderAnnotations(); syncMoveable(); renderSide(); scheduleIntegrity(); renderCounts();
+    if (slideIndex(S.slide) < 0) S.slide = slides()[0].id;  // e.g. after undoing a slide insertion
+    stage.innerHTML = slideEls().map(renderEl).join("");
+    renderAnnotations(); syncMoveable(); renderStrip(); renderSide(); scheduleIntegrity(); renderCounts();
     $("#projTitle").textContent = S.project.title || projectName;
+  }
+  function renderStrip() {
+    $("#thumbs").innerHTML = slides().map((s, i) => {
+      const items = slideEls(s.id), pend = items.filter((e) => e.type === "pending" || e.transfer_id).length;
+      return `<div class="thumb ${s.id === S.slide ? "on" : ""}" data-slide="${esc(s.id)}" title="${esc(s.title)} (double-click to rename)">
+        <div class="tnum">${i + 1}</div><div class="tframe"><div class="slide mini">${items.map(renderEl).join("")}</div></div>
+        <div class="tmeta"><span class="ttitle">${esc(s.title)}</span>${pend ? `<span class="chip ai" title="Pending placeholders or adaptations">${pend}</span>` : ""}</div>
+        <div class="tacts"><button data-slide-act="up" title="Move up" ${i ? "" : "disabled"}>↑</button><button data-slide-act="down" title="Move down" ${i < slides().length - 1 ? "" : "disabled"}>↓</button>
+          <button data-slide-act="duplicate" title="Duplicate slide">⧉</button><button data-slide-act="delete" title="Delete slide" ${slides().length > 1 ? "" : "disabled"}>✕</button></div></div>`;
+    }).join("");
+  }
+  function setSlide(sid) {
+    if (slideIndex(sid) < 0) return;
+    S.slide = sid; S.selected = []; S.editing = null;
+    const u = new URL(location.href); u.searchParams.set("slide", String(slideIndex(sid) + 1)); history.replaceState(null, "", u);
+    render();
   }
   function renderCounts() {
     const openLayout = S.project.annotations.filter((a) => a.status !== "applied").length;
     const openResearch = S.project.research_requests.filter((r) => ["pending_research", "partially_fulfilled", "not_available", "open"].includes(r.status)).length;
-    $("#reqCount").textContent = openLayout + openResearch || "";
+    const openTransfers = S.project.transfer_requests.filter((t) => t.status === "pending_adaptation").length;
+    $("#reqCount").textContent = openLayout + openResearch + openTransfers || "";
     const oc = $("#openCount"); oc.hidden = !openResearch; oc.textContent = `${openResearch} research request${openResearch === 1 ? "" : "s"} open`;
   }
   function fit() {
@@ -250,15 +283,18 @@
       bounds: { left: 0, top: 0, right: 0, bottom: 0, position: "css" }, origin: false, keepRatio: false,
     });
     const start = () => { before = JSON.stringify(S.project); ctxbar.hidden = true; };
+    const dragStart = start;
     const end = (label) => (e) => {
-      const nodes = e.targets || (e.target ? [e.target] : []);
+      const nodes = e.targets || (e.target ? [e.target] : []), drop = S.dropTarget;
+      clearDrop();
+      if (drop && e.isDrag) { render(); openTransfer([...S.selected], drop.slide); return; }  // cross-slide drop: geometry untouched
       if (e.isDrag || e.lastEvent) { nodes.forEach(readGeom); pushSnapshot(before, label); }
       placeCtxbar();
     };
     moveable
-      .on("dragStart", start).on("dragGroupStart", start).on("resizeStart", start).on("resizeGroupStart", start)
-      .on("drag", (e) => { e.target.style.left = `${e.left}px`; e.target.style.top = `${e.top}px`; })
-      .on("dragGroup", (e) => e.events.forEach((x) => { x.target.style.left = `${x.left}px`; x.target.style.top = `${x.top}px`; }))
+      .on("dragStart", dragStart).on("dragGroupStart", dragStart).on("resizeStart", start).on("resizeGroupStart", start)
+      .on("drag", (e) => { e.target.style.left = `${e.left}px`; e.target.style.top = `${e.top}px`; trackDrop(); })
+      .on("dragGroup", (e) => { e.events.forEach((x) => { x.target.style.left = `${x.left}px`; x.target.style.top = `${x.top}px`; }); trackDrop(); })
       .on("resize", (e) => Object.assign(e.target.style, { width: `${e.width}px`, height: `${e.height}px`, left: `${e.drag.left}px`, top: `${e.drag.top}px` }))
       .on("resizeGroup", (e) => e.events.forEach((x) => Object.assign(x.target.style, { width: `${x.width}px`, height: `${x.height}px`, left: `${x.drag.left}px`, top: `${x.drag.top}px` })))
       .on("dragEnd", end("Moved")).on("dragGroupEnd", end("Moved group"))
@@ -277,6 +313,27 @@
     });
   }
 
+  // ------------------------------------------------------------------ cross-slide drop targets (slide strip)
+  const lastPt = { x: -1, y: -1 };  // pointer position, tracked here rather than relying on Moveable's inputEvent
+  ["pointermove", "mousemove", "touchmove"].forEach((t) => window.addEventListener(t, (e) => {
+    const p = e.touches ? e.touches[0] : e; if (p) { lastPt.x = p.clientX; lastPt.y = p.clientY; }
+    if (strip.classList.contains("armed")) trackDrop();  // the dragged module is clamped to the slide; the pointer is not
+  }, { capture: true, passive: true }));
+  ["pointerup", "mouseup", "touchend"].forEach((t) => window.addEventListener(t, () => setTimeout(clearDrop, 0), true));  // after Moveable's dragEnd
+  function trackDrop() {
+    strip.classList.add("armed");
+    if (lastPt.x < 0) return;
+    const hit = document.elementFromPoint(lastPt.x, lastPt.y), thumb = hit?.closest(".thumb"), fresh = hit?.closest("#newSlideDrop");
+    S.dropTarget = fresh ? { slide: null } : thumb && thumb.dataset.slide !== S.slide ? { slide: thumb.dataset.slide } : null;
+    $$(".thumb").forEach((n) => n.classList.toggle("drop", !!S.dropTarget && n.dataset.slide === S.dropTarget.slide));
+    $("#newSlideDrop").classList.toggle("drop", !!fresh);
+    viewport.classList.toggle("dropping", !!S.dropTarget);
+  }
+  function clearDrop() {
+    S.dropTarget = null; $("#strip").classList.remove("armed"); viewport.classList.remove("dropping");
+    $$(".thumb.drop, #newSlideDrop.drop").forEach((n) => n.classList.remove("drop"));
+  }
+
   // ------------------------------------------------------------------ contextual toolbar (anchored to the selection)
   function selectionScreenRect() {
     const nodes = S.selected.map(nodeOf).filter(Boolean); if (!nodes.length) return null;
@@ -289,7 +346,7 @@
     if (!sel.length || S.editing || S.mode !== "select" || !popover.hidden) { ctxbar.hidden = true; return; }
     const multi = sel.length > 1, el = byId(sel[0]);
     const grouped = sel.some((id) => byId(id)?.group);
-    const kind = multi ? `${sel.length} selected` : ({ barchart: "Chart", pending: "Research placeholder" }[el.type] || el.type[0].toUpperCase() + el.type.slice(1));
+    const kind = multi ? `${sel.length} selected` : ({ barchart: "Chart", pending: el.transfer_id && !el.request_id ? "Adaptation placeholder" : "Research placeholder" }[el.type] || el.type[0].toUpperCase() + el.type.slice(1));
     ctxbar.innerHTML = `<span class="lbl">${esc(kind)}${!multi && boundIds(el).length ? " · source-bound 🔒" : ""}</span><span class="sep"></span>` +
       (multi ? `<button data-act="align-left" title="Align left">⇤</button><button data-act="align-center" title="Align centres">↔</button><button data-act="align-right" title="Align right">⇥</button>` +
                `<button data-act="align-top" title="Align top">⤒</button><button data-act="align-middle" title="Align middles">↕</button><button data-act="align-bottom" title="Align bottom">⤓</button>` +
@@ -297,7 +354,9 @@
                `<button data-act="group" title="Group (⌘G)">Group</button>` : "") +
       (grouped ? `<button data-act="ungroup" title="Ungroup (⇧⌘G)">Ungroup</button>` : "") +
       `<button data-act="duplicate" title="Duplicate (⌘D)">Duplicate</button><button data-act="front" title="Bring to front">Front</button><button data-act="back" title="Send to back">Back</button>` +
-      `<button data-act="delete" title="Delete (⌫)">Delete</button><span class="sep"></span><button data-act="ask-ai" class="ai" title="Describe a change for these elements">✦ Ask AI</button>`;
+      `<button data-act="delete" title="Delete (⌫)">Delete</button><span class="sep"></span>` +
+      `<button data-act="to-slide" title="Move, copy or adapt on another slide (or drag onto a slide thumbnail)">⇢ Slide…</button>` +
+      `<button data-act="ask-ai" class="ai" title="Describe a change for these elements">✦ Ask AI</button>`;
     ctxbar.hidden = false;
     const r = selectionScreenRect(); if (!r) { ctxbar.hidden = true; return; }
     const w = ctxbar.offsetWidth, h = ctxbar.offsetHeight, gap = 10;
@@ -341,14 +400,14 @@
   });
   function scopeIds(a) {
     if (a.kind === "element") return a.element_ids.filter(byId);
-    const r = a.rect; return els().filter((e) => e.x < r.x + r.w && e.x + e.w > r.x && e.y < r.y + r.h && e.y + e.h > r.y).map((e) => e.id);
+    const r = a.rect; return slideEls(annSlide(a)).filter((e) => e.x < r.x + r.w && e.x + e.w > r.x && e.y < r.y + r.h && e.y + e.h > r.y).map((e) => e.id);
   }
   const INTENTS = { layout: "Edit layout", existing_data: "Use existing data", research: "Add research-backed content" };
   function openPopover(target) {
     const rect = target.rect || bbox(target.element_ids.map(byId));
     S.draft = { ...target, rect, instruction: "", intent: "layout", cls: null, touched: false };
     setMode("select", true); renderAnnotations();
-    const scope = target.kind === "region" ? scopeIds({ kind: "region", rect }) : target.element_ids;
+    const scope = target.kind === "region" ? scopeIds({ kind: "region", rect, slide_id: S.slide }) : target.element_ids;
     popover.innerHTML = `<h4>✦ Describe the change</h4>
       <p class="hint">${target.kind === "region" ? `Region ${rect.w}×${rect.h}px` : "Selected elements"} · ${scope.length ? `covers ${scope.length} element(s)` : "empty area"}</p>
       <textarea id="popText" placeholder="e.g. “Reorganize these three blocks into two columns” or “Add a bar chart of revenue by region; research FY2025 figures”"></textarea>
@@ -381,14 +440,14 @@
     const d = S.draft; if (!d || !d.instruction.trim()) return;
     if (d.intent === "research") {
       try {
-        const r = await api("POST", "/api/research/create", { project: S.project, instruction: d.instruction, region: d.rect });
+        const r = await api("POST", "/api/research/create", { project: S.project, instruction: d.instruction, region: d.rect, slide_id: S.slide });
         closePopover(); replaceProject(r.project, "Research request created; placeholder added");
         S.activeReq = r.request.id; select([r.request.placeholder_element_id]); showTab("requests"); renderSide();
       } catch (err) { toast(`Could not create research request: ${err.message}`); }
       return;
     }
     const id = uid("req");
-    const ann = { id, instruction: d.instruction.trim(), status: "open", created: new Date().toISOString(), kind: d.kind, intent: d.intent,
+    const ann = { id, slide_id: S.slide, instruction: d.instruction.trim(), status: "open", created: new Date().toISOString(), kind: d.kind, intent: d.intent,
                   ...(d.kind === "region" ? { rect: d.rect } : { element_ids: d.element_ids }) };
     if (d.intent === "existing_data" && d.cls) ann.uses_evidence = [...new Set(Object.values(d.cls.matched_evidence).flat())];
     closePopover(); commit((p) => p.annotations.push(ann), "Layout change request added");
@@ -407,7 +466,7 @@
   annotLayer.addEventListener("click", (e) => { const b = e.target.closest(".badge"); if (!b) return; S.activeReq = b.dataset.req; showTab("requests"); renderAnnotations(); renderSide(); });
 
   // ------------------------------------------------------------------ insert + arrange actions
-  function insert(el) { commit((p) => p.elements.push(el), `Inserted ${el.type === "barchart" ? "chart" : el.type}`); select([el.id]); }
+  function insert(el) { el.slide_id = S.slide; commit((p) => p.elements.push(el),`Inserted ${el.type === "barchart" ? "chart" : el.type}`); select([el.id]); }
   const centre = (w, h) => ({ x: Math.round((W - w) / 2), y: Math.round((H - h) / 2), w, h });
   function align(kind) {
     const sel = S.selected.map(byId); if (!sel.length) return;
@@ -431,6 +490,7 @@
     "add-ellipse": () => insert({ id: uid("e"), type: "panel", shape: "ellipse", ...centre(120, 120), style: { fill: "#dbe4f0" }, refs: {} }),
     "add-chart": () => openPicker("chart"), "add-table": () => openPicker("table"), "add-metric": () => openPicker("metric"),
     "ask-ai": () => S.selected.length && openPopover({ kind: "element", element_ids: [...S.selected] }),
+    "to-slide": () => { if (!S.selected.length) return; const other = slides().find((s) => s.id !== S.slide); openTransfer([...S.selected], other ? other.id : null); },
     duplicate: () => {
       if (!S.selected.length) return; const ids = []; const group = uid("g");
       const copies = S.selected.map(byId).filter((e) => e.type !== "pending").map((e) => { const c = clone(e); c.id = uid(e.type.slice(0, 2)); c.x += 16; c.y += 16; if (e.group) c.group = group; ids.push(c.id); return c; });
@@ -470,12 +530,13 @@
   async function exportPng(label) {
     const errs = S.integrity.filter((i) => i.level === "error");
     if (errs.length && !confirm(`${errs.length} data-integrity error(s), e.g. ${errs[0].message}. Export anyway?`)) return;
-    const pending = els().filter((e) => e.type === "pending").length;
-    if (pending && !confirm(`${pending} research placeholder(s) are on the slide and will appear in the PNG. Export anyway?`)) return;
+    const pending = slideEls().filter((e) => e.type === "pending").length;
+    if (pending && !confirm(`${pending} pending placeholder(s) are on this slide and will appear in the PNG. Export anyway?`)) return;
     const prev = S.selected; select([]); ctxbar.hidden = true; stage.classList.add("exporting");
     try {
       const url = await htmlToImage.toPng(stage, { pixelRatio: 2, width: W, height: H, cacheBust: true, filter: (n) => !(n.classList && n.classList.contains("no-export")) });
-      const name = (typeof label === "string" ? label : prompt("Export label (a-z, 0-9, -)", "slide")) || "slide";
+      const def = `slide-${slideIndex(S.slide) + 1}`;
+      const name = (typeof label === "string" ? label : prompt("Export label (a-z, 0-9, -). Exports the slide shown.", def)) || def;
       const r = await api("POST", `/api/projects/${projectName}/export`, { png: url, label: name.toLowerCase().replace(/[^a-z0-9_-]/g, "-") });
       const a = document.createElement("a"); a.href = url; a.download = r.saved.split("/").pop(); a.click();
       status(`Exported 2560×1440 PNG → editor/${r.saved}`);
@@ -524,6 +585,98 @@
     }, { once: true });
   }
 
+  // ------------------------------------------------------------------ slides: add / duplicate / delete / reorder / rename
+  async function slideOp(op, sid, extra = {}) {
+    const at = slideIndex(sid);
+    try {
+      const r = await api("POST", "/api/slides", { project: S.project, op, slide_id: sid, ...extra });
+      replaceProject(r.project, { add: "Added slide", duplicate: "Duplicated slide", delete: "Deleted slide" }[op]);
+      setSlide(op === "delete" ? slides()[Math.min(at, slides().length - 1)].id : r.slide_id);
+    } catch (err) { toast(err.message); }
+  }
+  $("#strip").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-slide-act]"), thumb = e.target.closest(".thumb");
+    if (e.target.closest("#newSlideDrop")) return slideOp("add", null, { after: S.slide });
+    if (!thumb) return;
+    const sid = thumb.dataset.slide;
+    if (!b) return setSlide(sid);
+    const act = b.dataset.slideAct, i = slideIndex(sid);
+    if (act === "duplicate") slideOp("duplicate", sid);
+    if (act === "delete") {
+      const n = slideEls(sid).length;
+      if (confirm(`Delete ${slideName(sid)} and its ${n} element(s)? Undo (⌘Z) restores it.`)) slideOp("delete", sid);
+    }
+    if (act === "up" || act === "down") {
+      const j = act === "up" ? i - 1 : i + 1;
+      commit((p) => { const [s] = p.slides.splice(i, 1); p.slides.splice(j, 0, s); }, "Reordered slides");
+    }
+  });
+  $("#strip").addEventListener("dblclick", (e) => {
+    const thumb = e.target.closest(".thumb"); if (!thumb || e.target.closest("button")) return;
+    const s = slides()[slideIndex(thumb.dataset.slide)], t = prompt("Slide title", s.title);
+    if (t && t.trim()) commit((p) => { p.slides.find((x) => x.id === s.id).title = t.trim(); }, "Renamed slide");
+  });
+
+  // ------------------------------------------------------------------ transfer menu (after a cross-slide drop)
+  const MODE_INFO = [
+    ["move", "Move as-is", "Same module, ids and evidence links, on the target slide."],
+    ["copy", "Copy as-is", "Keep it here and place a linked copy there."],
+    ["move_adapt", "Move and adapt", "Move it; AI reworks wording and layout for the target slide."],
+    ["use_as_evidence", "Use as evidence for a new slide", "Keep it here; AI builds new content around its evidence."],
+    ["split", "Split into multiple modules", "Move it; AI breaks it into smaller modules."],
+    ["summarise", "Summarise for target slide", "Keep it here; AI writes a short summary there."],
+  ];
+  const LITERAL = new Set(["move", "copy"]);
+  function openTransfer(ids, target) {
+    ids = expandGroups(ids.filter(byId)); if (!ids.length) return;
+    const dlg = $("#xferDlg"), src = S.slide, mods = ids.map(byId);
+    const X = { ids, mode: "move" };
+    $("#xferTitle").textContent = `Transfer ${ids.length} module${ids.length === 1 ? "" : "s"}`;
+    const linked = new Set(mods.flatMap(allRefs)), claims = new Set(mods.flatMap((m) => m.refs?.claims || []));
+    $("#xferFrom").innerHTML = `From <b>${esc(slideName(src))}</b>: ${esc([...new Set(mods.map((m) => m.type === "barchart" ? "chart" : m.type))].join(", "))}. ` +
+      `Carries ${linked.size} evidence link(s) and ${claims.size} claim(s); they stay attached in every mode.`;
+    $("#xferTarget").innerHTML = slides().filter((s) => s.id !== src).map((s) => `<option value="${esc(s.id)}">${esc(slideName(s.id))}</option>`).join("") + `<option value="">＋ New slide</option>`;
+    $("#xferTarget").value = target ?? "";
+    $("#xferNewTitle").value = "";
+    $("#xferModes").innerHTML = [["Place as-is", MODE_INFO.slice(0, 2), ""], ["Ask AI to adapt · creates a transfer request", MODE_INFO.slice(2), "ai"]].map(([g, list, cls]) =>
+      `<div class="grp">${g}</div><div class="opts ${cls}">` + list.map(([k, l, d]) => `<label><input type="radio" name="xmode" value="${k}" ${k === "move" ? "checked" : ""}><div><b>${l}</b><span>${d}</span></div></label>`).join("") + `</div>`).join("");
+    $("#xferText").value = "";
+    let t;
+    const refresh = () => {
+      X.mode = $("#xferModes input:checked").value; X.target = $("#xferTarget").value || null;
+      $("#xferNewRow").hidden = X.target !== null;
+      const literal = LITERAL.has(X.mode); $("#xferText").disabled = literal;
+      $("#xferOk").textContent = literal ? MODE_INFO.find((m) => m[0] === X.mode)[1] : "Create transfer request";
+      clearTimeout(t); t = setTimeout(previewTransfer, 200);
+    };
+    const previewTransfer = async () => {
+      const box = $("#xferPreview");
+      try {
+        const r = await api("POST", "/api/transfer/preview", { project: S.project, module_ids: X.ids, target_slide_id: X.target, mode: X.mode, instruction: $("#xferText").value });
+        if (!r.ok) { box.innerHTML = `<span class="chip err">cannot transfer</span> ${esc(r.error)}`; $("#xferOk").disabled = true; return; }
+        $("#xferOk").disabled = false;
+        const c = r.classification, ph = r.placeholders;
+        box.innerHTML = LITERAL.has(X.mode) ? `<span class="chip ok">no request</span> ${r.module_ids.length} element(s) placed on ${X.target ? "the target slide" : "a new slide"} with links unchanged.`
+          : `<span class="chip ai">transfer request</span> ${ph.length ? `Will add: ${ph.map(esc).join("; ")}.` : "Modules are flagged for adaptation."}` +
+            (c ? ` <span class="hint">Instruction reads as ${c.intent === "research" ? `<b>needs research</b> (${esc(c.uncovered_topics.join(", "))})` : c.intent === "existing_data" ? "<b>new exhibit from existing evidence</b>" : "<b>rework existing content</b>"}.</span>` : "");
+      } catch (err) { box.textContent = err.message; }
+    };
+    $("#xferModes").onchange = refresh; $("#xferTarget").onchange = refresh; $("#xferText").oninput = refresh;
+    refresh();
+    dlg.returnValue = ""; dlg.showModal();
+    dlg.addEventListener("close", async () => {
+      if (dlg.returnValue !== "ok") return;
+      try {
+        const r = await api("POST", "/api/transfer", { project: S.project, module_ids: X.ids, target_slide_id: X.target, mode: X.mode,
+          instruction: LITERAL.has(X.mode) ? "" : $("#xferText").value, new_slide_title: $("#xferNewTitle").value });
+        const res = r.result, label = MODE_INFO.find((m) => m[0] === X.mode)[1];
+        replaceProject(r.project, `${label}: ${res.module_ids.length} element(s) → ${res.created_slide ? "new slide" : slideName(res.target_slide_id)}`);
+        setSlide(res.target_slide_id); select([...res.element_ids, ...res.placeholder_ids]);
+        if (res.transfer_request) { S.activeReq = res.transfer_request.id; showTab("requests"); renderSide(); }
+      } catch (err) { toast(`Transfer failed: ${err.message}`); }
+    }, { once: true });
+  }
+
   // ------------------------------------------------------------------ side panel
   function showTab(t) { $$("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t)); $$(".pane").forEach((p) => p.classList.toggle("on", p.id === `pane-${t}`)); }
   function renderSide() { renderProps(); renderRequests(); placeCtxbar(); }
@@ -542,9 +695,15 @@
     const pane = $("#pane-props");
     if (!S.selected.length) {
       const openR = S.project.research_requests.filter((r) => r.status !== "fulfilled" && r.status !== "closed").length;
-      pane.innerHTML = `<div class="sec"><h5>Slide</h5><p><b>${esc(S.project.title)}</b></p>
-        <p class="hint">${els().length} elements · ${Object.keys(S.evidence).length} evidence records · ${openR} open research request(s)</p></div>
+      const openT = S.project.transfer_requests.filter((t) => t.status === "pending_adaptation").length;
+      const s = slides()[slideIndex(S.slide)];
+      pane.innerHTML = `<div class="sec"><h5>Slide ${slideIndex(S.slide) + 1} of ${slides().length}</h5>
+        <label class="field"><span>Title</span><input data-slide-title value="${esc(s.title)}"></label>
+        <p class="hint">${slideEls().length} elements on this slide</p></div>
+        <div class="sec"><h5>Project</h5><p><b>${esc(S.project.title)}</b></p>
+        <p class="hint">${slides().length} slides · ${Object.keys(S.evidence).length} evidence records · ${openR} open research request(s) · ${openT} pending transfer(s)</p></div>
         <div class="sec"><h5>How to edit</h5><p class="hint">Click to select, shift-click for more, drag to move, drag handles to resize. Double-click any text to edit it.
+        Drag a selection onto another slide in the strip (or onto <b>＋ New slide</b>) to move, copy or ask AI to adapt it there; <b>⇢ Slide…</b> in the toolbar does the same.
         Use <b>AI region</b> to draw a box and describe a change, or <b>✦ Ask AI</b> on a selection. Figures marked 🔒 come from verified evidence and cannot be typed over.</p></div>`;
       return;
     }
@@ -563,7 +722,9 @@
     let extra = "";
     if (el.type === "metric") extra = `<label class="field"><span>Decimals</span><input type="number" min="0" max="4" data-fmt="decimals" value="${el.fmt?.decimals ?? 0}"></label>
       <button data-side="detach" title="Replace the bound figure with plain text (flagged in Data)">Detach value from evidence…</button>`;
-    if (el.type === "pending") { const r = rr(el.request_id); extra = r ? `<div class="card ai"><b>${esc(r.status)}</b><br>${esc(r.instruction)}<div class="row"><button data-side="rr-show" data-rr="${r.id}">Open request</button></div></div>` : ""; }
+    if (el.type === "pending" && el.request_id) { const r = rr(el.request_id); extra = r ? `<div class="card ai"><b>${esc(r.status)}</b><br>${esc(r.instruction)}<div class="row"><button data-side="rr-show" data-rr="${r.id}">Open request</button></div></div>` : ""; }
+    if (el.transfer_id) { const x = tr(el.transfer_id); extra += x ? `<div class="card xfer"><b>${esc(x.mode_label)}</b> · ${esc(x.status)}<br>${esc(x.instruction || x.intent)}<div class="row"><button data-side="tr-show" data-tr="${x.id}">Open transfer request</button></div></div>` : ""; }
+    if (el.origin) extra += `<p class="hint">Copied from <code>${esc(el.origin.element_id)}</code> on ${esc(slideName(el.origin.slide_id))}</p>`;
     pane.innerHTML = `<div class="sec"><h5>${esc(el.type === "barchart" ? "chart" : el.type)}</h5><code>${esc(el.id)}</code>${el.group ? ` <span class="chip">group</span>` : ""}${el.created_by ? ` <span class="chip ai">${esc(el.created_by)}</span>` : ""}</div>
       <div class="sec"><h5>Position & size</h5><div class="geo">${num("x", el.x)}${num("y", el.y)}${num("w", el.w)}${num("h", el.h)}</div></div>
       ${styleHtml || extra ? `<div class="sec"><h5>Style</h5>${styleHtml}${extra}</div>` : ""}
@@ -575,10 +736,24 @@
     if (t.dataset.style && el) commit(() => { el.style ||= {}; el.style[t.dataset.style] = t.type === "number" ? +t.value : t.value; }, "Changed style");
     if (t.dataset.fmt && el) commit(() => { el.fmt = { ...el.fmt, decimals: Math.max(0, Math.min(4, +t.value)) }; }, "Changed display format");
     if (t.dataset.req) commit((p) => { p.annotations.find((a) => a.id === t.dataset.req).instruction = t.value; }, "Updated instruction");
+    if (t.hasAttribute("data-slide-title") && t.value.trim()) commit((p) => { p.slides.find((s) => s.id === S.slide).title = t.value.trim(); }, "Renamed slide");
   });
   $("#side").addEventListener("click", async (e) => {
     const b = e.target.closest("button"); if (!b || !b.dataset.side) return;
-    const act = b.dataset.side, rid = b.dataset.req, rqid = b.dataset.rr;
+    const act = b.dataset.side, rid = b.dataset.req, rqid = b.dataset.rr, tid = b.dataset.tr;
+    // transfer requests (cross-slide drops)
+    if (act === "tr-show") {
+      const x = tr(tid); S.activeReq = tid; showTab("requests");
+      if (x && slideIndex(x.target_slide_id) >= 0) { setSlide(x.target_slide_id); select([...x.target_element_ids, ...x.placeholder_element_ids].filter(byId)); showTab("requests"); }
+      renderRequests();
+    }
+    if (act === "tr-export") {
+      try { const r = await api("POST", `/api/projects/${projectName}/transfers/${tid}`, S.project); S.transfers[tid] = { exported: r }; toast(`Transfer request written to editor/${r.request}`); renderRequests(); } catch (err) { toast(err.message); }
+    }
+    if (act === "tr-cancel") {
+      if (!confirm("Cancel this transfer request? Its placeholders are removed; moved modules stay where they are (⌘Z moves them back).")) return;
+      try { const r = await api("POST", "/api/transfer/cancel", { project: S.project, transfer_id: tid }); replaceProject(r.project, "Transfer request cancelled"); } catch (err) { toast(err.message); }
+    }
     if (act === "detach") {
       const el = byId(S.selected[0]); if (!confirm("Detach this figure from its evidence? It becomes plain text and is flagged in Data.")) return;
       const shown = fmtValue(ev(el.evidence_id)?.value, el.fmt);
@@ -606,7 +781,8 @@
       delete S.previews[rid];
     }
     // research requests
-    if (act === "rr-show") { S.activeReq = rqid; const r = rr(rqid); showTab("requests"); renderRequests(); if (r?.placeholder_element_id || r?.inserted_element_id) select([r.inserted_element_id || r.placeholder_element_id].filter(byId)); }
+    if (act === "rr-show") { S.activeReq = rqid; const r = rr(rqid); const ph = r && byId(r.inserted_element_id || r.placeholder_element_id);
+      if (ph && slideOf(ph) !== S.slide) setSlide(slideOf(ph)); showTab("requests"); renderRequests(); if (r?.placeholder_element_id || r?.inserted_element_id) select([r.inserted_element_id || r.placeholder_element_id].filter(byId)); }
     if (act === "rr-export") {
       try { const r = await api("POST", `/api/projects/${projectName}/research/${rqid}`, S.project); S.research[rqid] = { ...S.research[rqid], exported: r }; toast(`Research request written to editor/${r.request}`); renderRequests(); } catch (err) { toast(err.message); }
     }
@@ -674,11 +850,31 @@
       <details><summary>Paste patch JSON</summary><textarea data-patch="${a.id}"></textarea><button data-side="req-paste" data-req="${a.id}">Validate pasted patch</button></details>
       ${res}</div>`;
   }
+  const TR_LABEL = { pending_adaptation: ["Pending AI adaptation", "ai"], cancelled: ["Cancelled", ""], adapted: ["Adapted", "ok"] };
+  function transferCard(x) {
+    const [lbl, cls] = TR_LABEL[x.status] || [x.status, ""], L = x.linked, ex = S.transfers[x.id] || {};
+    const codes = (arr) => arr.length ? arr.map((i) => `<code>${esc(i)}</code>`).join(" ") : "none";
+    return `<div class="card xfer ${x.status === "cancelled" ? "cancelled" : ""}">
+      <span class="chip ${cls}">${esc(lbl)}</span> <b>${esc(x.mode_label)}</b>
+      <p style="margin:6px 0">${x.instruction ? esc(x.instruction) : `<i>No instruction</i>: ${esc(x.intent)}`}</p>
+      <dl><dt>From</dt><dd>${esc(slideName(x.source_slide_id))}${x.source_kept ? " (kept)" : ""}</dd>
+        <dt>To</dt><dd>${esc(slideName(x.target_slide_id))}${x.target_is_new_slide ? " <span class=\"chip\">new slide</span>" : ""}</dd>
+        <dt>Modules</dt><dd>${x.modules.map((m) => `${esc(m.type === "barchart" ? "chart" : m.type)}: ${esc(m.label)}`).join("<br>")}</dd>
+        <dt>Evidence</dt><dd>${codes(L.evidence_ids)}</dd><dt>Claims</dt><dd>${codes(L.claim_ids)}</dd><dt>Metrics</dt><dd>${codes(L.metric_ids)}</dd>
+        ${L.gap_ids.length ? `<dt>Gaps</dt><dd>${codes(L.gap_ids)}</dd>` : ""}
+        <dt>Placeholders</dt><dd>${x.placeholder_element_ids.length ? x.placeholder_element_ids.map((i) => esc(byId(i)?.title || `${i} (removed)`)).join("<br>") : "none"}</dd>
+        ${x.research_request_ids.length ? `<dt>Research</dt><dd>${x.research_request_ids.map((i) => `<code>${esc(i)}</code> ${esc(rr(i)?.status || "")}`).join("<br>")}</dd>` : ""}</dl>
+      <div class="row"><button data-side="tr-show" data-tr="${x.id}">Show on slide</button>
+        ${x.status === "pending_adaptation" ? `<button data-side="tr-export" data-tr="${x.id}">Send to AI (write handoff)</button><button data-side="tr-cancel" data-tr="${x.id}">Cancel request</button>` : ""}</div>
+      ${ex.exported ? `<p class="hint">Handoff file: editor/${esc(ex.exported.request)}. No model is called; a future adaptation step reads this file.</p>` : ""}
+      <details><summary>History (${x.history.length})</summary><pre>${esc(x.history.map((h) => `${h.at}  ${h.event}${h.detail ? " — " + h.detail : ""}`).join("\n"))}</pre></details></div>`;
+  }
   function renderRequests() {
-    const rs = S.project.research_requests, anns = S.project.annotations;
+    const rs = S.project.research_requests, anns = S.project.annotations, ts = S.project.transfer_requests;
     const active = S.activeReq;
     const sortActive = (arr) => [...arr].sort((a, b) => (b.id === active) - (a.id === active));
     $("#pane-requests").innerHTML =
+      `<div class="sec"><h5>Transfer requests (${ts.length})</h5>${ts.length ? sortActive([...ts].reverse()).map(transferCard).join("") : `<p class="hint">None. Drag modules onto another slide and choose an “Ask AI to adapt” option.</p>`}</div>` +
       `<div class="sec"><h5>Research requests (${rs.length})</h5>${rs.length ? sortActive(rs).map(researchCard).join("") : `<p class="hint">None. Draw an AI region and ask for content that needs new data.</p>`}</div>` +
       `<div class="sec"><h5>Layout change requests (${anns.length})</h5>${anns.length ? anns.map(layoutCard).join("") : `<p class="hint">None. Draw an AI region or use ✦ Ask AI on a selection.</p>`}</div>`;
   }
@@ -688,11 +884,13 @@
     const issues = S.integrity, n = issues.filter((i) => i.level !== "info").length;
     $("#intCount").textContent = n ? `(${n})` : "✓";
     $("#pane-integrity").innerHTML = `<p class="hint">Checked by the local server (editor/slidemodel.py) after every change.</p>` +
-      (issues.length ? issues.map((i) => `<div class="issue" data-el="${esc(i.element_id || "")}"><span class="chip ${i.level === "error" ? "err" : i.level === "warning" ? "warn" : "info"}">${i.level}</span> <code>${esc(i.code)}</code><br>${esc(i.message)}</div>`).join("")
+      (issues.length ? issues.map((i) => `<div class="issue" data-el="${esc(i.element_id || "")}" data-slide="${esc(i.slide_id || "")}"><span class="chip ${i.level === "error" ? "err" : i.level === "warning" ? "warn" : "info"}">${i.level}</span> <code>${esc(i.code)}</code>${i.slide_id ? ` <span class="hint">slide ${slideIndex(i.slide_id) + 1}</span>` : ""}<br>${esc(i.message)}</div>`).join("")
         : `<p><span class="chip ok">clean</span> All figures are bound to verified evidence, citations intact, no unsourced numbers.</p>`) +
-      `<div class="sec"><h5>Evidence on this slide</h5>${[...new Set(els().flatMap(allRefs))].map((id) => `<div class="issue" data-ev="${esc(id)}"><code>${esc(id)}</code>${isFixture(id) ? ` <span class="chip err">TEST FIXTURE</span>` : ""}<br>${esc(ev(id)?.subject || "")} · ${esc(ev(id)?.period || "")}</div>`).join("")}</div>`;
+      `<div class="sec"><h5>Evidence on this slide</h5>${[...new Set(slideEls().flatMap(allRefs))].map((id) => `<div class="issue" data-ev="${esc(id)}"><code>${esc(id)}</code>${isFixture(id) ? ` <span class="chip err">TEST FIXTURE</span>` : ""}<br>${esc(ev(id)?.subject || "")} · ${esc(ev(id)?.period || "")}</div>`).join("")}</div>`;
   }
-  $("#pane-integrity").addEventListener("click", (e) => { const d = e.target.closest(".issue"); if (d?.dataset.el) select([d.dataset.el]); if (d?.dataset.ev) select(els().filter((x) => allRefs(x).includes(d.dataset.ev)).map((x) => x.id)); });
+  $("#pane-integrity").addEventListener("click", (e) => { const d = e.target.closest(".issue");
+    if (d?.dataset.slide && d.dataset.slide !== S.slide) { setSlide(d.dataset.slide); showTab("integrity"); }
+    if (d?.dataset.el) select([d.dataset.el]); if (d?.dataset.ev) select(els().filter((x) => allRefs(x).includes(d.dataset.ev)).map((x) => x.id)); });
   $("#tabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
 
   // ------------------------------------------------------------------ keyboard + chrome
@@ -706,6 +904,7 @@
     if (mod && e.key.toLowerCase() === "g") { e.preventDefault(); return e.shiftKey ? actions.ungroup() : actions.group(); }
     if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); return actions.delete(); }
     if (e.key === "Escape") { if (!popover.hidden) return closePopover(); setMode("select"); return select([]); }
+    if (e.key === "PageDown" || e.key === "PageUp") { const s = slides()[slideIndex(S.slide) + (e.key === "PageDown" ? 1 : -1)]; if (s) setSlide(s.id); return; }
     if (e.key === "v") return setMode("select");
     if (e.key === "r") return setMode("region");
     const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -718,11 +917,13 @@
   // ------------------------------------------------------------------ boot
   (async function boot() {
     try { S.project = await api("GET", `/api/projects/${projectName}`); } catch (err) { toast(`Could not load project ${projectName}: ${err.message}`); return; }
-    S.project.research_results ||= [];
+    S.project.research_results ||= []; S.project.transfer_requests ||= [];
     S.saved = JSON.stringify(S.project);
+    const q = new URLSearchParams(location.search);
+    S.slide = (slides()[(+q.get("slide") || 1) - 1] || slides()[0]).id;
     try { S.fixtures = await api("GET", "/api/fixtures"); } catch { S.fixtures = []; }
     initTransform(); render(); fit(); status();
-    const tab = new URLSearchParams(location.search).get("tab"); if (["props", "requests", "integrity"].includes(tab)) showTab(tab);
-    window.__editor = { S, select, actions, undo, redo, save, render, fmtValue, openPopover, exportPng, setMode };  // for debugging/tests
+    const tab = q.get("tab"); if (["props", "requests", "integrity"].includes(tab)) showTab(tab);
+    window.__editor = { S, select, actions, undo, redo, save, render, fmtValue, openPopover, exportPng, setMode, setSlide, openTransfer };  // for debugging/tests
   })();
 })();

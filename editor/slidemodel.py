@@ -1,14 +1,19 @@
 """Editable slide project model and its integrity rules.
 
-A project is one JSON file holding:
+A project is one JSON file holding a small multi-page report (3-5 slides):
   - ``evidence`` / ``sources`` / ``claims`` / ``gaps``: a read-only snapshot of
-    research records, guarded by ``snapshot_sha256``;
-  - ``elements``: what appears on the exported slide (text, panels, metric
-    cards, tables, bar charts, source notes, gap placeholders);
+    research records, guarded by ``snapshot_sha256``, shared by all slides;
+  - ``slides``: ordered ``{id, title}`` pages;
+  - ``elements``: what appears on the exported slides (text, panels, metric
+    cards, tables, bar charts, source notes, gap placeholders). Each element
+    names its page with ``slide_id``; ids are unique across the project, so a
+    module keeps its identity (and its links) when it moves between slides;
   - ``annotations``: editing instructions (region or element scoped) that are
     never exported;
   - ``research_requests``: unresolved data needs raised instead of inventing
-    numbers.
+    numbers;
+  - ``transfer_requests``: cross-slide drops that ask the future AI to adapt
+    content (see ``transfer.py``).
 
 Bound elements (metric / table cells / chart bars) store an ``evidence_id``,
 never the number itself, so moving or restyling them cannot change a figure.
@@ -25,8 +30,10 @@ import re
 import uuid
 from datetime import datetime, timezone
 
-SCHEMA = "frr-slide/0.1"
+SCHEMA = "frr-slide/0.2"
+LEGACY_SCHEMA = "frr-slide/0.1"  # single slide, no slide_id; upgraded by migrate()
 SLIDE_W, SLIDE_H = 1280, 720
+MAX_SLIDES = 12
 ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "timeline", "sources", "gap", "pending"}
 GEOMETRY = ("x", "y", "w", "h")
 # Fields an AI patch may change on an existing element. Bound-evidence fields,
@@ -42,6 +49,102 @@ def now_iso() -> str:
 
 def new_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+
+# --------------------------------------------------------------------------- slides
+
+def migrate(project: dict) -> dict:
+    """Upgrade a single-slide 0.1 project in place to the multi-slide format."""
+    if project.get("schema") == LEGACY_SCHEMA:
+        sid = project.get("id") or "slide-1"
+        project["slides"] = [{"id": sid, "title": project.get("title") or "Slide 1"}]
+        for el in project.get("elements", []):
+            el.setdefault("slide_id", sid)
+        for a in project.get("annotations", []):
+            a.setdefault("slide_id", sid)
+        for r in project.get("research_requests", []):
+            if r.get("schema"):
+                r["slide_id"] = sid
+        project["schema"] = SCHEMA
+    project.setdefault("transfer_requests", [])
+    project.setdefault("research_results", [])
+    return project
+
+
+def slide_ids(project: dict) -> list[str]:
+    return [s["id"] for s in project.get("slides", [])]
+
+
+def slide_of(project: dict, item: dict) -> str | None:
+    """Slide an element or annotation belongs to (first slide when unspecified)."""
+    ids = slide_ids(project)
+    return item.get("slide_id") or (ids[0] if ids else None)
+
+
+def slide_elements(project: dict, slide_id: str) -> list[dict]:
+    return [e for e in project.get("elements", []) if slide_of(project, e) == slide_id]
+
+
+def slide_title(project: dict, slide_id: str) -> str:
+    s = next((s for s in project.get("slides", []) if s["id"] == slide_id), None)
+    return s["title"] if s else slide_id
+
+
+def _slide_frame(slide_id: str, title: str) -> list[dict]:
+    """Title and source line every new page starts with (sources render per slide)."""
+    return [
+        {"id": new_id("t"), "slide_id": slide_id, "type": "text", "x": 32, "y": 20, "w": 1216, "h": 40, "text": title,
+         "style": {"fontSize": 22, "fontWeight": 700, "color": "#0f2742"}, "refs": {}},
+        {"id": new_id("src"), "slide_id": slide_id, "type": "sources", "x": 32, "y": 640, "w": 1216, "h": 40,
+         "prefix": "Sources:", "style": {"fontSize": 8.5, "color": "#5b6b7f"}, "refs": {}},
+    ]
+
+
+def add_slide(project: dict, title: str = "", after: str | None = None) -> tuple[dict, str]:
+    """Insert a new page (after ``after``, else at the end). Returns (new_project, slide_id)."""
+    if len(project.get("slides", [])) >= MAX_SLIDES:
+        raise ValueError(f"a project holds at most {MAX_SLIDES} slides")
+    new = copy.deepcopy(project)
+    sid = new_id("s")
+    title = (title or "").strip() or f"Slide {len(new['slides']) + 1}"
+    ids = slide_ids(new)
+    pos = ids.index(after) + 1 if after in ids else len(ids)
+    new["slides"].insert(pos, {"id": sid, "title": title, "created": now_iso()})
+    new["elements"] += _slide_frame(sid, title)
+    return new, sid
+
+
+def duplicate_slide(project: dict, slide_id: str) -> tuple[dict, str]:
+    """Copy a page with new element ids. Pending placeholders are not copied: they
+    belong to one open request."""
+    if slide_id not in slide_ids(project):
+        raise KeyError(f"unknown slide {slide_id}")
+    new, sid = add_slide(project, slide_title(project, slide_id) + " (copy)", after=slide_id)
+    new["elements"] = [e for e in new["elements"] if e.get("slide_id") != sid]  # drop the blank frame
+    groups: dict[str, str] = {}
+    for el in slide_elements(project, slide_id):
+        if el["type"] == "pending":
+            continue
+        c = copy.deepcopy(el)
+        c.update(id=new_id(el["type"][:2]), slide_id=sid, origin={"element_id": el["id"], "slide_id": slide_id,
+                                                                  "via": "duplicate_slide"})
+        c.pop("transfer_id", None)
+        if el.get("group"):
+            c["group"] = groups.setdefault(el["group"], new_id("g"))
+        new["elements"].append(c)
+    return new, sid
+
+
+def delete_slide(project: dict, slide_id: str) -> dict:
+    if slide_id not in slide_ids(project):
+        raise KeyError(f"unknown slide {slide_id}")
+    if len(project["slides"]) == 1:
+        raise ValueError("a project needs at least one slide")
+    new = copy.deepcopy(project)
+    new["slides"] = [s for s in new["slides"] if s["id"] != slide_id]
+    new["elements"] = [e for e in new["elements"] if slide_of(project, e) != slide_id]
+    new["annotations"] = [a for a in new["annotations"] if slide_of(project, a) != slide_id]
+    return new
 
 
 # --------------------------------------------------------------------------- snapshot
@@ -161,7 +264,8 @@ def validate_project(project: dict) -> list[str]:
     if project.get("schema") != SCHEMA:
         errors.append(f"schema must be {SCHEMA}")
     project.setdefault("research_results", [])
-    for key in ("elements", "annotations", "research_requests", "research_results"):
+    project.setdefault("transfer_requests", [])
+    for key in ("slides", "elements", "annotations", "research_requests", "research_results", "transfer_requests"):
         if not isinstance(project.get(key), list):
             errors.append(f"{key} must be a list")
     for key in ("evidence", "sources", "claims", "gaps"):
@@ -169,6 +273,11 @@ def validate_project(project: dict) -> list[str]:
             errors.append(f"{key} must be an object")
     if errors:
         return errors
+    sids = slide_ids(project) if all(isinstance(s, dict) and s.get("id") for s in project["slides"]) else []
+    if not project["slides"] or len(sids) != len(project["slides"]):
+        errors.append("slides must be a non-empty list of {id, title}")
+    elif len(set(sids)) != len(sids):
+        errors.append("duplicate slide id")
     seen: set[str] = set()
     for el in project["elements"]:
         eid = el.get("id")
@@ -180,6 +289,8 @@ def validate_project(project: dict) -> list[str]:
         seen.add(eid)
         if el.get("type") not in ELEMENT_TYPES:
             errors.append(f"{eid}: unknown type {el.get('type')!r}")
+        if el.get("slide_id") not in sids:
+            errors.append(f"{eid}: slide_id {el.get('slide_id')!r} is not a slide of this project")
         for g in GEOMETRY:
             if not isinstance(el.get(g), (int, float)):
                 errors.append(f"{eid}: {g} must be a number")
@@ -197,9 +308,11 @@ def validate_project(project: dict) -> list[str]:
 def check_integrity(project: dict) -> list[dict]:
     """Data-safety report. Levels: error (do not export), warning (review), info."""
     issues: list[dict] = []
+    slide_by_el = {e.get("id"): slide_of(project, e) for e in project.get("elements", [])}
 
     def add(level, code, element_id, message):
-        issues.append(dict(level=level, code=code, element_id=element_id, message=message))
+        issues.append(dict(level=level, code=code, element_id=element_id, message=message,
+                           slide_id=slide_by_el.get(element_id)))
 
     if project.get("snapshot_sha256") != snapshot_hash(project):
         add("error", "snapshot_modified", None,
@@ -224,8 +337,12 @@ def check_integrity(project: dict) -> list[dict]:
                 add("warning", "unverified_value", eid, f"shows unverified evidence {ref}")
         if el.get("type") == "gap" and el.get("gap_id") not in gaps:
             add("error", "dangling_ref", eid, f"gap placeholder for unknown gap {el.get('gap_id')}")
+        if el.get("transfer_id") and el.get("type") != "pending":
+            add("info", "pending_adaptation", eid, f"moved here for AI adaptation (transfer {el['transfer_id']})")
         if el.get("type") == "pending":
-            if el.get("state") == "not_available":
+            if el.get("state") == "pending_adaptation":
+                add("warning", "pending_adaptation", eid, f"placeholder waiting for AI adaptation (transfer {el.get('transfer_id')})")
+            elif el.get("state") == "not_available":
                 add("info", "research_not_available", eid, "requested data is not available; placeholder kept")
             else:
                 add("warning", "pending_research", eid, f"placeholder waiting for research request {el.get('request_id')}")
@@ -249,7 +366,12 @@ def check_integrity(project: dict) -> list[dict]:
 
     for eid in project.get("baseline_evidence_shown", []):
         if eid not in shown:
-            add("info", "evidence_removed", None, f"evidence {eid} is no longer shown on the slide")
+            add("info", "evidence_removed", None, f"evidence {eid} is no longer shown on any slide")
+    sids = set(slide_ids(project))
+    for t in project.get("transfer_requests", []):
+        if t.get("status") == "pending_adaptation" and t.get("target_slide_id") not in sids:
+            add("warning", "transfer_target_missing", None,
+                f"transfer {t['id']} targets slide {t.get('target_slide_id')}, which was deleted")
     return issues
 
 
@@ -266,9 +388,18 @@ def _intersects(el: dict, r: dict) -> bool:
         el["y"] < r["y"] + r["h"] and el["y"] + el["h"] > r["y"]
 
 
+def annotation_slide(project: dict, annotation: dict) -> str | None:
+    """A region annotation names its slide; an element annotation follows its first element."""
+    if annotation.get("kind") == "element" and not annotation.get("slide_id"):
+        first = next((e for e in project["elements"] if e["id"] in annotation.get("element_ids", [])), None)
+        if first:
+            return slide_of(project, first)
+    return slide_of(project, annotation)
+
+
 def scope_of(project: dict, annotation: dict) -> tuple[list[str], dict]:
     """Element ids in scope and the rectangle new content must stay inside."""
-    els = project["elements"]
+    els = slide_elements(project, annotation_slide(project, annotation))
     if annotation["kind"] == "region":
         r = annotation["rect"]
         return [e["id"] for e in els if _intersects(e, r)], r
@@ -319,12 +450,13 @@ def build_change_request(project: dict, annotation_id: str) -> dict:
         "created": now_iso(),
         "instruction": ann.get("instruction", ""),
         "kind": ann["kind"],
+        "slide_id": annotation_slide(project, ann),
         "slide_size": {"w": SLIDE_W, "h": SLIDE_H},
         "scope_rect": rect,
         "scope_element_ids": ids,
         "elements_in_scope": [by_id[i] for i in ids],
         "other_elements": [{k: e[k] for k in ("id", "type", "x", "y", "w", "h")}
-                           for e in project["elements"] if e["id"] not in ids],
+                           for e in slide_elements(project, annotation_slide(project, ann)) if e["id"] not in ids],
         "evidence_in_scope": {k: evmap[k] for k in sorted(used) if k in evmap},
         "evidence_available": {k: {f: v.get(f) for f in ("metric_id", "subject", "period", "value", "unit",
                                                           "kind", "statement", "verification")}
@@ -430,6 +562,7 @@ def validate_patch(project: dict, annotation_id: str, patch: dict) -> tuple[list
             for audit in ("cited_text_original", "detached_from"):
                 el.pop(audit, None)
             el["id"] = new_id("ai")
+            el["slide_id"] = annotation_slide(project, ann)
             el.setdefault("refs", {})
             el["created_by"] = f"patch:{annotation_id}"
             check_bound(el, where)

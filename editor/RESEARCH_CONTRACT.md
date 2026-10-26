@@ -22,7 +22,8 @@ Classification is deterministic keyword and topic matching against the verified 
   "id": "rr-1a2b3c4d",
   "status": "pending_research",          // | partially_fulfilled | fulfilled | not_available
   "instruction": "Add a horizontal bar chart showing China Re's revenue distribution by country or region…",
-  "slide_id": "china_re_overview",
+  "slide_id": "overview",                // the slide holding the placeholder; follows it if the placeholder is moved
+  "transfer_id": "tr-…",                 // only when a cross-slide drop opened it (TRANSFER_CONTRACT.md)
   "region": {"x": 32, "y": 513, "w": 384, "h": 84},     // slide px (1280×720)
   "placeholder_element_id": "pending-…",
   "content_type": "barchart",            // barchart | timeline | table | metric | text

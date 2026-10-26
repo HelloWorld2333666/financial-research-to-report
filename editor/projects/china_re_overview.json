@@ -1,12 +1,19 @@
 {
- "schema": "frr-slide/0.1",
+ "schema": "frr-slide/0.2",
  "id": "china_re_overview",
  "title": "China Re overview (FY2025)",
  "size": {
   "w": 1280,
   "h": 720
  },
- "created": "2026-10-26T19:12:03Z",
+ "created": "2026-10-26T21:05:24Z",
+ "slides": [
+  {
+   "id": "overview",
+   "title": "Company overview"
+  }
+ ],
+ "transfer_requests": [],
  "generated_from": {
   "bundle": "research/china_re/fy2025_bundle.json",
   "bundle_sha256": "12fe1c7f981be077294422404403007e8a91d64329b7eba55fb63bec40afa5d3",
@@ -655,7 +662,8 @@
      "c.cr.earnings_softer",
      "c.cr.capital_buffer"
     ]
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "subtitle",
@@ -674,7 +682,8 @@
     "evidence": [
      "ev.cr.ifrs17"
     ]
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "rule",
@@ -690,7 +699,8 @@
     "borderColor": "transparent",
     "borderWidth": 0,
     "radius": 0
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "profile-bg",
@@ -706,7 +716,9 @@
     "borderColor": "transparent",
     "borderWidth": 0,
     "radius": 4
-   }
+   },
+   "slide_id": "overview",
+   "group": "g-profile"
   },
   {
    "id": "profile-h",
@@ -722,7 +734,9 @@
     "color": "#c8102e",
     "letterSpacing": "0.06em"
    },
-   "refs": {}
+   "refs": {},
+   "slide_id": "overview",
+   "group": "g-profile"
   },
   {
    "id": "profile",
@@ -744,7 +758,9 @@
      "ev.cr.business_lines"
     ]
    },
-   "cited_text_original": "• Origin: People's Insurance Company of China, est. October 1949; joint-stock company since October 2007\n• Listed on the HKEX Main Board on 26 October 2015 (stock code 1508)\n• Businesses: P&C reinsurance, life & health reinsurance, primary P&C insurance, asset management, insurance intermediary"
+   "cited_text_original": "• Origin: People's Insurance Company of China, est. October 1949; joint-stock company since October 2007\n• Listed on the HKEX Main Board on 26 October 2015 (stock code 1508)\n• Businesses: P&C reinsurance, life & health reinsurance, primary P&C insurance, asset management, insurance intermediary",
+   "slide_id": "overview",
+   "group": "g-profile"
   },
   {
    "id": "owner-bg",
@@ -760,7 +776,9 @@
     "borderColor": "transparent",
     "borderWidth": 0,
     "radius": 4
-   }
+   },
+   "slide_id": "overview",
+   "group": "g-owner"
   },
   {
    "id": "owner-h",
@@ -776,7 +794,9 @@
     "color": "#c8102e",
     "letterSpacing": "0.06em"
    },
-   "refs": {}
+   "refs": {},
+   "slide_id": "overview",
+   "group": "g-owner"
   },
   {
    "id": "owner",
@@ -800,7 +820,9 @@
      "c.cr.state_control"
     ]
    },
-   "cited_text_original": "• Central Huijin Investment Ltd.: 71.56% (controlling shareholder)\n• Ministry of Finance: 11.45%\n• Remaining holders not itemised in the sources reviewed"
+   "cited_text_original": "• Central Huijin Investment Ltd.: 71.56% (controlling shareholder)\n• Ministry of Finance: 11.45%\n• Remaining holders not itemised in the sources reviewed",
+   "slide_id": "overview",
+   "group": "g-owner"
   },
   {
    "id": "ratings-bg",
@@ -816,7 +838,9 @@
     "borderColor": "transparent",
     "borderWidth": 0,
     "radius": 4
-   }
+   },
+   "slide_id": "overview",
+   "group": "g-ratings"
   },
   {
    "id": "ratings-h",
@@ -832,7 +856,9 @@
     "color": "#c8102e",
     "letterSpacing": "0.06em"
    },
-   "refs": {}
+   "refs": {},
+   "slide_id": "overview",
+   "group": "g-ratings"
   },
   {
    "id": "ratings",
@@ -858,7 +884,9 @@
      "gap.cr.ratings_primary"
     ]
    },
-   "cited_text_original": "A.M. Best: A (Excellent) · S&P Global Ratings: A\nMaintained during 2025 per the issuer; agency publications not yet reviewed"
+   "cited_text_original": "A.M. Best: A (Excellent) · S&P Global Ratings: A\nMaintained during 2025 per the issuer; agency publications not yet reviewed",
+   "slide_id": "overview",
+   "group": "g-ratings"
   },
   {
    "id": "geo-gap",
@@ -878,7 +906,8 @@
     "fill": "#fff7e6",
     "borderColor": "#e0a100",
     "color": "#6b4e00"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "kpi-income",
@@ -905,7 +934,8 @@
     "fill": "#ffffff",
     "borderColor": "#d5dbe3",
     "accent": "#0f2742"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "kpi-profit",
@@ -932,7 +962,8 @@
     "fill": "#ffffff",
     "borderColor": "#d5dbe3",
     "accent": "#0f2742"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "kpi-roe",
@@ -957,7 +988,8 @@
     "fill": "#ffffff",
     "borderColor": "#d5dbe3",
     "accent": "#0f2742"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "kpi-assets",
@@ -984,7 +1016,8 @@
     "fill": "#ffffff",
     "borderColor": "#d5dbe3",
     "accent": "#0f2742"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "seg-chart",
@@ -1018,7 +1051,8 @@
     "fill": "#ffffff",
     "borderColor": "#d5dbe3",
     "bar": "#0f2742"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "cr-table",
@@ -1126,7 +1160,8 @@
    "style": {
     "fill": "#ffffff",
     "borderColor": "#d5dbe3"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "solv-table",
@@ -1192,7 +1227,8 @@
    "style": {
     "fill": "#ffffff",
     "borderColor": "#d5dbe3"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "takeaways-bg",
@@ -1208,7 +1244,9 @@
     "borderColor": "transparent",
     "borderWidth": 0,
     "radius": 4
-   }
+   },
+   "slide_id": "overview",
+   "group": "g-takeaways"
   },
   {
    "id": "takeaways-h",
@@ -1224,7 +1262,9 @@
     "color": "#c8102e",
     "letterSpacing": "0.06em"
    },
-   "refs": {}
+   "refs": {},
+   "slide_id": "overview",
+   "group": "g-takeaways"
   },
   {
    "id": "takeaways",
@@ -1253,7 +1293,9 @@
      "ev.cr.solvency_unaudited"
     ]
    },
-   "cited_text_original": "• Majority state-owned: Central Huijin is the controlling shareholder.\n• Earnings softened despite top-line growth; see the KPI cards for computed changes.\n• Overseas P&C underwriting strengthened while domestic P&C reinsurance and primary P&C margins narrowed.\n• Group solvency eased slightly in 2025 to 155% core and 189% aggregated (unaudited)."
+   "cited_text_original": "• Majority state-owned: Central Huijin is the controlling shareholder.\n• Earnings softened despite top-line growth; see the KPI cards for computed changes.\n• Overseas P&C underwriting strengthened while domestic P&C reinsurance and primary P&C margins narrowed.\n• Group solvency eased slightly in 2025 to 155% core and 189% aggregated (unaudited).",
+   "slide_id": "overview",
+   "group": "g-takeaways"
   },
   {
    "id": "sources",
@@ -1267,7 +1309,8 @@
    "style": {
     "fontSize": 8.5,
     "color": "#5b6b7f"
-   }
+   },
+   "slide_id": "overview"
   },
   {
    "id": "footer",
@@ -1282,7 +1325,8 @@
     "fontWeight": 400,
     "color": "#5b6b7f"
    },
-   "refs": {}
+   "refs": {},
+   "slide_id": "overview"
   }
  ],
  "annotations": [],
@@ -1292,7 +1336,7 @@
    "gap_id": "gap.cr.geography",
    "status": "open",
    "source": "bundle gap",
-   "created": "2026-10-26T19:12:03Z",
+   "created": "2026-10-26T21:05:24Z",
    "description": "No revenue split by country or region was found in the two sources reviewed. The full FY2025 annual report has not been reviewed."
   }
  ],

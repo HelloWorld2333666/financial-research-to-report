@@ -19,6 +19,11 @@ Serves editor/static and a small JSON API. Binds to 127.0.0.1 only.
     POST /api/research/revert                      remove inserted research content, reopen the request
     GET  /api/fixtures                             list TEST FIXTURE responses (simulated engine output)
     POST /api/research/fixture                     load a TEST FIXTURE response for a request
+    POST /api/slides                               add / duplicate / delete a slide
+    POST /api/transfer/preview                     what a cross-slide drop would do (no change)
+    POST /api/transfer                             apply a cross-slide drop (move, copy or adaptive mode)
+    POST /api/transfer/cancel                      withdraw a pending transfer request
+    POST /api/projects/<name>/transfers/<id>       write the transfer request handoff file
 """
 
 from __future__ import annotations
@@ -38,6 +43,7 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import research  # noqa: E402
 import slidemodel  # noqa: E402
+import transfer  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
@@ -53,6 +59,7 @@ class Paths:
         self.exports = root / "exports"
         self.requests = root / "requests"
         self.research = root / "research"
+        self.transfers = root / "transfers"
         self.fixtures = root / "fixtures" / "research_responses"
 
 
@@ -115,7 +122,7 @@ def make_handler(paths: Paths):
                     p = self.project_path(r[2])
                     if not p.exists():
                         return self.fail(HTTPStatus.NOT_FOUND, "no such project")
-                    return self.send_json(json.loads(p.read_text(encoding="utf-8")))
+                    return self.send_json(slidemodel.migrate(json.loads(p.read_text(encoding="utf-8"))))
                 if r[:2] == ["api", "projects"] and len(r) == 6 and r[3] == "requests" and r[5] == "patch":
                     self.project_path(r[2])
                     if not NAME_RE.match(r[4]):
@@ -147,7 +154,7 @@ def make_handler(paths: Paths):
             try:
                 if r[:2] == ["api", "projects"] and len(r) == 3:
                     p = self.project_path(r[2])
-                    project = self.read_json()
+                    project = slidemodel.migrate(self.read_json())
                     errors = slidemodel.validate_project(project)
                     if errors:
                         return self.send_json({"errors": errors}, HTTPStatus.UNPROCESSABLE_ENTITY)
@@ -178,7 +185,8 @@ def make_handler(paths: Paths):
                     return self.send_json(research.classify(body["project"], body.get("instruction", "")))
                 if r == ["api", "research", "create"]:
                     new, req = research.create_request(body["project"], body.get("instruction", ""),
-                                                       body.get("region") or {}, body.get("overrides"))
+                                                       body.get("region") or {}, body.get("overrides"),
+                                                       body.get("slide_id"))
                     return self.send_json({"project": new, "request": req,
                                            "integrity": slidemodel.check_integrity(new)})
                 if r == ["api", "research", "apply"]:
@@ -190,6 +198,38 @@ def make_handler(paths: Paths):
                 if r == ["api", "research", "revert"]:
                     new = research.revert_insertion(body["project"], body["request_id"])
                     return self.send_json({"project": new, "integrity": slidemodel.check_integrity(new)})
+                if r == ["api", "slides"]:
+                    op, sid = body.get("op"), body.get("slide_id")
+                    if op == "add":
+                        new, sid = slidemodel.add_slide(body["project"], body.get("title", ""), body.get("after"))
+                    elif op == "duplicate":
+                        new, sid = slidemodel.duplicate_slide(body["project"], sid)
+                    elif op == "delete":
+                        new = slidemodel.delete_slide(body["project"], sid)
+                    else:
+                        raise ValueError("op must be add, duplicate or delete")
+                    return self.send_json({"project": new, "slide_id": sid})
+                if r[:2] == ["api", "transfer"] and len(r) <= 3:
+                    args = (body["project"], body.get("module_ids") or [], body.get("target_slide_id"), body.get("mode"),
+                            body.get("instruction", ""))
+                    if r[2:] == ["preview"]:
+                        return self.send_json(transfer.preview(*args))
+                    if r[2:] == ["cancel"]:
+                        new = transfer.cancel_transfer(body["project"], body["transfer_id"])
+                        return self.send_json({"project": new, "integrity": slidemodel.check_integrity(new)})
+                    if not r[2:]:
+                        new, result = transfer.transfer(*args, drop=body.get("drop"),
+                                                        new_slide_title=body.get("new_slide_title", ""))
+                        return self.send_json({"project": new, "result": result,
+                                               "integrity": slidemodel.check_integrity(new)})
+                if r[:2] == ["api", "projects"] and len(r) == 5 and r[3] == "transfers":
+                    self.project_path(r[2])
+                    if not NAME_RE.match(r[4]):
+                        raise ValueError("invalid transfer id")
+                    f = paths.transfers / r[2] / f"{r[4]}.request.json"
+                    atomic_write(f, json.dumps(transfer.export_transfer(body, r[4]), indent=1,
+                                               ensure_ascii=False).encode("utf-8"))
+                    return self.send_json({"request": str(f.relative_to(paths.root))})
                 if r == ["api", "research", "fixture"]:
                     if not NAME_RE.match(body.get("name", "")):
                         raise ValueError("invalid fixture name")

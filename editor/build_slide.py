@@ -21,6 +21,7 @@ from slidemodel import SCHEMA, bound_evidence_ids, check_integrity, element_evid
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE = ROOT / "research" / "china_re" / "fy2025_bundle.json"
 OUT = Path(__file__).resolve().parent / "projects" / "china_re_overview.json"
+SLIDE_ID = "overview"
 
 INK, MUTED, ACCENT, PANEL, LINE = "#0f2742", "#5b6b7f", "#c8102e", "#f3f5f8", "#d5dbe3"
 BN = {"scale": 1e6, "decimals": 1, "prefix": "RMB ", "suffix": "bn"}  # RMB thousand -> bn
@@ -163,9 +164,18 @@ def build(bundle: dict, bundle_path: Path) -> dict:
              "Figures verified against source PDFs by an AI assistant; human review pending. Segment revenue is "
              "before inter-segment eliminations.", size=8.5, color=MUTED),
     ]
+    # A panel, its header and its text form one module: dragging any part moves all three.
+    modules = {"profile": "g-profile", "owner": "g-owner", "ratings": "g-ratings", "takeaways": "g-takeaways"}
+    for e in elements:
+        e["slide_id"] = SLIDE_ID
+        base = e["id"].removesuffix("-bg").removesuffix("-h")
+        if base in modules:
+            e["group"] = modules[base]
     project = dict(
         schema=SCHEMA, id="china_re_overview", title="China Re overview (FY2025)",
         size=dict(w=1280, h=720), created=now_iso(),
+        slides=[dict(id=SLIDE_ID, title="Company overview")],
+        transfer_requests=[],
         generated_from=dict(bundle=str(bundle_path.relative_to(ROOT)),
                             bundle_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
                             company=bundle["company"]),

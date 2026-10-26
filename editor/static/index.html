@@ -38,6 +38,11 @@
     <button data-act="add-metric" class="tool" title="Metric card from verified evidence"><span>#</span>Metric</button>
   </nav>
 
+  <aside id="strip" aria-label="Slides">
+    <div id="thumbs"></div>
+    <button id="newSlideDrop" title="Add a blank slide, or drop selected modules here to start a new slide">＋ New slide<small>or drop modules here</small></button>
+  </aside>
+
   <section id="viewport">
     <div id="stageScaler">
       <div id="stage" class="slide"></div>
@@ -75,6 +80,22 @@
       <span class="grow"></span>
       <button value="cancel" type="submit">Cancel</button>
       <button value="ok" type="submit" class="primary" id="pickOk">Insert</button>
+    </menu>
+  </form>
+</dialog>
+<dialog id="xferDlg">
+  <form method="dialog">
+    <h3 id="xferTitle">Transfer modules</h3>
+    <p class="hint" id="xferFrom"></p>
+    <label class="row">To <select id="xferTarget"></select></label>
+    <label class="row" id="xferNewRow">New slide title <input id="xferNewTitle" placeholder="New slide"></label>
+    <div id="xferModes"></div>
+    <textarea id="xferText" placeholder="Optional: what should this become on the target slide? e.g. “Turn this into a separate page focused on geographic exposure, and add a regional bar chart.”"></textarea>
+    <div id="xferPreview" class="intent"></div>
+    <menu>
+      <span class="grow"></span>
+      <button value="cancel" type="submit">Cancel</button>
+      <button value="ok" type="submit" class="primary" id="xferOk">Apply</button>
     </menu>
   </form>
 </dialog>
