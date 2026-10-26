@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Generated output and private material
+output/
+private/
+*.docx
+*.pdf
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

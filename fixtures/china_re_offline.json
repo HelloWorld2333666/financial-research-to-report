@@ -1,0 +1,219 @@
+{
+  "mode": "offline_fixture",
+  "description": "SYNTHETIC offline fixture for pipeline testing. Every source, value and statement here is invented test data shaped like a reinsurer credit review. None of it is a real-world figure or finding about China Reinsurance (Group) Corporation. Periods are labelled FIXTURE-Y1/Y2 on purpose so they cannot be mistaken for real fiscal years.",
+  "sources": [
+    {
+      "id": "src.fx.annual_report",
+      "title": "[SYNTHETIC FIXTURE] Annual report excerpt",
+      "publisher": "Fixture publisher (synthetic)",
+      "source_type": "annual_report",
+      "origin": "fixture",
+      "notes": "Stands in for an issuer annual report. Not a real document."
+    },
+    {
+      "id": "src.fx.rating_note",
+      "title": "[SYNTHETIC FIXTURE] Rating agency note",
+      "publisher": "Fixture agency (synthetic)",
+      "source_type": "rating_report",
+      "origin": "fixture",
+      "notes": "Stands in for a rating action commentary. Not a real document."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev.fx.profile",
+      "source_id": "src.fx.annual_report",
+      "kind": "fact",
+      "statement": "Synthetic: the group reports property & casualty reinsurance, life & health reinsurance and primary insurance segments.",
+      "locator": "Fixture p.3",
+      "question_ids": ["q.profile", "q.business_mix"],
+      "verification": "verified"
+    },
+    {
+      "id": "ev.fx.controller",
+      "source_id": "src.fx.annual_report",
+      "kind": "fact",
+      "statement": "Synthetic: a state-owned holding entity is disclosed as the controlling shareholder; the fixture gives no stake percentage.",
+      "locator": "Fixture p.12",
+      "question_ids": ["q.ownership"],
+      "verification": "verified"
+    },
+    {
+      "id": "ev.fx.geography",
+      "source_id": "src.fx.annual_report",
+      "kind": "fact",
+      "statement": "Synthetic: revenue is disclosed only as domestic versus overseas in aggregate; no country-level split is given.",
+      "locator": "Fixture p.27, segment note",
+      "question_ids": ["q.business_mix"],
+      "verification": "verified"
+    },
+    {
+      "id": "ev.fx.revenue.y1",
+      "source_id": "src.fx.annual_report",
+      "kind": "metric_value",
+      "statement": "Synthetic total revenue, FIXTURE-Y1.",
+      "locator": "Fixture p.40, income statement",
+      "question_ids": ["q.performance"],
+      "verification": "verified",
+      "metric_id": "m.revenue",
+      "value": 100.0,
+      "unit": "synthetic currency units",
+      "period": "FIXTURE-Y1"
+    },
+    {
+      "id": "ev.fx.revenue.y2",
+      "source_id": "src.fx.annual_report",
+      "kind": "metric_value",
+      "statement": "Synthetic total revenue, FIXTURE-Y2.",
+      "locator": "Fixture p.40, income statement",
+      "question_ids": ["q.performance"],
+      "verification": "verified",
+      "metric_id": "m.revenue",
+      "value": 104.0,
+      "unit": "synthetic currency units",
+      "period": "FIXTURE-Y2"
+    },
+    {
+      "id": "ev.fx.net_profit.y2",
+      "source_id": "src.fx.annual_report",
+      "kind": "metric_value",
+      "statement": "Synthetic net profit attributable to shareholders, FIXTURE-Y2.",
+      "locator": "Fixture p.40, income statement",
+      "question_ids": ["q.performance"],
+      "verification": "verified",
+      "metric_id": "m.net_profit",
+      "value": 5.0,
+      "unit": "synthetic currency units",
+      "period": "FIXTURE-Y2"
+    },
+    {
+      "id": "ev.fx.combined_ratio.y1",
+      "source_id": "src.fx.annual_report",
+      "kind": "metric_value",
+      "statement": "Synthetic P&C reinsurance combined ratio, FIXTURE-Y1.",
+      "locator": "Fixture p.18, segment KPIs",
+      "question_ids": ["q.capital"],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 99.0,
+      "unit": "percent",
+      "period": "FIXTURE-Y1"
+    },
+    {
+      "id": "ev.fx.combined_ratio.y2",
+      "source_id": "src.fx.annual_report",
+      "kind": "metric_value",
+      "statement": "Synthetic P&C reinsurance combined ratio, FIXTURE-Y2. Left unverified on purpose to exercise the verification gap path.",
+      "locator": "Fixture p.18, segment KPIs",
+      "question_ids": ["q.capital"],
+      "verification": "unverified",
+      "metric_id": "m.combined_ratio",
+      "value": 101.0,
+      "unit": "percent",
+      "period": "FIXTURE-Y2"
+    },
+    {
+      "id": "ev.fx.solvency.y2",
+      "source_id": "src.fx.annual_report",
+      "kind": "metric_value",
+      "statement": "Synthetic group comprehensive solvency adequacy ratio, FIXTURE-Y2.",
+      "locator": "Fixture p.55, solvency note",
+      "question_ids": ["q.capital"],
+      "verification": "verified",
+      "metric_id": "m.solvency_ratio",
+      "value": 180.0,
+      "unit": "percent",
+      "period": "FIXTURE-Y2"
+    },
+    {
+      "id": "ev.fx.rating",
+      "source_id": "src.fx.rating_note",
+      "kind": "quote",
+      "statement": "Synthetic: the fixture agency affirms its rating with a stable outlook and cites expected support from the controlling shareholder.",
+      "locator": "Fixture rating note, rationale section",
+      "question_ids": ["q.ratings", "q.ownership"],
+      "verification": "unverified"
+    }
+  ],
+  "findings": [
+    {
+      "id": "f.fx.scale",
+      "statement": "In the fixture, revenue grew from 100 to 104 synthetic units between FIXTURE-Y1 and FIXTURE-Y2.",
+      "nature": "fact",
+      "question_ids": ["q.performance"],
+      "evidence_ids": ["ev.fx.revenue.y1", "ev.fx.revenue.y2"]
+    },
+    {
+      "id": "f.fx.underwriting",
+      "statement": "In the fixture, P&C underwriting moved from a small profit to a small loss (combined ratio crossed 100%).",
+      "nature": "interpretation",
+      "question_ids": ["q.capital"],
+      "evidence_ids": ["ev.fx.combined_ratio.y1", "ev.fx.combined_ratio.y2"]
+    },
+    {
+      "id": "f.fx.capital",
+      "statement": "In the fixture, the comprehensive solvency adequacy ratio is 180% in FIXTURE-Y2.",
+      "nature": "fact",
+      "question_ids": ["q.capital"],
+      "evidence_ids": ["ev.fx.solvency.y2"]
+    },
+    {
+      "id": "f.fx.support",
+      "statement": "In the fixture, state control and the agency's stated support expectation point the same way.",
+      "nature": "interpretation",
+      "question_ids": ["q.ownership", "q.ratings"],
+      "evidence_ids": ["ev.fx.controller", "ev.fx.rating"]
+    }
+  ],
+  "claims": [
+    {
+      "id": "c.fx.capital_buffer",
+      "statement": "[Fixture] Regulatory capital sits well above the minimum, partly offsetting weaker underwriting.",
+      "nature": "interpretation",
+      "finding_ids": ["f.fx.capital", "f.fx.underwriting"],
+      "caveats": "Two fixture periods only; solvency regime comparability not assessed."
+    },
+    {
+      "id": "c.fx.state_support",
+      "statement": "[Fixture] Shareholder support is a credit strength cited by the rating agency.",
+      "nature": "interpretation",
+      "finding_ids": ["f.fx.support"]
+    },
+    {
+      "id": "c.fx.geography_limited",
+      "statement": "[Fixture] Geographic exposure can only be shown as a domestic/overseas aggregate.",
+      "nature": "fact",
+      "evidence_ids": ["ev.fx.geography"]
+    }
+  ],
+  "gaps": [
+    {
+      "id": "gap.fx.country_split",
+      "description": "Country-level revenue breakdown is not disclosed in the fixture source; only a domestic/overseas aggregate exists.",
+      "reason": "not_disclosed",
+      "question_ids": ["q.business_mix"],
+      "impact": "A country-level geography exhibit cannot be produced.",
+      "suggested_action": "Show the disclosed aggregate with a disclosure note, or find alternative disclosed data. Do not allocate the overseas share to countries."
+    }
+  ],
+  "slide_modules": [
+    {
+      "id": "sm.fx.capital",
+      "claim_ids": ["c.fx.capital_buffer"],
+      "proof_role": "financial strength",
+      "exhibit_hint": "KPI cards plus combined ratio bars"
+    },
+    {
+      "id": "sm.fx.support",
+      "claim_ids": ["c.fx.state_support"],
+      "proof_role": "ownership and support",
+      "exhibit_hint": "ownership chart with rating quote"
+    },
+    {
+      "id": "sm.fx.geography",
+      "claim_ids": ["c.fx.geography_limited"],
+      "proof_role": "geographic footprint",
+      "exhibit_hint": "aggregate split with disclosure note"
+    }
+  ]
+}
