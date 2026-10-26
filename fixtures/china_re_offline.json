@@ -1,5 +1,7 @@
 {
   "mode": "offline_fixture",
+  "company": "China Reinsurance (Group) Corporation",
+  "company_aliases": [],
   "description": "SYNTHETIC offline fixture for pipeline testing. Every source, value and statement here is invented test data shaped like a reinsurer credit review. None of it is a real-world figure or finding about China Reinsurance (Group) Corporation. Periods are labelled FIXTURE-Y1/Y2 on purpose so they cannot be mistaken for real fiscal years.",
   "sources": [
     {

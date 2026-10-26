@@ -70,7 +70,7 @@ A `ResearchRecord` contains:
 - **gaps** (missing information, each with a reason such as `not_disclosed`)
 - **slide modules**: candidate proof blocks referencing claims
 
-Claim support and question status are always *computed*, never taken from input. Questions or metrics without evidence become explicit gaps rather than answers. Details: [docs/architecture.md](docs/architecture.md).
+Each evidence bundle declares the `company` it is about (plus optional `company_aliases`). A run for any other company is rejected (exit 2). Claim support and question status are always *computed*, never taken from input. Questions or metrics without evidence become explicit gaps rather than answers. Details: [docs/architecture.md](docs/architecture.md).
 
 ## Configuration
 

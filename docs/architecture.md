@@ -46,6 +46,10 @@ The three-way distinction the brief asks for maps onto the model as follows:
 - **interpretations**: `nature = interpretation`
 - **missing information**: `Gap`
 
+## Company binding
+
+An `EvidenceBundle` must declare `company` and may list `company_aliases`. `pipeline.run` rejects a scope whose company doesn't match, after ignoring case, spacing and punctuation. So "China Reinsurance (Group) Corporation" matches "china reinsurance group corporation", but "China Re" matches only if it is listed as an alias. This stops one company's evidence from being published under another company's name.
+
 ## Validation rules
 
 Errors block use of the record:

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from frr.pipeline import load_bundle, run
+from frr.pipeline import format_value, load_bundle, render_summary, run
 from frr.schema import QuestionStatus, Scope, SupportStatus
 
 from conftest import by_id
@@ -59,3 +59,25 @@ def test_metric_periods_and_subjects_are_explicit(real):
     for e in real.evidence:
         if e.kind.value == "metric_value":
             assert e.period and e.subject and e.unit, e.id
+
+
+def test_real_bundle_accepts_aliases_and_rejects_other_insurers(real):
+    for name in ("China Re", "China Reinsurance Group"):
+        run(Scope(company=name, objective="Assess the credit profile.", sector="insurance"), real)
+    with pytest.raises(ValueError):
+        run(Scope(company="AIA Group Limited", objective="Assess the credit profile.", sector="insurance"), real)
+
+
+def test_summary_shows_exact_values_and_subjects(real_run):
+    record, issues = real_run
+    summary = render_summary(record, issues)
+    assert "e+0" not in summary
+    assert "| ev.cr.total_income.fy2025 | m.revenue | Group | FY2025 | 124,927,594 | RMB thousand |" in summary
+    assert "| P&C reinsurance segment | FY2025 | 45,812 | RMB million |" in summary
+    assert "| Life and health reinsurance segment | FY2025 | 10,088 |" in summary
+
+
+@pytest.mark.parametrize("value,text", [(124927594.0, "124,927,594"), (9.18, "9.18"), (189.0, "189"),
+                                        (95.98, "95.98"), (1234567.25, "1,234,567.25"), (None, "—")])
+def test_format_value_is_exact(value, text):
+    assert format_value(value) == text

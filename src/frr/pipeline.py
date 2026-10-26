@@ -111,9 +111,26 @@ def _auto_gaps(record: ResearchRecord) -> list[Gap]:
     return gaps
 
 
+def _company_key(name: str) -> str:
+    # Case, spacing and punctuation differences only: "China Reinsurance (Group) Corporation"
+    # matches "china reinsurance group corporation", but not "China Re" unless listed as an alias.
+    return re.sub(r"[^a-z0-9]+", "", name.lower())
+
+
+def check_company(scope: Scope, bundle: EvidenceBundle) -> None:
+    """Raise ValueError if the bundle is not about the company being researched."""
+    names = [bundle.company, *bundle.company_aliases]
+    if _company_key(scope.company) not in {_company_key(n) for n in names}:
+        raise ValueError(
+            f"Evidence bundle is for '{bundle.company}', not '{scope.company}'. "
+            f"Accepted names: {'; '.join(names)}"
+        )
+
+
 def run(scope: Scope, bundle: EvidenceBundle, llm_provider: str = "none",
         now: datetime | None = None) -> tuple[ResearchRecord, list[Issue]]:
     validate_scope(scope)
+    check_company(scope, bundle)
     questions, metrics = plan_questions(scope)
     now = now or datetime.now(timezone.utc)
 
@@ -162,6 +179,15 @@ def write_outputs(record: ResearchRecord, issues: list[Issue], out_dir: Path) ->
     return list(paths.values())
 
 
+def format_value(value: float | None) -> str:
+    """Exact, thousands-separated value for human review (never scientific notation)."""
+    if value is None:
+        return "—"
+    if float(value).is_integer():
+        return f"{int(value):,}"
+    return f"{value:,}"  # shortest repr that round-trips, e.g. 9.18 -> "9.18"
+
+
 def render_summary(record: ResearchRecord, issues: list[Issue]) -> str:
     s = record.scope
     lines = [f"# Research record: {s.company}", ""]
@@ -191,9 +217,10 @@ def render_summary(record: ResearchRecord, issues: list[Issue]) -> str:
     lines += ["", "## Metrics recorded", ""]
     metric_ev = [e for e in record.evidence if e.kind == EvidenceKind.metric_value]
     if metric_ev:
-        lines += ["| Evidence | Metric | Period | Value | Unit | Verification |", "|---|---|---|---|---|---|"]
-        lines += [f"| {e.id} | {e.metric_id} | {e.period} | {e.value:g} | {e.unit} | {e.verification.value} |"
-                  for e in metric_ev]
+        lines += ["| Evidence | Metric | Subject | Period | Value | Unit | Verification |",
+                  "|---|---|---|---|---|---|---|"]
+        lines += [f"| {e.id} | {e.metric_id} | {e.subject or '—'} | {e.period} | {format_value(e.value)} "
+                  f"| {e.unit} | {e.verification.value} |" for e in metric_ev]
     else:
         lines.append("None.")
 

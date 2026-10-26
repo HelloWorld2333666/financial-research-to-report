@@ -204,6 +204,9 @@ class EvidenceBundle(_Model):
     """Research material fed into the pipeline (fixture file or, later, live research)."""
 
     mode: RecordMode
+    # The entity this material is about; a run for any other company is rejected.
+    company: str = Field(min_length=2, max_length=200)
+    company_aliases: list[str] = Field(default_factory=list)
     description: str
     sources: list[Source] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)

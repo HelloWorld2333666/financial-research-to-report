@@ -12,7 +12,7 @@ def make_bundle(**evidence_overrides):
               page=2, excerpt="Total assets 527,763,431 508,347,105", metric_id="m.total_assets",
               value=527763431, unit="RMB thousand", period="31 Dec 2025")
     ev.update(evidence_overrides)
-    return EvidenceBundle(mode="live", description="test", sources=[dict(
+    return EvidenceBundle(mode="live", company="Test Co", description="test", sources=[dict(
         id="src.1", title="t", publisher="p", source_type="exchange_filing", origin="retrieved",
         content_sha256=SHA)], evidence=[ev])
 

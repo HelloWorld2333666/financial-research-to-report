@@ -1,5 +1,11 @@
 {
   "mode": "live",
+  "company": "China Reinsurance (Group) Corporation",
+  "company_aliases": [
+    "China Re",
+    "China Reinsurance Group",
+    "China Reinsurance (Group) Corp."
+  ],
   "description": "China Reinsurance (Group) Corporation, FY2025, built by hand from two public HKEX filings. Every evidence item records the PDF page and a verbatim excerpt; see research/china_re/README.md for the verification procedure.",
   "sources": [
     {

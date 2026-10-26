@@ -13,6 +13,8 @@ The full hashes are in the bundle. The PDFs themselves are not committed.
 
 ## What's in it
 
+- **Company binding:** `company` = China Reinsurance (Group) Corporation. Accepted aliases are "China Re", "China Reinsurance Group" and "China Reinsurance (Group) Corp.". Runs under any other name are rejected.
+
 - **35 evidence items**
   - 23 metric values covering:
     - total income, insurance revenue (group and segments), net profit attributable, weighted average ROE and total assets
