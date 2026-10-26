@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide Editor Spike</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header id="toolbar">
+  <strong id="projTitle">Slide editor</strong>
+  <div class="grp" role="group" aria-label="Mode">
+    <button data-act="mode-select" class="mode on" title="Select / move (V)">Select</button>
+    <button data-act="mode-region" class="mode" title="Draw a region and describe a change (R)">Region request</button>
+  </div>
+  <div class="grp" role="group" aria-label="Insert">
+    <button data-act="add-text" title="Insert text box">+ Text</button>
+    <button data-act="add-panel" title="Insert rectangular panel">+ Panel</button>
+    <button data-act="add-ellipse" title="Insert ellipse">+ Ellipse</button>
+    <button data-act="add-metric" title="Insert a metric card bound to verified evidence">+ Metric…</button>
+  </div>
+  <div class="grp" role="group" aria-label="Arrange">
+    <button data-act="duplicate" title="Duplicate (⌘D)">Duplicate</button>
+    <button data-act="delete" title="Delete (⌫)">Delete</button>
+    <button data-act="group" title="Group (⌘G)">Group</button>
+    <button data-act="ungroup" title="Ungroup (⇧⌘G)">Ungroup</button>
+    <button data-act="front" title="Bring to front">Front</button>
+    <button data-act="back" title="Send to back">Back</button>
+  </div>
+  <div class="grp" role="group" aria-label="Align">
+    <button data-act="align-left" title="Align left">⇤</button>
+    <button data-act="align-center" title="Align centres horizontally">↔</button>
+    <button data-act="align-right" title="Align right">⇥</button>
+    <button data-act="align-top" title="Align top">⤒</button>
+    <button data-act="align-middle" title="Align middles vertically">↕</button>
+    <button data-act="align-bottom" title="Align bottom">⤓</button>
+    <button data-act="dist-h" title="Distribute horizontally">⋯</button>
+    <button data-act="dist-v" title="Distribute vertically">⋮</button>
+  </div>
+  <div class="grp" role="group" aria-label="History">
+    <button data-act="undo" title="Undo (⌘Z)">Undo</button>
+    <button data-act="redo" title="Redo (⇧⌘Z)">Redo</button>
+    <button data-act="revert" title="Revert selected elements (or everything) to the last save">Revert to saved</button>
+  </div>
+  <div class="grp right">
+    <button data-act="save" class="primary" title="Save project (⌘S)">Save</button>
+    <button data-act="export" title="Export a clean 2560×1440 PNG">Export PNG</button>
+  </div>
+  <span id="status" aria-live="polite"></span>
+</header>
+<main>
+  <section id="viewport">
+    <div id="stageScaler">
+      <div id="stage" class="slide"></div>
+      <div id="annotLayer"></div>
+    </div>
+  </section>
+  <aside id="side">
+    <nav id="tabs">
+      <button data-tab="props" class="on">Properties</button>
+      <button data-tab="requests">Change requests <span id="reqCount"></span></button>
+      <button data-tab="integrity">Data integrity <span id="intCount"></span></button>
+    </nav>
+    <div id="pane-props" class="pane on"></div>
+    <div id="pane-requests" class="pane"></div>
+    <div id="pane-integrity" class="pane"></div>
+  </aside>
+</main>
+<dialog id="metricDlg">
+  <form method="dialog">
+    <h3>Insert metric card</h3>
+    <p class="hint">Only verified evidence can be shown as a number. Missing data becomes a research request.</p>
+    <label>Evidence <select id="metricEv"></select></label>
+    <label>Label <input id="metricLabel" placeholder="Card label"></label>
+    <menu>
+      <button value="research" type="submit">Metric is missing → research request</button>
+      <button value="cancel" type="submit">Cancel</button>
+      <button value="ok" type="submit" class="primary">Insert</button>
+    </menu>
+  </form>
+</dialog>
+<script src="vendor/moveable.min.js"></script>
+<script src="vendor/selecto.min.js"></script>
+<script src="vendor/html-to-image.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

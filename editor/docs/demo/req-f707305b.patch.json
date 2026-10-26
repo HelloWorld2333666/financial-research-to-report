@@ -1,0 +1,10 @@
+{
+ "request_id": "req-f707305b",
+ "ops": [],
+ "summary": "No country-level revenue data exists in the evidence snapshot; left the gap box unchanged and raised a research request.",
+ "research_requests": [
+  {
+   "description": "China Re revenue by country, top five countries, FY2025 (and FY2024 for comparison). Not in the current evidence; check the FY2025 annual report segment and geographic notes. Do not estimate."
+  }
+ ]
+}

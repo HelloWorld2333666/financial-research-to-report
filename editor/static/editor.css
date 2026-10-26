@@ -1,0 +1,115 @@
+:root {
+  --chrome-bg: #f6f7f9; --chrome-line: #d9dee5; --chrome-text: #1d2733; --chrome-muted: #66717f;
+  --accent: #2563eb; --req: #ea580c; --warn: #b45309; --err: #b91c1c; --ok: #15803d;
+  --slide-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--chrome-text); background: #e9ecf0; }
+body { display: flex; flex-direction: column; }
+
+/* ---------- chrome ---------- */
+#toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px;
+  background: var(--chrome-bg); border-bottom: 1px solid var(--chrome-line); }
+#toolbar .grp { display: flex; gap: 2px; padding-left: 10px; border-left: 1px solid var(--chrome-line); }
+#toolbar .grp.right { margin-left: auto; }
+button { font: inherit; padding: 4px 9px; border: 1px solid var(--chrome-line); border-radius: 5px;
+  background: #fff; color: inherit; cursor: pointer; }
+button:hover { border-color: #aab3bf; }
+button.on, button.mode.on { background: #1d2733; color: #fff; border-color: #1d2733; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+#status { flex-basis: 100%; color: var(--chrome-muted); font-size: 12px; min-height: 16px; }
+#status.dirty::before { content: "● unsaved changes · "; color: var(--req); }
+
+main { flex: 1; display: flex; min-height: 0; }
+#viewport { flex: 1; position: relative; overflow: auto; padding: 24px; }
+#viewport.region-mode { cursor: crosshair; }
+#stageScaler { position: relative; width: 1280px; height: 720px; transform-origin: 0 0; }
+#side { width: 360px; border-left: 1px solid var(--chrome-line); background: #fff; display: flex; flex-direction: column; }
+#tabs { display: flex; border-bottom: 1px solid var(--chrome-line); }
+#tabs button { flex: 1; border: 0; border-radius: 0; padding: 9px 4px; background: var(--chrome-bg); font-size: 12px; }
+#tabs button.on { background: #fff; color: var(--chrome-text); font-weight: 600; box-shadow: inset 0 -2px var(--accent); }
+@media (max-width: 1100px) {  /* narrow windows: give the slide the full width, panel below */
+  main { flex-direction: column; overflow: auto; }
+  #viewport { flex: none; padding: 12px; overflow: visible; }
+  #side { width: auto; border-left: 0; border-top: 1px solid var(--chrome-line); min-height: 320px; }
+}
+.pane { display: none; padding: 12px; overflow: auto; flex: 1; }
+.pane.on { display: block; }
+.pane h4 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--chrome-muted); }
+.pane label { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-size: 12px; }
+.pane label > span { width: 82px; color: var(--chrome-muted); }
+.pane input, .pane select, .pane textarea { font: inherit; padding: 3px 5px; border: 1px solid var(--chrome-line); border-radius: 4px; }
+.pane input[type=number] { width: 70px; }
+.pane textarea { width: 100%; min-height: 64px; resize: vertical; }
+.geo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.geo label > span { width: auto; }
+.geo input { width: 100%; }
+.ref { border: 1px solid var(--chrome-line); border-radius: 5px; padding: 6px 8px; margin: 5px 0; font-size: 12px; }
+.ref code { font-size: 11px; }
+.ref .ex { color: var(--chrome-muted); font-style: italic; }
+.tag { display: inline-block; font-size: 10.5px; padding: 0 6px; border-radius: 9px; background: #e5e7eb; }
+.tag.verified, .tag.applied { background: #dcfce7; color: var(--ok); }
+.tag.open { background: #ffedd5; color: var(--req); }
+.tag.error { background: #fee2e2; color: var(--err); }
+.tag.warning { background: #fef3c7; color: var(--warn); }
+.tag.info { background: #e0e7ff; color: #3730a3; }
+.hint { color: var(--chrome-muted); font-size: 12px; }
+.req { border: 1px solid var(--chrome-line); border-left: 3px solid var(--req); border-radius: 5px; padding: 8px; margin: 8px 0; }
+.req.applied { border-left-color: var(--ok); }
+.req .row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.req pre, .pane pre { white-space: pre-wrap; word-break: break-all; font-size: 11px; background: #f3f4f6; padding: 6px; border-radius: 4px; max-height: 180px; overflow: auto; }
+.issue { padding: 5px 0; border-bottom: 1px solid #eef0f3; cursor: pointer; font-size: 12px; }
+dialog { border: 1px solid var(--chrome-line); border-radius: 8px; width: 520px; }
+dialog label { display: block; margin: 8px 0; }
+dialog select, dialog input { width: 100%; font: inherit; padding: 4px; }
+dialog menu { display: flex; gap: 6px; justify-content: flex-end; padding: 0; }
+
+/* ---------- slide (exported) ---------- */
+.slide { position: absolute; inset: 0; width: 1280px; height: 720px; background: #fff; overflow: hidden;
+  font-family: var(--slide-font); color: #0f2742; box-shadow: 0 4px 24px rgba(15, 39, 66, .18); }
+.slide.exporting { box-shadow: none; }
+.el { position: absolute; user-select: none; }
+.el .txt { white-space: pre-wrap; width: 100%; height: 100%; overflow: hidden; outline: none; }
+.el [contenteditable=true] { user-select: text; cursor: text; outline: 2px solid var(--accent); outline-offset: 1px;
+  background: rgba(37, 99, 235, .04); overflow: visible; }
+.el-panel { }
+.el-metric { padding: 9px 11px; border: 1px solid; border-radius: 4px; display: flex; flex-direction: column; }
+.el-metric .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #5b6b7f; }
+.el-metric .val { font-size: 23px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.el-metric .dlt { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.el-metric .note { font-size: 9.5px; color: #5b6b7f; margin-top: auto; }
+.el-table { border: 1px solid; border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; }
+.el-table table { width: 100%; border-collapse: collapse; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.el-table th { text-align: right; font-weight: 700; color: #5b6b7f; border-bottom: 1.5px solid #0f2742; padding: 3px 4px; }
+.el-table th:first-child, .el-table td:first-child { text-align: left; }
+.el-table td { text-align: right; padding: 4px; border-bottom: 1px solid #e3e7ed; }
+.el-table th:first-child { color: #0f2742; }
+.el-table .fn { font-size: 8.5px; color: #5b6b7f; margin-top: auto; padding-top: 4px; }
+.el-bar { border: 1px solid; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; }
+.el-bar .ttl { font-size: 11px; font-weight: 700; margin-bottom: 10px; }
+.el-bar .rows { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
+.el-bar .br { display: grid; grid-template-columns: 112px 1fr 44px; align-items: center; gap: 8px; font-size: 10.5px; }
+.el-bar .track { height: 22px; }
+.el-bar .fill { height: 100%; border-radius: 2px; }
+.el-bar .v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.el-sources { font-size: 8.5px; line-height: 1.35; }
+.el-gap { border: 1.5px dashed; border-radius: 4px; padding: 8px 10px; font-size: 10.5px; }
+.el-gap .gl { font-weight: 700; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 3px; }
+.bound { cursor: help; }
+
+/* ---------- editor-only overlays (never exported) ---------- */
+.cite { position: absolute; top: -6px; right: -6px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px;
+  background: #2563eb; color: #fff; font: 700 9px/14px -apple-system, sans-serif; text-align: center; opacity: .75; }
+.lock { font-size: 9px; vertical-align: super; opacity: .55; }
+.slide.exporting .no-export { display: none !important; }
+#annotLayer { position: absolute; inset: 0; pointer-events: none; }
+.ann { position: absolute; border: 2px dashed var(--req); background: rgba(234, 88, 12, .06); border-radius: 3px; }
+.ann.element { border-style: dotted; }
+.ann.applied { border-color: var(--ok); background: rgba(21, 128, 61, .04); }
+.ann.active { box-shadow: 0 0 0 3px rgba(234, 88, 12, .25); }
+.ann .badge { position: absolute; top: -11px; left: -11px; width: 22px; height: 22px; border-radius: 11px; pointer-events: auto;
+  cursor: pointer; background: var(--req); color: #fff; font: 700 11px/22px -apple-system, sans-serif; text-align: center; }
+.ann.applied .badge { background: var(--ok); }
+.ann.drawing { border-style: solid; }

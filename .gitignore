@@ -22,3 +22,8 @@ private/
 .DS_Store
 .idea/
 .vscode/
+
+# Slide editor spike: generated locally
+editor/exports/
+editor/requests/
+editor/projects/.history/

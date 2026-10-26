@@ -1,0 +1,37 @@
+{
+ "request_id": "req-f707305b",
+ "summary": "DELIBERATELY INVALID test patch (hand-written to exercise the validator)",
+ "ops": [
+  {
+   "op": "add",
+   "element": {
+    "type": "text",
+    "x": 40,
+    "y": 470,
+    "w": 360,
+    "h": 60,
+    "refs": {},
+    "text": "Revenue by country: China 82%, UK 9%, US 4%, Singapore 3%, other 2%"
+   }
+  },
+  {
+   "op": "update",
+   "id": "kpi-income",
+   "set": {
+    "evidence_id": "ev.cr.total_assets.2025"
+   }
+  },
+  {
+   "op": "add",
+   "element": {
+    "type": "metric",
+    "x": 40,
+    "y": 470,
+    "w": 190,
+    "h": 80,
+    "label": "Overseas share",
+    "evidence_id": "ev.cr.overseas_share.fy2025"
+   }
+  }
+ ]
+}
