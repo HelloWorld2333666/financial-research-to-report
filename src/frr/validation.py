@@ -126,8 +126,14 @@ def validate_record(record: ResearchRecord) -> list[Issue]:
             warn("silent_question", q.id, "question has neither evidence nor a recorded gap")
 
     for e in record.evidence:
-        if e.verification == Verification.unverified and record.mode == RecordMode.live:
+        if record.mode != RecordMode.live:
+            continue
+        if e.verification == Verification.unverified:
             warn("unverified_evidence", e.id, "live evidence not yet verified against source")
+        elif not (e.verified_by and e.verified_on):
+            warn("verification_unattributed", e.id, "verified evidence should record verified_by and verified_on")
+        if e.verification == Verification.verified and not (e.page and e.excerpt):
+            warn("verification_not_checkable", e.id, "verified evidence has no page + excerpt for automated checks")
 
     return issues
 

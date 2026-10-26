@@ -119,6 +119,7 @@ class Source(_Model):
     url: Optional[str] = None
     published_date: Optional[date] = None
     accessed_date: Optional[date] = None
+    content_sha256: Optional[str] = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     notes: Optional[str] = None
 
 
@@ -127,14 +128,20 @@ class Evidence(_Model):
     source_id: str
     kind: EvidenceKind
     statement: str
-    locator: Optional[str] = None  # page / section / table within the source
+    locator: Optional[str] = None  # human-readable: printed page, section, table
+    page: Optional[int] = Field(default=None, ge=1)  # 1-based PDF page, for automated checks
+    excerpt: Optional[str] = None  # short verbatim text from the source at `page`
+    subject: Optional[str] = None  # entity or segment the evidence is about, e.g. "Group"
     question_ids: list[str] = Field(default_factory=list)
     verification: Verification = Verification.unverified
+    verified_by: Optional[str] = None
+    verified_on: Optional[date] = None
     # metric_value fields
     metric_id: Optional[str] = None
     value: Optional[float] = None
     unit: Optional[str] = None
     period: Optional[str] = None
+    issuer_definition: Optional[str] = None  # when the issuer's definition differs from ours
 
 
 class Finding(_Model):

@@ -63,7 +63,8 @@ def _question_status(record: ResearchRecord, qid: str) -> QuestionStatus:
         return QuestionStatus.open
     metrics_missing = set(question.metric_ids) - _metric_values(record)
     all_verified = all(e.verification == Verification.verified for e in linked)
-    if has_finding and not metrics_missing and all_verified:
+    has_gap = any(qid in g.question_ids for g in record.gaps)  # a recorded gap means not fully answered
+    if has_finding and not metrics_missing and all_verified and not has_gap:
         return QuestionStatus.answered
     return QuestionStatus.partially_answered
 

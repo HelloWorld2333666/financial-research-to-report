@@ -1,4 +1,4 @@
-"""Command-line entry point: ``frr run | demo | validate | schema``."""
+"""Command-line entry point: ``frr run | demo | validate | schema | check-sources``."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from frr.config import load_settings
 from frr.pipeline import load_bundle, run, write_outputs
 from frr.schema import ResearchRecord, Scope
+from frr.sourcecheck import check_bundle_files
 from frr.validation import has_errors, validate_record
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -45,6 +46,28 @@ def _execute(scope_kwargs: dict, evidence: Path, out: Path) -> int:
     return 1 if has_errors(issues) else 0
 
 
+def _check_sources(evidence: Path, file_args: list[str]) -> int:
+    try:
+        bundle = load_bundle(evidence)
+        files = {}
+        for item in file_args:
+            sid, sep, path = item.partition("=")
+            if not sep or not sid or not path:
+                raise ValueError(f"--file expects SOURCE_ID=PATH, got '{item}'")
+            if not Path(path).is_file():
+                raise FileNotFoundError(f"no such file: {path}")
+            files[sid] = Path(path)
+        results = check_bundle_files(bundle, files)
+    except (ValidationError, ValueError, FileNotFoundError, RuntimeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    for r in results:
+        print(f"{r.status.upper():8} {r.evidence_id}: {r.detail}")
+    counts = {k: sum(r.status == k for r in results) for k in ("ok", "fail", "skipped")}
+    print(f"{counts['ok']} ok, {counts['fail']} failed, {counts['skipped']} skipped")
+    return 1 if counts["fail"] else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="frr", description="Financial research-to-report, Phase 0.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -66,6 +89,11 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("schema", help="Print the ResearchRecord JSON Schema.")
 
+    p_chk = sub.add_parser("check-sources", help="Check evidence excerpts against local source PDFs.")
+    p_chk.add_argument("--evidence", required=True, type=Path, help="Evidence bundle JSON.")
+    p_chk.add_argument("--file", action="append", default=[], metavar="SOURCE_ID=PATH",
+                       help="Local PDF for a source id (repeatable).")
+
     args = parser.parse_args(argv)
 
     if args.command == "run":
@@ -86,6 +114,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{sum(i.level == 'error' for i in issues)} error(s), "
               f"{sum(i.level == 'warning' for i in issues)} warning(s)")
         return 1 if has_errors(issues) else 0
+    if args.command == "check-sources":
+        return _check_sources(args.evidence, args.file)
     if args.command == "schema":
         print(json.dumps(ResearchRecord.model_json_schema(), indent=2))
         return 0

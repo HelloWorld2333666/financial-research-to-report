@@ -67,6 +67,22 @@ METRICS: dict[str, MetricDefinition] = {
             caveats="Measurement basis changed under IFRS 17; compare only like-for-like periods.",
         ),
         MetricDefinition(
+            id="m.insurance_revenue",
+            name="Insurance revenue",
+            definition="Insurance revenue under IFRS 17, as reported for the group or a segment.",
+            unit="currency",
+            caveats="Segment figures may be before inter-segment eliminations and not sum to the group total.",
+        ),
+        MetricDefinition(
+            id="m.core_solvency_ratio",
+            name="Core solvency adequacy ratio",
+            definition="Core capital divided by minimum capital under the applicable regime "
+            "(C-ROSS for PRC insurers).",
+            unit="percent",
+            formula="core_capital / minimum_capital",
+            caveats="Regime changes (e.g. C-ROSS Phase II) break comparability across years.",
+        ),
+        MetricDefinition(
             id="m.solvency_ratio",
             name="Comprehensive solvency adequacy ratio",
             definition="Actual capital divided by minimum capital under the applicable regime "
@@ -127,13 +143,18 @@ _GENERAL_QUESTIONS: list[dict] = [
 ]
 
 _INSURANCE_OVERRIDES: dict[str, dict] = {
+    "q.business_mix": dict(
+        _GENERAL_QUESTIONS[2],
+        evidence_needed=["insurance revenue by segment", "revenue by geography (only as disclosed)"],
+        metric_ids=["m.insurance_revenue"],
+    ),
     # Insurers are assessed on underwriting and regulatory capital, not corporate leverage.
     "q.balance_sheet": dict(
         id="q.capital",
         text="How strong are underwriting results and regulatory capital?",
         rationale="Underwriting profitability and solvency are the core credit drivers for (re)insurers.",
         evidence_needed=["combined ratio by segment", "solvency adequacy ratios", "capital actions"],
-        metric_ids=["m.combined_ratio", "m.solvency_ratio"],
+        metric_ids=["m.combined_ratio", "m.solvency_ratio", "m.core_solvency_ratio"],
     ),
 }
 
