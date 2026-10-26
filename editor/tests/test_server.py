@@ -3,6 +3,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -86,3 +87,33 @@ def test_change_request_round_trip(srv, project):
     bad = {"request_id": "req-a1", "ops": [{"op": "update", "id": "kpi-roe", "set": {"x": 0}}]}
     status, v = call("POST", base + "/api/patch/validate", {"project": project, "request_id": "req-a1", "patch": bad})
     assert not v["ok"] and "outside the request scope" in v["errors"][0]
+
+
+def test_research_endpoints_round_trip(srv, project):
+    base, paths = srv
+    fx = paths.root / "fixtures" / "research_responses"
+    fx.mkdir(parents=True)
+    src = Path(__file__).resolve().parents[1] / "fixtures" / "research_responses"
+    for f in src.glob("*.json"):
+        (fx / f.name).write_text(f.read_text())
+    status, c = call("POST", base + "/api/classify", {"project": project, "instruction": "Add revenue by country chart; research FY2025"})
+    assert status == 200 and c["intent"] == "research"
+    status, r = call("POST", base + "/api/research/create",
+                     {"project": project, "instruction": "Add revenue by country chart; research FY2025",
+                      "region": {"x": 32, "y": 513, "w": 384, "h": 84}})
+    assert status == 200 and r["request"]["status"] == "pending_research"
+    p, rid = r["project"], r["request"]["id"]
+    status, h = call("POST", base + f"/api/projects/demo/research/{rid}", p)
+    assert status == 200 and (paths.root / h["request"]).exists()
+    assert call("GET", base + f"/api/projects/demo/research/{rid}/response")[0] == 404
+    status, lst = call("GET", base + "/api/fixtures")
+    assert {f["name"] for f in lst} == {"test_fixture_geo_region_fulfilled", "test_fixture_geo_country_not_available"}
+    status, resp = call("POST", base + "/api/research/fixture", {"name": "test_fixture_geo_country_not_available", "request_id": rid})
+    assert resp["request_id"] == rid
+    (paths.research / "demo" / f"{rid}.response.json").write_text(json.dumps(resp))
+    status, loaded = call("GET", base + f"/api/projects/demo/research/{rid}/response")
+    status, a = call("POST", base + "/api/research/apply", {"project": p, "response": loaded})
+    assert a["ok"] and a["project"]["research_requests"][-1]["status"] == "not_available"
+    status, rv = call("POST", base + "/api/research/revert", {"project": a["project"], "request_id": rid})
+    assert rv["project"]["research_requests"][-1]["status"] == "pending_research"
+    assert call("POST", base + "/api/research/fixture", {"name": "../secret", "request_id": rid})[0] == 400

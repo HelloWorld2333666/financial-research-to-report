@@ -17,7 +17,7 @@ No LLM calls are made and there is no slide generation yet. There are two exampl
 
 See [docs/status.md](docs/status.md) for what works, what is mocked, and what remains unverified.
 
-**Slide editor spike** (branch `feature/slide-editor-spike`): [`editor/`](editor/README.md) is a local browser editor for one evidence-bound China Re slide, with drag/resize/edit, region-scoped AI change requests with patch validation, and clean PNG export. Run `python3 editor/server.py`, then open http://127.0.0.1:8765/?project=china_re_overview.
+**Slide preview editor** (branch `feature/slide-editor-spike`): [`editor/`](editor/README.md) is a focused preview workspace for one evidence-bound China Re slide. It supports layout editing, region-scoped AI change requests, research requests with pending placeholders (with a [handoff contract](editor/RESEARCH_CONTRACT.md) for a future Research Engine), and clean PNG export. Run `python3 editor/server.py`, then open http://127.0.0.1:8765/?project=china_re_overview.
 
 ## Quick start (macOS, Python ≥ 3.11)
 

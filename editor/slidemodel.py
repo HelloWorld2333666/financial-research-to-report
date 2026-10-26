@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 
 SCHEMA = "frr-slide/0.1"
 SLIDE_W, SLIDE_H = 1280, 720
-ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "sources", "gap"}
+ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "timeline", "sources", "gap", "pending"}
 GEOMETRY = ("x", "y", "w", "h")
 # Fields an AI patch may change on an existing element. Bound-evidence fields,
 # refs, ids, types and audit fields are deliberately absent.
@@ -50,6 +50,31 @@ def snapshot_hash(project: dict) -> str:
     payload = {k: project.get(k, {}) for k in ("evidence", "sources", "claims", "gaps")}
     canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+# --------------------------------------------------------------------------- evidence views
+
+def _accepted_results(project: dict) -> list[dict]:
+    return [r["response"] for r in project.get("research_results", []) if not r.get("reverted")]
+
+
+def evidence_map(project: dict) -> dict:
+    """Bundle snapshot plus evidence from accepted (not reverted) research responses.
+
+    The snapshot itself is never modified; research adds alongside it."""
+    merged = dict(project.get("evidence", {}))
+    for resp in _accepted_results(project):
+        for e in resp.get("evidence") or []:
+            merged.setdefault(e["id"], {k: v for k, v in e.items() if k != "id"})
+    return merged
+
+
+def source_map(project: dict) -> dict:
+    merged = dict(project.get("sources", {}))
+    for resp in _accepted_results(project):
+        for s in resp.get("sources") or []:
+            merged.setdefault(s["id"], {k: v for k, v in s.items() if k != "id"})
+    return merged
 
 
 # --------------------------------------------------------------------------- bound refs
@@ -87,6 +112,11 @@ def free_texts(el: dict) -> list[str]:
             texts += [c.get("text") for c in row.get("cells", []) if "text" in c]
     if el.get("type") == "barchart":
         texts += [b.get("label") for b in el.get("bars", [])]
+    if el.get("type") == "timeline":
+        for ev in el.get("events", []):
+            texts += [ev.get("label"), ev.get("text")]
+    if el.get("type") == "pending":  # the user's instruction, not slide content
+        texts = []
     return [t for t in texts if isinstance(t, str) and t]
 
 
@@ -113,7 +143,7 @@ def evidence_numbers(project: dict, evidence_ids: set[str]) -> set[str]:
     """Numbers a citation can legitimately support: values (rescaled) and excerpt/statement figures."""
     nums: set[str] = set()
     for eid in evidence_ids:
-        ev = project.get("evidence", {}).get(eid)
+        ev = evidence_map(project).get(eid)
         if not ev:
             continue
         if isinstance(ev.get("value"), (int, float)):
@@ -130,7 +160,8 @@ def validate_project(project: dict) -> list[str]:
     errors: list[str] = []
     if project.get("schema") != SCHEMA:
         errors.append(f"schema must be {SCHEMA}")
-    for key in ("elements", "annotations", "research_requests"):
+    project.setdefault("research_results", [])
+    for key in ("elements", "annotations", "research_requests", "research_results"):
         if not isinstance(project.get(key), list):
             errors.append(f"{key} must be a list")
     for key in ("evidence", "sources", "claims", "gaps"):
@@ -174,8 +205,10 @@ def check_integrity(project: dict) -> list[dict]:
         add("error", "snapshot_modified", None,
             "The research snapshot (evidence/sources/claims/gaps) differs from the one built from the bundle.")
 
-    evidence, claims = project.get("evidence", {}), project.get("claims", {})
-    sources, gaps = project.get("sources", {}), project.get("gaps", {})
+    evidence, claims = evidence_map(project), project.get("claims", {})
+    sources, gaps = source_map(project), project.get("gaps", {})
+    from research import results_integrity  # local import: research imports this module
+    issues += results_integrity(project)
     shown: set[str] = set()
     for el in project.get("elements", []):
         eid = el["id"]
@@ -191,6 +224,16 @@ def check_integrity(project: dict) -> list[dict]:
                 add("warning", "unverified_value", eid, f"shows unverified evidence {ref}")
         if el.get("type") == "gap" and el.get("gap_id") not in gaps:
             add("error", "dangling_ref", eid, f"gap placeholder for unknown gap {el.get('gap_id')}")
+        if el.get("type") == "pending":
+            if el.get("state") == "not_available":
+                add("info", "research_not_available", eid, "requested data is not available; placeholder kept")
+            else:
+                add("warning", "pending_research", eid, f"placeholder waiting for research request {el.get('request_id')}")
+        fixture = sorted(i for i in element_evidence_ids(el)
+                         if sources.get(evidence.get(i, {}).get("source_id"), {}).get("origin") == "fixture")
+        if fixture:
+            add("error", "fixture_data_on_slide", eid,
+                f"shows TEST FIXTURE evidence ({', '.join(fixture)}); not real research, do not publish")
         shown |= element_evidence_ids(el)
 
         if el.get("detached_from"):
@@ -268,6 +311,7 @@ def build_change_request(project: dict, annotation_id: str) -> dict:
     ids, rect = scope_of(project, ann)
     by_id = {e["id"]: e for e in project["elements"]}
     used = set().union(*(element_evidence_ids(by_id[i]) for i in ids)) if ids else set()
+    evmap = evidence_map(project)
     return {
         "schema": "frr-slide-change-request/0.1",
         "request_id": annotation_id,
@@ -281,10 +325,10 @@ def build_change_request(project: dict, annotation_id: str) -> dict:
         "elements_in_scope": [by_id[i] for i in ids],
         "other_elements": [{k: e[k] for k in ("id", "type", "x", "y", "w", "h")}
                            for e in project["elements"] if e["id"] not in ids],
-        "evidence_in_scope": {k: project["evidence"][k] for k in sorted(used) if k in project["evidence"]},
+        "evidence_in_scope": {k: evmap[k] for k in sorted(used) if k in evmap},
         "evidence_available": {k: {f: v.get(f) for f in ("metric_id", "subject", "period", "value", "unit",
                                                           "kind", "statement", "verification")}
-                               for k, v in project["evidence"].items() if v.get("verification") == "verified"},
+                               for k, v in evmap.items() if v.get("verification") == "verified"},
         "gaps": project.get("gaps", {}),
         "rules": RULES,
         "patch_schema": PATCH_SCHEMA,
@@ -326,7 +370,7 @@ def validate_patch(project: dict, annotation_id: str, patch: dict) -> tuple[list
     scope_ids, rect = scope_of(project, ann)
     new = copy.deepcopy(project)
     by_id = {e["id"]: e for e in new["elements"]}
-    evidence = new["evidence"]
+    evidence = evidence_map(new)
 
     def check_numbers(el: dict, where: str) -> None:
         supported = evidence_numbers(new, element_evidence_ids(el))

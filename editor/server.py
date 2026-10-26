@@ -11,6 +11,14 @@ Serves editor/static and a small JSON API. Binds to 127.0.0.1 only.
     POST /api/projects/<name>/requests/<id>        write change request + prompt for an agent
     GET  /api/projects/<name>/requests/<id>/patch  read the agent's patch file, if any
     POST /api/patch/validate                       validate (and preview) a patch against a project
+    POST /api/classify                             layout edit vs existing data vs research (no model calls)
+    POST /api/research/create                      add a Research Request + pending placeholder
+    POST /api/projects/<name>/research/<id>        write the Research Request handoff file
+    GET  /api/projects/<name>/research/<id>/response   read a Research Engine response file, if any
+    POST /api/research/apply                       validate and apply a Research Engine response
+    POST /api/research/revert                      remove inserted research content, reopen the request
+    GET  /api/fixtures                             list TEST FIXTURE responses (simulated engine output)
+    POST /api/research/fixture                     load a TEST FIXTURE response for a request
 """
 
 from __future__ import annotations
@@ -28,6 +36,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import research  # noqa: E402
 import slidemodel  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
@@ -43,6 +52,8 @@ class Paths:
         self.history = root / "projects" / ".history"
         self.exports = root / "exports"
         self.requests = root / "requests"
+        self.research = root / "research"
+        self.fixtures = root / "fixtures" / "research_responses"
 
 
 def stamp() -> str:
@@ -113,6 +124,18 @@ def make_handler(paths: Paths):
                     if not f.exists():
                         return self.fail(HTTPStatus.NOT_FOUND, f"no patch file yet: {f.relative_to(paths.root)}")
                     return self.send_json(json.loads(f.read_text(encoding="utf-8")))
+                if r[:2] == ["api", "projects"] and len(r) == 6 and r[3] == "research" and r[5] == "response":
+                    self.project_path(r[2])
+                    if not NAME_RE.match(r[4]):
+                        raise ValueError("invalid request id")
+                    f = paths.research / r[2] / f"{r[4]}.response.json"
+                    if not f.exists():
+                        return self.fail(HTTPStatus.NOT_FOUND, f"no response yet: {f.relative_to(paths.root)}")
+                    return self.send_json(json.loads(f.read_text(encoding="utf-8")))
+                if r == ["api", "fixtures"]:
+                    files = sorted(paths.fixtures.glob("*.json")) if paths.fixtures.exists() else []
+                    return self.send_json([{"name": f.stem, "description": json.loads(f.read_text())["notes"]}
+                                           for f in files])
             except ValueError as exc:
                 return self.fail(HTTPStatus.BAD_REQUEST, str(exc))
             if r and r[0] == "api":
@@ -151,6 +174,40 @@ def make_handler(paths: Paths):
                         return self.send_json({"ok": False, "errors": errors})
                     return self.send_json({"ok": True, "project": new,
                                            "integrity": slidemodel.check_integrity(new)})
+                if r == ["api", "classify"]:
+                    return self.send_json(research.classify(body["project"], body.get("instruction", "")))
+                if r == ["api", "research", "create"]:
+                    new, req = research.create_request(body["project"], body.get("instruction", ""),
+                                                       body.get("region") or {}, body.get("overrides"))
+                    return self.send_json({"project": new, "request": req,
+                                           "integrity": slidemodel.check_integrity(new)})
+                if r == ["api", "research", "apply"]:
+                    errors, warnings, new = research.apply_response(body["project"], body["response"])
+                    if errors:
+                        return self.send_json({"ok": False, "errors": errors, "warnings": warnings})
+                    return self.send_json({"ok": True, "warnings": warnings, "project": new,
+                                           "integrity": slidemodel.check_integrity(new)})
+                if r == ["api", "research", "revert"]:
+                    new = research.revert_insertion(body["project"], body["request_id"])
+                    return self.send_json({"project": new, "integrity": slidemodel.check_integrity(new)})
+                if r == ["api", "research", "fixture"]:
+                    if not NAME_RE.match(body.get("name", "")):
+                        raise ValueError("invalid fixture name")
+                    f = paths.fixtures / f"{body['name']}.json"
+                    if not f.exists():
+                        raise ValueError("no such fixture")
+                    resp = json.loads(f.read_text(encoding="utf-8"))
+                    resp["request_id"] = body["request_id"]  # fixtures are request-agnostic
+                    return self.send_json(resp)
+                if r[:2] == ["api", "projects"] and len(r) == 5 and r[3] == "research":
+                    self.project_path(r[2])
+                    if not NAME_RE.match(r[4]):
+                        raise ValueError("invalid request id")
+                    handoff = research.export_request(body, r[4])
+                    d = paths.research / r[2]
+                    atomic_write(d / f"{r[4]}.request.json", json.dumps(handoff, indent=1, ensure_ascii=False).encode("utf-8"))
+                    return self.send_json({"request": str((d / f"{r[4]}.request.json").relative_to(paths.root)),
+                                           "response_expected_at": str((d / f"{r[4]}.response.json").relative_to(paths.root))})
                 if r[:2] == ["api", "projects"] and len(r) == 4 and r[3] == "export":
                     self.project_path(r[2])
                     url = body.get("png", "")

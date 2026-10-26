@@ -1,123 +1,98 @@
-# Slide editor spike (prototype)
+# Financial Slide Preview & AI Layout Editor (prototype)
 
-This is a local, browser-based editor for one dense 16:9 financial slide. It shows real China Re figures that are bound to the verified research bundle. You can rearrange and edit the slide freely, attach region-scoped change requests for an AI agent, validate the agent's proposed changes against data-safety rules, and export a clean PNG.
+This is a purpose-built preview workspace for **one AI-generated financial slide**. Research and slide planning produce the content and layout; this editor lets you:
+- inspect the complete slide, with every figure traceable to source evidence
+- rearrange and restyle it, and add blocks
+- describe changes to specific regions, including asking for **new research-backed content**
+- save the approved preview for final rendering
 
-It is a **spike**, kept separate from the research pipeline (`src/frr/`). It reads `research/china_re/fy2025_bundle.json` only as data.
+It is **not** a presentation platform. There are no templates, themes, font libraries, asset marketplaces, deck generation or PPTX support, and none are planned here. It is kept separate from the research pipeline (`src/frr/`) and reads `research/china_re/fy2025_bundle.json` only as data.
 
 ## Run it (macOS, Python 3.11+, no Node needed)
 
 ```bash
-python3 editor/server.py            # serves on 127.0.0.1 only
+python3 editor/server.py
 ```
 
-Open **http://127.0.0.1:8765/?project=china_re_overview**
+Then open one of:
 
-To regenerate the initial slide from the bundle (this overwrites `editor/projects/china_re_overview.json`):
-
-```bash
-python3 editor/build_slide.py
-```
-
-Tests (part of the repo suite):
-
-```bash
-.venv/bin/python -m pytest editor/tests
-```
-
-## What you can do
-
-| Action | How |
+| Project | URL |
 |---|---|
-| Select | Click; shift-click to add or remove; drag a marquee over empty slide area |
-| Move / resize | Drag the element or its handles. Snapping guides align to other elements. Arrow keys nudge 1px (Shift: 10px) |
-| Edit text | Double-click any text, label, table header or row label, chart title or footnote. Esc or click away to commit |
-| Insert | **+ Text**, **+ Panel**, **+ Ellipse**, and **+ Metric…** (a card bound to a chosen verified evidence item) |
-| Arrange | Duplicate (⌘D), Delete (⌫), Group (⌘G) / Ungroup (⇧⌘G), Front / Back, align ×6, distribute horizontally / vertically |
-| Style | Properties panel: position, size, font size and weight, colours, fill, border, radius, number of decimals for metrics |
-| Undo | ⌘Z / ⇧⌘Z (in-memory history, 200 steps) |
-| Revert | **Revert to saved** reverts only the selected elements, or the whole slide when nothing is selected |
-| Save / reload | ⌘S writes `editor/projects/<name>.json` and keeps the previous version in `projects/.history/` |
-| Region request | **Region request** (R), then drag a box over the slide and describe the change |
-| Element request | Select elements, then **Ask AI about this element…** |
-| Export | **Export PNG** produces 2560×1440 with no handles, request boxes, citation badges or lock icons; saved to `editor/exports/` and downloaded |
+| Initial slide | http://127.0.0.1:8765/?project=china_re_overview |
+| Research request demo (not-available end state) | http://127.0.0.1:8765/?project=china_re_overview_research_demo&tab=requests |
+| Earlier layout-editing demo | http://127.0.0.1:8765/?project=china_re_overview_demo |
 
-### Slide content (A) and edit requests (B) are separate
+- Regenerate the initial slide from the bundle (this overwrites `projects/china_re_overview.json`): `python3 editor/build_slide.py`
+- Tests: `.venv/bin/python -m pytest editor/tests`
 
-- **(A) Slide elements** live in `project.elements` and render in `#stage`. Only these are exported.
-- **(B) Annotations** (region or element change requests) live in `project.annotations` and render in a separate `#annotLayer` that is never part of the export. They point at slide coordinates or element ids, so the slide underneath stays structurally editable.
+## Workspace
 
-## Financial data rules (enforced in `slidemodel.py`)
+| Area | What it does |
+|---|---|
+| **Top bar** | Title, save state, open research requests, undo/redo, revert, **Save** (⌘S), **Export PNG** |
+| **Left rail** | **Select** (V), **✦ AI region** (R), then insert **Text**, **Panel**, **Shape**, **Chart**, **Table**, **Metric**. Chart, table and metric open a picker of *verified* figures. Mixing metrics, units or periods in one chart is blocked, and "Data missing → research request" switches to AI region |
+| **Canvas** | A centred 16:9 slide that fits to the window. Click, shift-click or marquee to select; drag to move; handles to resize with snapping guides; double-click any text to edit; arrows nudge (Shift: 10px) |
+| **Floating toolbar** | Anchored above the selection. Duplicate, Front/Back, Delete and **✦ Ask AI**; with several elements selected, also align ×6, distribute, and Group/Ungroup |
+| **Inspector** | **Inspect**: position, size, style, and linked evidence, claims and gaps with page and excerpt. **Requests**: research requests and layout change requests. **Data**: integrity report and the evidence shown on the slide |
 
-- **Figures are references, not text.** Metric cards, table cells and chart bars store an `evidence_id` and a display format. The value comes from the project's evidence snapshot, so moving, resizing or restyling cannot change a figure, and a figure can't be typed over (🔒).
-- **Tamper detection.** The evidence, sources, claims and gaps snapshot carries a SHA-256 hash; any edit to it is a data-integrity **error**.
-- **Data-integrity panel**, recomputed after every change:
-  - an edited cited text → warning
-  - a detached value → warning
-  - a number in text that no cited evidence supports → warning
-  - a dangling reference → error
-  - evidence that is no longer shown → info
-- **Computed changes.** Percent and percentage-point changes are calculated from two evidence values; nobody types them.
-- **Missing data is a research request.** If a metric is missing, **+ Metric… → "Metric is missing"** or an agent patch raises a research request instead of inventing a number. The geography gap is shown as an explicit placeholder.
+### Describing a change (the core interaction)
 
-## AI change-request workflow
+1. Draw a box with **✦ AI region**, or select elements and press **✦ Ask AI**.
+2. Type what you want. As you type, the editor suggests how to handle it, and you can change the suggestion with one click:
+   - **Edit layout**: rearrange or restyle what is already there.
+   - **Use existing data**: new content that verified evidence already covers. No new research is triggered.
+   - **Add research-backed content**: needs data the project doesn't have. A **pending research placeholder** goes in the box, and a structured Research Request is saved.
+3. **Create request.** Layout requests use the agent patch flow (below). Research requests wait for a Research Engine response; see [RESEARCH_CONTRACT.md](RESEARCH_CONTRACT.md).
 
-1. Draw a region (or select elements) and type an instruction.
-2. **Export for agent** writes `editor/requests/<project>/<id>.request.json` and `<id>.prompt.md`. These contain the instruction, region, in-scope elements, the other elements' boxes, the verified evidence available, rules and the patch JSON Schema.
-3. An agent returns a **patch**: a list of `update`, `add` and `delete` ops plus `research_requests`, written to `<id>.patch.json`.
-4. **Load agent patch** sends it to `/api/patch/validate`, which applies it all-or-nothing and rejects it when:
-   - it touches elements outside the scope
-   - it places new content outside the region
-   - it changes `evidence_id`, `refs`, ids or types
-   - it rebinds chart or table figures
-   - it uses unknown or unverified evidence
-   - it adds a number in text that no cited evidence supports
-5. **Apply** puts it on the undo stack (⌘Z reverts it).
+## Data safety
 
-### Is Claude Code integration automated? No, not in this spike
+- **Figures are references, not text.** Metric cards, table cells and chart bars store an `evidence_id`; numbers render from evidence and can't be typed over (🔒). Moving, resizing and restyling never change a figure.
+- **Snapshot protection.** The research snapshot is hash-guarded. Research results are stored alongside it with their own hash and are never written into it; new responses can't overwrite existing evidence ids.
+- **Data tab.** It flags:
+  - edited cited text, detached values, and numbers without a supporting source
+  - dangling references
+  - pending research placeholders
+  - TEST FIXTURE data on the slide (an error; export asks for confirmation)
+  - tampered research results
+- **Missing data stays visible.** It becomes an open research request or a *Not available* placeholder with a suggested alternative, never an estimate.
 
-The server prints a suggested command but **never runs it**:
+## Preview and final rendering
 
-```bash
-claude -p --tools '' --output-format json --no-session-persistence --json-schema '<patch schema>' < editor/requests/<project>/<id>.prompt.md
-```
+The preview and the PNG export render **the same saved slide specification** (`projects/<name>.json`) through the same DOM, so the exported PNG matches the preview. If a later stage renders the final slide with a separate generative image model, that output is **not** guaranteed to match the preview pixel for pixel. Layout, line breaks and chart proportions may drift, and figures in a generated image must be re-checked against the evidence. The saved specification remains the source of truth.
 
-- `--tools ''` disables every tool, so the agent can't read or write files. It can only return JSON, which the validator then checks.
-- I confirmed these flags exist in Claude Code 2.1.296 (`claude --help`) but did not run the command, because it uses your Claude account and you asked for no paid calls.
-- In the demo below, the patches were written by the Claude Code session that built this spike. It read the exported request file, wrote `<id>.patch.json`, and the editor then validated and applied the patch. That shows the data flow works with a real agent; it is not an automated integration.
+## AI execution: what is and isn't automated
 
-## Demo performed (2026-10-27)
+- **Layout requests.** **Export for agent** writes a scoped request plus prompt. An agent returns a JSON patch, which is validated (scope, region, no rebinding of figures, verified evidence only, no unsourced numbers) and applied with undo. The server shows a tool-less `claude -p --tools '' --json-schema …` command but **never runs it**, because it would use your Claude account.
+- **Research requests.**
+  - **Send to Research Engine** writes the handoff file.
+  - **Load engine response** reads `editor/research/<project>/<id>.response.json`.
+  - **Simulate with a TEST FIXTURE** loads synthetic responses for testing the insertion path.
+  
+  There is no Research Engine yet.
 
-Everything below was done in the browser against the running server. Screenshots are in `editor/docs/screenshots/`.
+## Acceptance test performed (2026-10-27, in the browser)
 
-1. Loaded the slide (25 elements, 27 evidence-bound figures, integrity clean): `slide-initial.png`.
-2. Shrank the profile panel with its resize handle.
-3. Grouped the three ownership elements with real shift-clicks and ⌘G, then moved the group.
-4. Grouped and moved the ratings block, nudged it with Shift+↓, and corrected a mis-click with ⌘Z.
-5. Moved the data-gap box.
-6. Double-clicked the title and typed a new one.
-7. Inserted a panel and a text box with the toolbar, then typed a note into the box.
-8. Drew a region over Key Takeaways and typed: "Turn the key takeaways into a 2x2 grid of cards… do not add new figures." The scope resolved to `takeaways-bg`, `takeaways-h` and `takeaways`.
-9. Asked about the geography gap element: "Replace this box with a chart of revenue by country (top five, FY2025)."
-10. Saved, reloaded the page, and confirmed every edit persisted.
-11. Exported both requests. The agent patches:
-    - **Takeaways:** a 2×2 grid of cards; it validated and was applied.
-    - **Geography:** no country data exists in the evidence, so the patch has no layout change and raises a research request.
-12. Pasted a **deliberately invalid** hand-written patch (invented country shares, a rebound KPI, an unknown evidence id). It was **rejected with 7 reasons**, and the slide was unchanged.
-13. Tested undo and revert:
-    - Recoloured the title, then **Revert to saved** on the title only; the grid was unaffected.
-    - ⌘Z undid the patch and brought the original takeaways back; redo reapplied it.
-    - Detaching the ROE value raised `detached_citation` and `unsourced_number` warnings; undo restored the bound value.
-14. Exported the modified slide (`slide-modified.png`). `editor-ui-modified.png` shows the editor with request overlays, which are not exported.
+1. On the China Re slide I deleted the old geography gap box, drew an AI region in its place, and typed: "Add a horizontal bar chart showing China Re's revenue distribution by country or region. Please research… do not estimate undisclosed country-level values."
+   - The editor suggested **Needs research** (no evidence for geography; known gap `gap.cr.geography`).
+   - **Create request** added a Research Request (bar chart, FY2025, country scope, no-estimates constraint, related revenue evidence) and a pending placeholder at x32 y513, 384×84.
+2. I saved (⌘S) and **reloaded**. The request, placeholder and open-request counter all persisted.
+3. **Send to Research Engine** wrote the handoff file. **Simulate with a TEST FIXTURE** loaded `test_fixture_geo_region_fulfilled`, which validated with a fixture warning.
+4. **Insert into slide** put an editable bar chart in exactly the placeholder region:
+   - each bar keeps its value, unit, period, source and excerpt
+   - no other element changed and the bundle snapshot is untouched
+   - Data shows `fixture_data_on_slide`, and Export asked for confirmation before writing `docs/screenshots/slide-research-fixture-inserted.png`
+5. **Remove inserted content** restored the placeholder and reopened the request (history: created → response:fulfilled → reverted).
+6. Loading `test_fixture_geo_country_not_available` created **no chart**. The placeholder now reads *Not available* with the reason and an alternative, and the request stays open: `docs/screenshots/workspace-research-not-available.png`.
+7. Compared with a freshly built slide, the only differences are the removed gap box and the new placeholder.
+8. I also checked through the same popover:
+   - "Reorganize these three blocks into two columns" → **Edit layout**
+   - "Add a 2×2 financial metrics section here" → **Use existing data** (23 verified items), with no research request
+   - **Chart** insert: three FY2025 combined ratios were inserted; mixing ROE with total income was blocked
 
 ## Known limitations
 
-- **Agent execution is manual.** There is no button that runs Claude Code, and no streaming or progress.
-- **Small model.** One slide per project; no slide list, no thumbnails, no PPTX.
-- **Plain text editing.** No rich text (bold or colour within a run). Tables have fixed columns, with no add or remove row or column. The bar chart is a simple HTML component with horizontal bars only.
-- **Text overflow is not detected.** Text can overflow its box silently.
-- **Undo history is lost on reload.** Previous saved versions are on disk in `projects/.history/`, but there's no UI to browse them yet.
-- **Number checks are heuristic.** They match numbers literally (with rescaling) against cited evidence values and excerpts, so a correct derived number in free text is flagged too. Treat warnings as "review", not proof.
-- **Not every gesture was tested with a real mouse.** Selection, shift-click, ⌘G, keyboard nudges, undo, typing, toolbar clicks and region drawing were. Moveable drag and resize handles were driven by dispatched pointer-event sequences, because the browser automation's drag doesn't send intermediate moves. They have not been tried with a physical mouse by a person.
-- **Unexplained console errors.** During automated testing, Moveable logged six internal errors (`Cannot set properties of null (setting 'dist')`). Targeted attempts to reproduce them (pointer-only, duplicate pointer and mouse streams, pressing a grouped element directly, press and release without moves, select-then-drag) produced none. No model or file corruption was observed, but the cause is unknown.
-- **Fonts.** Export uses system fonts (Helvetica Neue / Arial); there are no embedded web fonts.
-- **Untested elsewhere.** Only checked on macOS in Chromium-based browsers.
+- **No Research Engine and no automatic agent execution.** Responses come from files or fixtures; layout patches come from a hand-run agent.
+- **Rough intent detection.** It uses keyword and topic rules, can misclassify, and you can override it. The "uses existing data" path records which evidence to use but doesn't build the new block automatically.
+- **Text can overflow.** Text is clipped rather than reflowed; a long *Not available* message in a small box is cut off until you resize it.
+- **Not every gesture was tested with a real mouse.** Moveable drag and resize handles were tested with dispatched pointer events; real-mouse use by a person is still unverified. Moveable logged unexplained internal errors in an earlier session (not reproduced since).
+- **Narrow scope.** One slide per project, plain-text editing, fixed table columns, horizontal bar charts and simple timelines only. Only checked in Chromium on macOS.

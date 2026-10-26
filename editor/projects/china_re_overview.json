@@ -6,7 +6,7 @@
   "w": 1280,
   "h": 720
  },
- "created": "2026-10-26T18:53:42Z",
+ "created": "2026-10-26T19:12:03Z",
  "generated_from": {
   "bundle": "research/china_re/fy2025_bundle.json",
   "bundle_sha256": "12fe1c7f981be077294422404403007e8a91d64329b7eba55fb63bec40afa5d3",
@@ -1292,7 +1292,7 @@
    "gap_id": "gap.cr.geography",
    "status": "open",
    "source": "bundle gap",
-   "created": "2026-10-26T18:53:42Z",
+   "created": "2026-10-26T19:12:03Z",
    "description": "No revenue split by country or region was found in the two sources reviewed. The full FY2025 annual report has not been reviewed."
   }
  ],
@@ -1328,5 +1328,6 @@
   "ev.cr.total_assets.2025",
   "ev.cr.total_income.fy2024",
   "ev.cr.total_income.fy2025"
- ]
+ ],
+ "research_results": []
 }
