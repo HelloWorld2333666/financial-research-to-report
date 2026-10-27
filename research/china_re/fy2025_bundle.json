@@ -1,0 +1,979 @@
+{
+  "mode": "live",
+  "description": "China Reinsurance (Group) Corporation, FY2025, built by hand from two public HKEX filings. Every evidence item records the PDF page and a verbatim excerpt; see research/china_re/README.md for the verification procedure.",
+  "sources": [
+    {
+      "id": "src.cr.fy2025_results",
+      "title": "Announcement of Annual Results for the Year Ended 31 December 2025",
+      "publisher": "China Reinsurance (Group) Corporation (HKEX: 1508)",
+      "source_type": "exchange_filing",
+      "origin": "retrieved",
+      "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0330/2026033002224.pdf",
+      "published_date": "2026-03-30",
+      "accessed_date": "2026-10-26",
+      "content_sha256": "2424ca31c284c2dd1f781d45321d1973b241b6d3226415ef7c6ba824b69029d0",
+      "notes": "Audited consolidated results with FY2024 comparatives; 74 pages. Printed page = PDF page."
+    },
+    {
+      "id": "src.cr.fy2025_sustainability",
+      "title": "2025 Sustainability Report",
+      "publisher": "China Reinsurance (Group) Corporation (HKEX: 1508)",
+      "source_type": "exchange_filing",
+      "origin": "retrieved",
+      "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0429/2026042902150.pdf",
+      "published_date": "2026-04-29",
+      "accessed_date": "2026-10-26",
+      "content_sha256": "0c7f2c89333fec1703b39aed390912cf768457076a87db8d016b9696d49f071f",
+      "notes": "138 pages. Printed page numbers are offset by one from PDF pages."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev.cr.total_income.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group total income, FY2025.",
+      "locator": "p.2, consolidated statement of profit or loss",
+      "page": 2,
+      "excerpt": "Total income 124,927,594 118,132,916",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.revenue",
+      "value": 124927594,
+      "unit": "RMB thousand",
+      "period": "FY2025",
+      "issuer_definition": "Total income (shown as 'operating income' in the MD&A) in the IFRS consolidated statement of profit or loss; includes insurance revenue, interest and investment income.",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.total_income.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group total income, FY2024 (comparative).",
+      "locator": "p.2, consolidated statement of profit or loss",
+      "page": 2,
+      "excerpt": "Total income 124,927,594 118,132,916",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.revenue",
+      "value": 118132916,
+      "unit": "RMB thousand",
+      "period": "FY2024",
+      "issuer_definition": "As for FY2025.",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.insurance_revenue.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group insurance revenue (IFRS 17), FY2025.",
+      "locator": "p.2, consolidated statement of profit or loss",
+      "page": 2,
+      "excerpt": "Insurance revenue 4 103,087,051 101,363,282",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance",
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "metric_id": "m.insurance_revenue",
+      "value": 103087051,
+      "unit": "RMB thousand",
+      "period": "FY2025",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.insurance_revenue.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group insurance revenue (IFRS 17), FY2024 (comparative).",
+      "locator": "p.2, consolidated statement of profit or loss",
+      "page": 2,
+      "excerpt": "Insurance revenue 4 103,087,051 101,363,282",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance",
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "metric_id": "m.insurance_revenue",
+      "value": 101363282,
+      "unit": "RMB thousand",
+      "period": "FY2024",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.net_profit_attr.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Net profit attributable to shareholders of the parent company, FY2025.",
+      "locator": "p.18, earnings per share note",
+      "page": 18,
+      "excerpt": "Net profit attributable to shareholders of the parent company 9,771,143 10,556,993",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.net_profit",
+      "value": 9771143,
+      "unit": "RMB thousand",
+      "period": "FY2025",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.net_profit_attr.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Net profit attributable to shareholders of the parent company, FY2024 (comparative).",
+      "locator": "p.18, earnings per share note",
+      "page": 18,
+      "excerpt": "Net profit attributable to shareholders of the parent company 9,771,143 10,556,993",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.net_profit",
+      "value": 10556993,
+      "unit": "RMB thousand",
+      "period": "FY2024",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.roe.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Weighted average return on equity, FY2025.",
+      "locator": "p.21, Key Financial Indicators",
+      "page": 21,
+      "excerpt": "Weighted average return on equity (%) 1 9.18 10.74",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.roe",
+      "value": 9.18,
+      "unit": "percent",
+      "period": "FY2025",
+      "issuer_definition": "Net profit attributable to shareholders of the parent company ÷ balance of weighted average equity (issuer note 1, p.21), not simple average equity.",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.roe.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Weighted average return on equity, FY2024 (comparative).",
+      "locator": "p.21, Key Financial Indicators",
+      "page": 21,
+      "excerpt": "Weighted average return on equity (%) 1 9.18 10.74",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.roe",
+      "value": 10.74,
+      "unit": "percent",
+      "period": "FY2024",
+      "issuer_definition": "As for FY2025.",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.total_assets.2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group total assets at 31 December 2025.",
+      "locator": "p.4, consolidated statement of financial position",
+      "page": 4,
+      "excerpt": "Total assets 527,763,431 508,347,105",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.total_assets",
+      "value": 527763431,
+      "unit": "RMB thousand",
+      "period": "31 Dec 2025",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.total_assets.2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group total assets at 31 December 2024.",
+      "locator": "p.4, consolidated statement of financial position",
+      "page": 4,
+      "excerpt": "Total assets 527,763,431 508,347,105",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "metric_id": "m.total_assets",
+      "value": 508347105,
+      "unit": "RMB thousand",
+      "period": "31 Dec 2024",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.seg_rev.pc_re.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "P&C reinsurance segment insurance revenue, FY2025, before inter-segment eliminations.",
+      "locator": "p.19, Key Operating Data",
+      "page": 19,
+      "excerpt": "P&C reinsurance 1 45,812 46,042 (0.5)",
+      "subject": "P&C reinsurance segment",
+      "question_ids": [
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "metric_id": "m.insurance_revenue",
+      "value": 45812,
+      "unit": "RMB million",
+      "period": "FY2025",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.seg_rev.lh_re.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Life and health reinsurance segment insurance revenue, FY2025, before eliminations.",
+      "locator": "p.19, Key Operating Data",
+      "page": 19,
+      "excerpt": "Life and health reinsurance 1 10,088 9,846 2.5",
+      "subject": "Life and health reinsurance segment",
+      "question_ids": [
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "metric_id": "m.insurance_revenue",
+      "value": 10088,
+      "unit": "RMB million",
+      "period": "FY2025",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.seg_rev.primary_pc.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Primary P&C insurance segment insurance revenue, FY2025, before eliminations.",
+      "locator": "p.19, Key Operating Data",
+      "page": 19,
+      "excerpt": "Primary P&C insurance 1 48,869 46,914 4.2",
+      "subject": "Primary P&C insurance segment (China Continent Insurance)",
+      "question_ids": [
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "metric_id": "m.insurance_revenue",
+      "value": 48869,
+      "unit": "RMB million",
+      "period": "FY2025",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.domestic_pc_re.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Combined ratio, Domestic P&C reinsurance (China Re P&C), FY2025.",
+      "locator": "p.25, domestic P&C reinsurance table",
+      "page": 25,
+      "excerpt": "Combined ratio (%) 3 95.98 92.77",
+      "subject": "Domestic P&C reinsurance (China Re P&C)",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 95.98,
+      "unit": "percent",
+      "period": "FY2025",
+      "issuer_definition": "(Insurance service expenses − amounts recoverable from reinsurers) ÷ (insurance revenue − allocation of reinsurance premiums), IFRS 17 basis (issuer note 3).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.domestic_pc_re.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Combined ratio, Domestic P&C reinsurance (China Re P&C), FY2024.",
+      "locator": "p.25, domestic P&C reinsurance table",
+      "page": 25,
+      "excerpt": "Combined ratio (%) 3 95.98 92.77",
+      "subject": "Domestic P&C reinsurance (China Re P&C)",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 92.77,
+      "unit": "percent",
+      "period": "FY2024",
+      "issuer_definition": "(Insurance service expenses − amounts recoverable from reinsurers) ÷ (insurance revenue − allocation of reinsurance premiums), IFRS 17 basis (issuer note 3).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.overseas_pc_chaucer.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Combined ratio, Overseas P&C reinsurance and Chaucer, FY2025.",
+      "locator": "p.28, overseas P&C reinsurance and Chaucer table",
+      "page": 28,
+      "excerpt": "Combined ratio (%) 3 81.19 84.71",
+      "subject": "Overseas P&C reinsurance and Chaucer",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 81.19,
+      "unit": "percent",
+      "period": "FY2025",
+      "issuer_definition": "(Insurance service expenses − amounts recoverable from reinsurers) ÷ (insurance revenue − allocation of reinsurance premiums), IFRS 17 basis (issuer note 3).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.overseas_pc_chaucer.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Combined ratio, Overseas P&C reinsurance and Chaucer, FY2024.",
+      "locator": "p.28, overseas P&C reinsurance and Chaucer table",
+      "page": 28,
+      "excerpt": "Combined ratio (%) 3 81.19 84.71",
+      "subject": "Overseas P&C reinsurance and Chaucer",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 84.71,
+      "unit": "percent",
+      "period": "FY2024",
+      "issuer_definition": "(Insurance service expenses − amounts recoverable from reinsurers) ÷ (insurance revenue − allocation of reinsurance premiums), IFRS 17 basis (issuer note 3).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.primary_pc.fy2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Combined ratio, Primary P&C insurance (China Continent Insurance), FY2025.",
+      "locator": "p.44, primary P&C insurance table",
+      "page": 44,
+      "excerpt": "Combined ratio (%) 3 99.17 97.67",
+      "subject": "Primary P&C insurance (China Continent Insurance)",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 99.17,
+      "unit": "percent",
+      "period": "FY2025",
+      "issuer_definition": "(Insurance service expenses − amounts recoverable from reinsurers) ÷ (insurance revenue − allocation of reinsurance premiums), IFRS 17 basis (issuer note 3).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.primary_pc.fy2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Combined ratio, Primary P&C insurance (China Continent Insurance), FY2024.",
+      "locator": "p.44, primary P&C insurance table",
+      "page": 44,
+      "excerpt": "Combined ratio (%) 3 99.17 97.67",
+      "subject": "Primary P&C insurance (China Continent Insurance)",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.combined_ratio",
+      "value": 97.67,
+      "unit": "percent",
+      "period": "FY2024",
+      "issuer_definition": "(Insurance service expenses − amounts recoverable from reinsurers) ÷ (insurance revenue − allocation of reinsurance premiums), IFRS 17 basis (issuer note 3).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.cr.primary_pc_incl_finance",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "Issuer note 4: including insurance finance expenses/income and change in premium reserves, the FY2025 primary P&C combined ratio was 100.41%.",
+      "locator": "p.44, primary P&C insurance table, note 4",
+      "page": 44,
+      "excerpt": "the calculation result of which was 100.41%",
+      "subject": "Primary P&C insurance (China Continent Insurance)",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.solvency_agg.2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group aggregated (comprehensive) solvency adequacy ratio at 31 December 2025.",
+      "locator": "p.20, solvency table, Group row",
+      "page": 20,
+      "excerpt": "Group 155 189 159 194",
+      "subject": "Group",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.solvency_ratio",
+      "value": 189,
+      "unit": "percent",
+      "period": "31 Dec 2025",
+      "issuer_definition": "Reported as 'aggregated solvency adequacy ratio'. 2025 data unaudited (note 1, p.20).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.solvency_agg.2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group aggregated (comprehensive) solvency adequacy ratio at 31 December 2024.",
+      "locator": "p.20, solvency table, Group row",
+      "page": 20,
+      "excerpt": "Group 155 189 159 194",
+      "subject": "Group",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.solvency_ratio",
+      "value": 194,
+      "unit": "percent",
+      "period": "31 Dec 2024",
+      "issuer_definition": "Reported as 'aggregated solvency adequacy ratio'.",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.solvency_core.2025",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group core solvency adequacy ratio at 31 December 2025.",
+      "locator": "p.20, solvency table, Group row",
+      "page": 20,
+      "excerpt": "Group 155 189 159 194",
+      "subject": "Group",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.core_solvency_ratio",
+      "value": 155,
+      "unit": "percent",
+      "period": "31 Dec 2025",
+      "issuer_definition": "2025 data unaudited (note 1, p.20).",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.solvency_core.2024",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "metric_value",
+      "statement": "Group core solvency adequacy ratio at 31 December 2024.",
+      "locator": "p.20, solvency table, Group row",
+      "page": 20,
+      "excerpt": "Group 155 189 159 194",
+      "subject": "Group",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "metric_id": "m.core_solvency_ratio",
+      "value": 159,
+      "unit": "percent",
+      "period": "31 Dec 2024",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.solvency_unaudited",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "The issuer states that 31 December 2025 solvency data has not been audited.",
+      "locator": "p.20, solvency table note 1",
+      "page": 20,
+      "excerpt": "The relevant solvency data as at 31 December 2025 has not been audited by the auditors of the Company",
+      "subject": "Group",
+      "question_ids": [
+        "q.capital"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.business_lines",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "The group's businesses are P&C reinsurance, life and health reinsurance, primary P&C insurance, asset management, insurance intermediary and other businesses.",
+      "locator": "p.19, MD&A Overview",
+      "page": 19,
+      "excerpt": "The Group is engaged in P&C reinsurance, life and health reinsurance, primary P&C insurance, asset management, insurance intermediary business and other businesses.",
+      "subject": "Group",
+      "question_ids": [
+        "q.profile",
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.history",
+      "source_id": "src.cr.fy2025_sustainability",
+      "kind": "fact",
+      "statement": "China Re originates from the People's Insurance Company of China (established October 1949) and was restructured into a joint-stock limited company in October 2007.",
+      "locator": "Sustainability report p.4 (PDF p.5), About China Re",
+      "page": 5,
+      "excerpt": "China Re is originally from the People's Insurance Company of China established in October 1949 and restructured into a joint-stock limited company in October 2007.",
+      "subject": "Group",
+      "question_ids": [
+        "q.profile"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.listing",
+      "source_id": "src.cr.fy2025_sustainability",
+      "kind": "fact",
+      "statement": "China Re listed on the Main Board of the Hong Kong Stock Exchange on 26 October 2015 (stock code 1508).",
+      "locator": "Sustainability report p.4 (PDF p.5), About China Re",
+      "page": 5,
+      "excerpt": "On 26 October 2015, China Re was listed on the Main Board of the Stock Exchange of Hong Kong Limited",
+      "subject": "Group",
+      "question_ids": [
+        "q.profile"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.shareholders",
+      "source_id": "src.cr.fy2025_sustainability",
+      "kind": "fact",
+      "statement": "The Ministry of Finance holds 11.45% and Central Huijin Investment Ltd. holds 71.56% of China Re.",
+      "locator": "Sustainability report p.4 (PDF p.5), About China Re",
+      "page": 5,
+      "excerpt": "Ministry of Finance holding 11.45% and Central Huijin Investment Ltd. holding 71.56%.",
+      "subject": "Group",
+      "question_ids": [
+        "q.ownership"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.controlling_shareholder",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "The issuer identifies Central Huijin as its controlling shareholder.",
+      "locator": "p.59, undertakings of the controlling shareholder",
+      "page": 59,
+      "excerpt": "the Company and Central Huijin, the controlling shareholder, complied",
+      "subject": "Group",
+      "question_ids": [
+        "q.ownership"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; human review pending"
+    },
+    {
+      "id": "ev.cr.ratings_issuer",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "quote",
+      "statement": "The issuer reports that during 2025 it maintained an \"A (Excellent)\" rating from A.M. Best and an \"A\" rating from S&P Global Ratings. Rating type and outlook are not stated there.",
+      "locator": "p.21, MD&A summary",
+      "page": 21,
+      "excerpt": "we maintained the \"A (Excellent)\" rating by A.M. Best and \"A\" by S&P Global Ratings",
+      "subject": "Group",
+      "question_ids": [
+        "q.ratings"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.agri_decline",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "The issuer attributes the 0.5% fall in P&C reinsurance segment insurance revenue mainly to lower earned premiums from domestic agriculture insurance business.",
+      "locator": "p.24, P&C reinsurance segment, insurance revenue",
+      "page": 24,
+      "excerpt": "mainly due to the decline in scale of earned premiums from domestic agriculture insurance business",
+      "subject": "P&C reinsurance segment",
+      "question_ids": [
+        "q.risks",
+        "q.business_mix"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; human review pending"
+    },
+    {
+      "id": "ev.cr.cat_losses",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "The issuer reports that overseas P&C business was hit in H1 2025 by catastrophe losses, including the California wildfires and severe convective storms (SCS).",
+      "locator": "p.28, overseas P&C reinsurance and Chaucer",
+      "page": 28,
+      "excerpt": "the first half of the year was impacted by catastrophic losses such as California wildfires in the United States and SCS",
+      "subject": "Overseas P&C reinsurance and Chaucer",
+      "question_ids": [
+        "q.risks"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.investment_yield",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "Total investment yield was 4.66% in FY2025 versus 4.83% in FY2024 (issuer definition, note 4, p.20).",
+      "locator": "p.19, Key Operating Data",
+      "page": 19,
+      "excerpt": "Total investment yield (%) 4 4.66 4.83",
+      "subject": "Group",
+      "question_ids": [
+        "q.risks",
+        "q.performance"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; value and column read on rendered page; human review pending"
+    },
+    {
+      "id": "ev.cr.ifrs17",
+      "source_id": "src.cr.fy2025_results",
+      "kind": "fact",
+      "statement": "The group has applied IFRS 17 and IFRS 9 from 1 January 2023, so FY2024-FY2025 figures share a basis but are not comparable with pre-2023 reporting.",
+      "locator": "p.1, basis of preparation",
+      "page": 1,
+      "excerpt": "\"IFRS\") 17 – Insurance Contracts",
+      "subject": "Group",
+      "question_ids": [
+        "q.performance"
+      ],
+      "verification": "verified",
+      "verified_on": "2026-10-26",
+      "verified_by": "Claude (AI assistant): excerpt matched on PDF page by frr check-sources; human review pending"
+    }
+  ],
+  "findings": [
+    {
+      "id": "f.cr.scale",
+      "nature": "fact",
+      "question_ids": [
+        "q.performance"
+      ],
+      "statement": "Total income rose 5.8% to RMB124.9bn in FY2025 (FY2024: RMB118.1bn); insurance revenue rose 1.7% to RMB103.1bn; total assets were RMB527.8bn at end-2025.",
+      "evidence_ids": [
+        "ev.cr.total_income.fy2025",
+        "ev.cr.total_income.fy2024",
+        "ev.cr.insurance_revenue.fy2025",
+        "ev.cr.insurance_revenue.fy2024",
+        "ev.cr.total_assets.2025"
+      ]
+    },
+    {
+      "id": "f.cr.profitability",
+      "nature": "fact",
+      "question_ids": [
+        "q.performance"
+      ],
+      "statement": "Net profit attributable to shareholders fell 7.4% to RMB9.77bn (FY2024: RMB10.56bn) and weighted average ROE fell from 10.74% to 9.18%.",
+      "evidence_ids": [
+        "ev.cr.net_profit_attr.fy2025",
+        "ev.cr.net_profit_attr.fy2024",
+        "ev.cr.roe.fy2025",
+        "ev.cr.roe.fy2024"
+      ]
+    },
+    {
+      "id": "f.cr.mix",
+      "nature": "fact",
+      "question_ids": [
+        "q.business_mix"
+      ],
+      "statement": "Before inter-segment eliminations, FY2025 insurance revenue was RMB48.9bn primary P&C, RMB45.8bn P&C reinsurance and RMB10.1bn life and health reinsurance.",
+      "evidence_ids": [
+        "ev.cr.seg_rev.primary_pc.fy2025",
+        "ev.cr.seg_rev.pc_re.fy2025",
+        "ev.cr.seg_rev.lh_re.fy2025"
+      ]
+    },
+    {
+      "id": "f.cr.underwriting",
+      "nature": "interpretation",
+      "question_ids": [
+        "q.capital",
+        "q.risks"
+      ],
+      "statement": "Underwriting moved in opposite directions: the overseas P&C and Chaucer combined ratio improved (84.71% to 81.19%) while domestic P&C reinsurance (92.77% to 95.98%) and primary P&C (97.67% to 99.17%; 100.41% including insurance finance items) weakened, leaving primary P&C around break-even.",
+      "evidence_ids": [
+        "ev.cr.cr.domestic_pc_re.fy2025",
+        "ev.cr.cr.domestic_pc_re.fy2024",
+        "ev.cr.cr.overseas_pc_chaucer.fy2025",
+        "ev.cr.cr.overseas_pc_chaucer.fy2024",
+        "ev.cr.cr.primary_pc.fy2025",
+        "ev.cr.cr.primary_pc.fy2024",
+        "ev.cr.cr.primary_pc_incl_finance"
+      ]
+    },
+    {
+      "id": "f.cr.capital",
+      "nature": "fact",
+      "question_ids": [
+        "q.capital"
+      ],
+      "statement": "Group solvency ratios edged down: aggregated 194% to 189% and core 159% to 155% (end-2024 to end-2025; 2025 figures unaudited).",
+      "evidence_ids": [
+        "ev.cr.solvency_agg.2025",
+        "ev.cr.solvency_agg.2024",
+        "ev.cr.solvency_core.2025",
+        "ev.cr.solvency_core.2024",
+        "ev.cr.solvency_unaudited"
+      ]
+    },
+    {
+      "id": "f.cr.ownership",
+      "nature": "fact",
+      "question_ids": [
+        "q.ownership"
+      ],
+      "statement": "Central Huijin (controlling shareholder, 71.56%) and the Ministry of Finance (11.45%) together hold 83.01% of shares (sum of the two disclosed stakes).",
+      "evidence_ids": [
+        "ev.cr.shareholders",
+        "ev.cr.controlling_shareholder"
+      ]
+    },
+    {
+      "id": "f.cr.risk_signals",
+      "nature": "fact",
+      "question_ids": [
+        "q.risks"
+      ],
+      "statement": "Disclosed FY2025 pressure points: lower domestic agriculture earned premiums, H1 catastrophe losses overseas, and a lower total investment yield (4.83% to 4.66%).",
+      "evidence_ids": [
+        "ev.cr.agri_decline",
+        "ev.cr.cat_losses",
+        "ev.cr.investment_yield"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "id": "c.cr.state_control",
+      "nature": "fact",
+      "finding_ids": [
+        "f.cr.ownership"
+      ],
+      "statement": "China Re is majority state-owned: Central Huijin is the controlling shareholder (71.56%) and the Ministry of Finance holds 11.45%."
+    },
+    {
+      "id": "c.cr.earnings_softer",
+      "nature": "interpretation",
+      "finding_ids": [
+        "f.cr.scale",
+        "f.cr.profitability"
+      ],
+      "statement": "FY2025 earnings softened despite top-line growth: total income +5.8% but attributable net profit −7.4% and ROE down 1.56 percentage points.",
+      "caveats": "Two years only; drivers of the profit decline are not decomposed here."
+    },
+    {
+      "id": "c.cr.underwriting_divergence",
+      "nature": "interpretation",
+      "finding_ids": [
+        "f.cr.underwriting"
+      ],
+      "statement": "Overseas P&C underwriting strengthened while domestic P&C reinsurance and primary P&C margins narrowed.",
+      "caveats": "Segment-level ratios only; no group-level combined ratio recorded."
+    },
+    {
+      "id": "c.cr.capital_buffer",
+      "nature": "fact",
+      "finding_ids": [
+        "f.cr.capital"
+      ],
+      "statement": "Group solvency eased slightly in 2025 to 155% core and 189% aggregated.",
+      "caveats": "2025 solvency figures are unaudited. Regulatory minimums are not yet sourced in this record."
+    },
+    {
+      "id": "c.cr.ratings_stable",
+      "nature": "fact",
+      "evidence_ids": [
+        "ev.cr.ratings_issuer"
+      ],
+      "statement": "The issuer reports its A.M. Best \"A (Excellent)\" and S&P \"A\" ratings were maintained in 2025.",
+      "caveats": "Issuer-reported; agency publications, rating types, dates and outlooks not yet reviewed."
+    },
+    {
+      "id": "c.cr.business_mix",
+      "nature": "interpretation",
+      "finding_ids": [
+        "f.cr.mix"
+      ],
+      "evidence_ids": [
+        "ev.cr.business_lines"
+      ],
+      "statement": "Primary P&C insurance and P&C reinsurance are of similar size and together dominate insurance revenue; life and health reinsurance is much smaller.",
+      "caveats": "Segment figures are before inter-segment eliminations."
+    }
+  ],
+  "gaps": [
+    {
+      "id": "gap.cr.geography",
+      "reason": "not_found",
+      "question_ids": [
+        "q.business_mix"
+      ],
+      "description": "No revenue split by country or region was found in the two sources reviewed. The full FY2025 annual report has not been reviewed.",
+      "impact": "A geographic exhibit cannot be built yet. Do not allocate overseas business to countries.",
+      "suggested_action": "Review the FY2025 annual report segment and geographic notes."
+    },
+    {
+      "id": "gap.cr.group_combined_ratio",
+      "reason": "not_found",
+      "question_ids": [
+        "q.capital"
+      ],
+      "metric_ids": [
+        "m.combined_ratio"
+      ],
+      "description": "No group-level combined ratio was found in the results announcement; only segment ratios are recorded.",
+      "suggested_action": "Check the annual report; otherwise present segment ratios with their scopes."
+    },
+    {
+      "id": "gap.cr.ratings_primary",
+      "reason": "needs_verification",
+      "question_ids": [
+        "q.ratings"
+      ],
+      "description": "Ratings are issuer-reported only. Agency rating type, action date, outlook and rationale have not been checked at A.M. Best or S&P.",
+      "suggested_action": "Retrieve the latest rating action from each agency."
+    },
+    {
+      "id": "gap.cr.solvency_minimum",
+      "reason": "not_yet_researched",
+      "question_ids": [
+        "q.capital"
+      ],
+      "description": "Regulatory minimum solvency requirements (C-ROSS) are not sourced, so the headroom above minimum is not stated.",
+      "suggested_action": "Cite the NFRA solvency rules for core and comprehensive minimums."
+    },
+    {
+      "id": "gap.cr.shareholder_support",
+      "reason": "not_yet_researched",
+      "question_ids": [
+        "q.ownership"
+      ],
+      "description": "The record shows who controls China Re, not whether or how the state would support it; no source on support willingness or capacity has been reviewed.",
+      "suggested_action": "Review rating agency support assessments (e.g. government-related issuer analysis)."
+    },
+    {
+      "id": "gap.cr.risk_disclosures",
+      "reason": "not_yet_researched",
+      "question_ids": [
+        "q.risks"
+      ],
+      "description": "The issuer's principal risk and risk-management disclosures have not been reviewed; the risks recorded are FY2025 performance pressure points only, and mitigants are not covered.",
+      "suggested_action": "Review the annual report risk management section and any rating agency risk discussion."
+    },
+    {
+      "id": "gap.cr.solvency_audit",
+      "reason": "needs_verification",
+      "question_ids": [
+        "q.capital"
+      ],
+      "metric_ids": [
+        "m.solvency_ratio",
+        "m.core_solvency_ratio"
+      ],
+      "description": "The 31 December 2025 solvency figures are unaudited per the issuer.",
+      "suggested_action": "Re-check against the audited or NFRA-published solvency report when available."
+    }
+  ],
+  "slide_modules": [
+    {
+      "id": "sm.cr.ownership",
+      "claim_ids": [
+        "c.cr.state_control"
+      ],
+      "proof_role": "ownership and control",
+      "exhibit_hint": "shareholding structure chart"
+    },
+    {
+      "id": "sm.cr.business_mix",
+      "claim_ids": [
+        "c.cr.business_mix"
+      ],
+      "proof_role": "business composition",
+      "exhibit_hint": "segment insurance revenue bars (before eliminations)"
+    },
+    {
+      "id": "sm.cr.financials",
+      "claim_ids": [
+        "c.cr.earnings_softer"
+      ],
+      "proof_role": "scale and profitability",
+      "exhibit_hint": "KPI cards: total income, net profit, ROE, total assets"
+    },
+    {
+      "id": "sm.cr.underwriting",
+      "claim_ids": [
+        "c.cr.underwriting_divergence"
+      ],
+      "proof_role": "underwriting quality",
+      "exhibit_hint": "segment combined ratio comparison, FY2024 vs FY2025"
+    },
+    {
+      "id": "sm.cr.capital",
+      "claim_ids": [
+        "c.cr.capital_buffer",
+        "c.cr.ratings_stable"
+      ],
+      "proof_role": "capital strength and external view",
+      "exhibit_hint": "solvency ratios with ratings panel"
+    }
+  ]
+}

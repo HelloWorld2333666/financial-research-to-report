@@ -8,16 +8,21 @@ The foundation for an AI research-to-report system. The goal is short (3–5 sli
 
 The intended workflow is Research Engine → Slide Planning → High-Density Editable Preview → Final PNG Rendering → QA → Revision Management.
 
-**This repository is at Phase 0.** It implements a small, deterministic Research Engine for one use case: public-company financial and credit research. Its output is a structured, validated research record. It preserves provenance from source to future slide module, so later planning and revisions don't have to redo the research.
+**This repository is in Phase 1** (Phase 0 foundation plus the first real evidence bundle). It implements a small, deterministic Research Engine for one use case: public-company financial and credit research. Its output is a structured, validated research record. It preserves provenance from source to future slide module, so later planning and revisions don't have to redo the research.
 
-No LLM calls are made, there is no slide generation yet, and the bundled example uses **synthetic fixture data, not real research**. See [docs/status.md](docs/status.md) for what works, what is mocked, and what remains unverified.
+No LLM calls are made and there is no slide generation yet. There are two examples:
+
+- `frr demo` runs a **synthetic** fixture (`fixtures/`), which is not real research.
+- [`research/china_re/`](research/china_re/README.md) holds a **real**, hand-built FY2025 evidence bundle for China Re. It is drawn from two HKEX filings, with page numbers, verbatim excerpts and a review checklist.
+
+See [docs/status.md](docs/status.md) for what works, what is mocked, and what remains unverified.
 
 ## Quick start (macOS, Python ≥ 3.11)
 
 ```bash
 python3 -m venv .venv            # or: uv venv --python 3.12 .venv
 source .venv/bin/activate
-pip install -e ".[dev]"          # or: uv pip install -e ".[dev]"
+pip install -e ".[dev,pdf]"      # or: uv pip install -e ".[dev,pdf]"
 
 frr demo                         # China Re offline fixture -> output/china_re_demo/
 pytest                           # run the test suite
@@ -41,12 +46,13 @@ frr run --company "Acme Corp" --objective "Assess leverage and refinancing risk.
 frr demo [--out DIR]
 frr validate output/acme/research_record.json
 frr schema > research_record.schema.json
+frr check-sources --evidence BUNDLE.json --file SOURCE_ID=path/to/source.pdf   # needs .[pdf]
 ```
 
 Exit codes:
 
 - `0`: OK (warnings allowed)
-- `1`: the record has validation errors
+- `1`: the record has validation errors, or a source check failed
 - `2`: invalid or unsupported input
 
 Phase 0 supports use case `company_credit` with sector `general` or `insurance`. Any other use case or sector is rejected with a clear message.
@@ -58,7 +64,7 @@ A `ResearchRecord` contains:
 - the **scope** (company, objective, use case, sector)
 - deterministic **research questions** (each with the evidence it needs)
 - **metric definitions**
-- **sources**, and **evidence** items pointing to a source and locator, with `verified`/`unverified` status
+- **sources** (with URL and document SHA-256), and **evidence** items pointing to a source, PDF page and verbatim excerpt, with `verified`/`unverified` status and who verified it
 - **findings** (fact or interpretation) built on evidence
 - **claims** linked to evidence directly or through findings
 - **gaps** (missing information, each with a reason such as `not_disclosed`)
@@ -78,8 +84,10 @@ src/frr/questions.py    Question templates and metric definitions for company/cr
 src/frr/pipeline.py     Scope → questions → bundle → computed support, status, gaps → outputs
 src/frr/validation.py   Cross-reference, support and fixture/live separation checks
 src/frr/config.py       Environment settings (provider, model, paid-call guard)
+src/frr/sourcecheck.py  Check evidence excerpts and values against local source PDFs
 src/frr/cli.py          `frr` command
 fixtures/               Synthetic offline fixtures only, never verified research
+research/               Real evidence bundles built from public sources (with verification notes)
 tests/                  pytest suite
 docs/                   Architecture and status notes
 ```

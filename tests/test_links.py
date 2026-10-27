@@ -64,3 +64,14 @@ def test_qualitative_evidence_cannot_carry_a_number(scope, bundle):
 def test_validate_record_is_stable_on_reload(scope, bundle):
     record, issues = run(scope, bundle)
     assert validate_record(record) == issues
+
+
+def test_live_verified_evidence_needs_attribution_and_excerpt(scope, bundle):
+    bundle.mode = "live"
+    for s in bundle.sources:
+        s.origin = "retrieved"
+    ev = by_id(bundle.evidence, "ev.fx.profile")
+    _, issues = run(scope, bundle)
+    flagged = {(i.code, i.object_id) for i in issues}
+    assert ("verification_unattributed", ev.id) in flagged
+    assert ("verification_not_checkable", ev.id) in flagged

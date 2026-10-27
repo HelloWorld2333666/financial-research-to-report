@@ -12,6 +12,7 @@ dependencies = ["pydantic>=2.7,<3"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+pdf = ["pypdf>=4"]
 
 [project.scripts]
 frr = "frr.cli:main"
