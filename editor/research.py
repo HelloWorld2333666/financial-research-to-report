@@ -125,12 +125,17 @@ def classify(project: dict, instruction: str) -> dict:
     }
 
 
-def create_request(project: dict, instruction: str, region: dict, overrides: dict | None = None) -> tuple[dict, dict]:
-    """Add a pending Research Request and its placeholder. Returns (new_project, request)."""
+def create_request(project: dict, instruction: str, region: dict, overrides: dict | None = None,
+                   slide_id: str | None = None) -> tuple[dict, dict]:
+    """Add a pending Research Request and its placeholder on ``slide_id`` (default:
+    the first slide). Returns (new_project, request)."""
     if not instruction or not instruction.strip():
         raise ValueError("instruction is required")
     if any(not isinstance(region.get(k), (int, float)) for k in ("x", "y", "w", "h")) or region["w"] < 8 or region["h"] < 8:
         raise ValueError("region needs numeric x, y, w, h of at least 8px")
+    slide_id = slide_id or sm.slide_ids(project)[0]
+    if slide_id not in sm.slide_ids(project):
+        raise ValueError(f"unknown slide {slide_id}")
     cls = classify(project, instruction)
     cls.update({k: v for k, v in (overrides or {}).items() if k in ("content_type", "visualization", "period", "geographic_scope")})
     new = copy.deepcopy(project)
@@ -143,7 +148,7 @@ def create_request(project: dict, instruction: str, region: dict, overrides: dic
     request = {
         "schema": REQUEST_SCHEMA, "id": rid, "status": "pending_research", "kind": "research",
         "instruction": instruction.strip(), "created": sm.now_iso(),
-        "slide_id": new.get("id"), "region": {k: round(region[k]) for k in ("x", "y", "w", "h")},
+        "slide_id": slide_id, "region": {k: round(region[k]) for k in ("x", "y", "w", "h")},
         "placeholder_element_id": pid,
         "content_type": cls["content_type"], "visualization": cls["visualization"],
         "objective": instruction.strip(),
@@ -157,7 +162,7 @@ def create_request(project: dict, instruction: str, region: dict, overrides: dic
     }
     new["research_requests"].append(request)
     new["elements"].append({
-        "id": pid, "type": "pending", "x": request["region"]["x"], "y": request["region"]["y"],
+        "id": pid, "slide_id": slide_id, "type": "pending", "x": request["region"]["x"], "y": request["region"]["y"],
         "w": request["region"]["w"], "h": request["region"]["h"], "request_id": rid, "state": "pending_research",
         "title": f"Pending research: {cls['visualization'] or cls['content_type'] or 'content'}",
         "text": instruction.strip(), "refs": {}, "style": {},
@@ -274,6 +279,8 @@ def apply_response(project: dict, response: dict) -> tuple[list[str], list[str],
     if vis and status != "not_available":
         element, verrs = _visual_element(vis, geom, merged, req["id"])
         errors += verrs
+        if element:
+            element["slide_id"] = sm.slide_of(new, placeholder) if placeholder else req.get("slide_id")
         if element:
             for ref in sm.bound_evidence_ids(element) + element.get("refs", {}).get("evidence", []):
                 if ref not in merged:

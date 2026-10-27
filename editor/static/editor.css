@@ -6,6 +6,7 @@
   --r: 6px;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--text); background: var(--bg); }
 body { display: flex; flex-direction: column; overflow: hidden; }
 button { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 5px 10px; cursor: pointer; }
@@ -43,6 +44,26 @@ button.icon { width: 32px; padding: 4px 0; font-size: 16px; }
 .tool.on span { color: var(--accent); }
 .tool.ai span { color: var(--ai); }
 .tool.ai.on { background: var(--ai-soft); color: var(--ai); }
+
+/* slide strip (multi-page navigation + cross-slide drop targets) */
+#strip { width: 184px; flex: none; background: #f6f7f9; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+#thumbs { flex: 1; overflow: auto; padding: 10px 10px 4px; display: flex; flex-direction: column; gap: 10px; }
+.thumb { position: relative; display: grid; grid-template-columns: 14px 1fr; gap: 2px 6px; cursor: pointer; border-radius: 8px; padding: 4px; }
+.thumb .tnum { font-size: 11px; color: var(--muted); text-align: right; padding-top: 2px; }
+.thumb .tframe { width: 144px; height: 81px; overflow: hidden; border-radius: 3px; border: 1px solid var(--line); background: #fff; position: relative; }
+.thumb.on .tframe { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.thumb .tmeta { grid-column: 2; display: flex; align-items: center; gap: 4px; font-size: 11px; min-width: 0; }
+.thumb .ttitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.thumb .tacts { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; }
+.thumb:hover .tacts { display: flex; }
+.thumb .tacts button { padding: 0 5px; font-size: 11px; line-height: 18px; background: rgba(255, 255, 255, .95); }
+.slide.mini { position: absolute; inset: auto; left: 0; top: 0; transform: scale(.1125); transform-origin: 0 0; box-shadow: none; pointer-events: none; }
+.slide.mini .no-export { display: none !important; }
+#strip.armed .thumb:not(.on) .tframe, #strip.armed #newSlideDrop { outline: 2px dashed #b9a3e3; outline-offset: 2px; }
+.thumb.drop .tframe, #newSlideDrop.drop { outline: 3px solid var(--ai) !important; background: var(--ai-soft); }
+#newSlideDrop { margin: 6px 10px 10px; padding: 10px 6px; border: 1.5px dashed #b9c1cb; background: none; color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+#newSlideDrop small { font-size: 10px; }
+#viewport.dropping .moveable-control-box { opacity: .35; }
 
 #viewport { flex: 1; position: relative; overflow: auto; display: flex; }
 #viewport.region-mode, #viewport.region-mode * { cursor: crosshair !important; }
@@ -98,7 +119,7 @@ button.icon { width: 32px; padding: 4px 0; font-size: 16px; }
 .card .row button { font-size: 11.5px; padding: 3px 8px; }
 .card dl { display: grid; grid-template-columns: 92px 1fr; gap: 2px 6px; margin: 6px 0; }
 .card dt { color: var(--muted); }
-.card dd { margin: 0; }
+.card dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .card textarea { width: 100%; min-height: 54px; font: inherit; border: 1px solid var(--line); border-radius: 5px; padding: 5px; }
 .card pre, .pane pre { white-space: pre-wrap; word-break: break-word; font-size: 11px; background: #f5f6f8; padding: 6px; border-radius: 5px; max-height: 160px; overflow: auto; margin: 6px 0 0; }
 .card details summary { cursor: pointer; color: var(--muted); font-size: 11.5px; margin-top: 4px; }
@@ -117,7 +138,23 @@ dialog .row input { flex: 1; font: inherit; padding: 5px 7px; border: 1px solid 
 #pickList .v { font-variant-numeric: tabular-nums; color: var(--muted); }
 dialog menu { display: flex; gap: 6px; padding: 0; margin: 12px 0 0; }
 
+#xferDlg textarea { width: 100%; min-height: 64px; font: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin-top: 8px; }
+#xferDlg textarea:disabled { background: #f6f7f9; }
+#xferDlg select { flex: 1; font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
+#xferModes .grp { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 10px 0 4px; }
+#xferModes .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#xferModes label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; cursor: pointer; font-size: 12px; }
+#xferModes label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+#xferModes .ai label:has(input:checked) { border-color: var(--ai); background: var(--ai-soft); }
+#xferModes label b { display: block; font-weight: 600; }
+#xferModes label span { color: var(--muted); font-size: 11px; }
+.card.xfer { border-left: 3px solid var(--ai); }
+.card.xfer.cancelled { opacity: .6; border-left-color: var(--line); }
+
 @media (max-width: 1100px) {
+  #strip { width: 150px; }
+  .thumb .tframe { width: 112px; height: 63px; }
+  .slide.mini { transform: scale(.0875); }
   #side { width: 280px; }
   #rail { width: 56px; }
   .tool { font-size: 9.5px; }
@@ -169,6 +206,12 @@ dialog menu { display: flex; gap: 6px; padding: 0; margin: 12px 0 0; }
 .el-pending.na { border-color: #a15c00; background: #fff8ec; color: #6b4300; }
 .el-pending.na .pt::before { content: "⚠"; }
 .el-pending.na .pi { color: #6b4300; }
+.el-pending.adapt { border-color: #2457d6; background: repeating-linear-gradient(135deg, #f6f8ff, #f6f8ff 8px, #edf2fd 8px, #edf2fd 16px); color: #1d3f99; }
+.el-pending.adapt .pt::before { content: "✦"; }
+.el-pending.adapt .pi { color: #2d4f9e; }
+.el.flagged { outline: 1.5px dashed var(--ai); outline-offset: 2px; }
+.slide.exporting .el.flagged { outline: none; }
+.xflag { position: absolute; left: 0; top: -15px; font: 600 9px/13px -apple-system, sans-serif; color: #fff; background: var(--ai); padding: 0 5px; border-radius: 3px; white-space: nowrap; }
 .bound { cursor: help; }
 
 /* ---------- editor-only overlays (never exported) ---------- */
