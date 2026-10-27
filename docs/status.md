@@ -10,6 +10,12 @@ _Last updated: 2026-10-26_
 - **Verification so far:** automated excerpt and value check (35/35 ok), visual reading of every table value against its rendered column header, and recomputation of all derived figures. **This was done by an AI assistant, not a person.** Each item records that in `verified_by`. A human review checklist is in the bundle README.
 - No paid API calls were made. The PDFs were downloaded from hkexnews.hk for checking and are not committed.
 
+## Fixes from the 2026-10-27 evaluation
+
+- **Company binding:** evidence bundles now declare their `company` and `company_aliases`, and a run under another company's name exits 2 with no output. Before this fix, the China Re bundle ran cleanly under "AIA Group Limited".
+- **Exact summary values:** `summary.md` now prints exact, comma-separated values (e.g. 124,927,594 instead of `1.24928e+08`) and has a Subject column, so segment rows are distinguishable.
+- **Still open:** numbers written in claim and finding text are not checked against evidence values. A claim with wrong figures is still marked "supported" if its cited evidence is verified. Derived figures were checked by hand.
+
 ## Works (exercised by tests and the examples)
 
 - Scope validation. Unsupported use cases (sovereign, industry) and sectors are rejected with a clear message.
@@ -35,7 +41,7 @@ _Last updated: 2026-10-26_
 
 ## Test results
 
-Run with `pytest` on macOS (Darwin 25.6), Python 3.12.15, pydantic 2.14.1, pytest 9.1.1: **51 passed**, none skipped. The real-bundle tests check structure and validation only; they need no PDFs or network. The PDF-based `check-sources` run (35/35 ok) was done manually against downloaded copies and is not part of `pytest`.
+Run with `pytest` on macOS (Darwin 25.6), Python 3.12.15, pydantic 2.14.1, pytest 9.1.1: **68 passed**, none skipped (2026-10-27). The real-bundle tests check structure and validation only; they need no PDFs or network. The PDF-based `check-sources` run (35/35 ok) was done manually against downloaded copies and is not part of `pytest`.
 
 ## Recommended next steps
 

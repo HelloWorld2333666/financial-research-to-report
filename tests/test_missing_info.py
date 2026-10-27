@@ -29,7 +29,7 @@ def test_unverified_evidence_prevents_answered_status(scope, bundle):
 
 
 def test_empty_bundle_produces_only_gaps_and_no_claims(scope):
-    empty = EvidenceBundle(mode="offline_fixture", description="nothing collected")
+    empty = EvidenceBundle(mode="offline_fixture", company=scope.company, description="nothing collected")
     record, issues = run(scope, empty)
     assert record.claims == [] and record.evidence == []
     assert all(q.status == QuestionStatus.open for q in record.questions)
