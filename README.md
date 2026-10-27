@@ -17,6 +17,8 @@ No LLM calls are made and there is no slide generation yet. There are two exampl
 
 See [docs/status.md](docs/status.md) for what works, what is mocked, and what remains unverified.
 
+**Slide preview editor** (branch `feature/slide-editor-spike`): [`editor/`](editor/README.md) is a focused preview workspace for one evidence-bound China Re slide. It supports layout editing, region-scoped AI change requests, research requests with pending placeholders (with a [handoff contract](editor/RESEARCH_CONTRACT.md) for a future Research Engine), and clean PNG export. Run `python3 editor/server.py`, then open http://127.0.0.1:8765/?project=china_re_overview.
+
 ## Quick start (macOS, Python ≥ 3.11)
 
 ```bash
@@ -88,6 +90,7 @@ src/frr/sourcecheck.py  Check evidence excerpts and values against local source 
 src/frr/cli.py          `frr` command
 fixtures/               Synthetic offline fixtures only, never verified research
 research/               Real evidence bundles built from public sources (with verification notes)
+editor/                 Slide editor spike (independent of src/frr; stdlib server + vendored MIT JS)
 tests/                  pytest suite
 docs/                   Architecture and status notes
 ```

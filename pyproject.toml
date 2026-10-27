@@ -21,4 +21,4 @@ frr = "frr.cli:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "editor/tests"]

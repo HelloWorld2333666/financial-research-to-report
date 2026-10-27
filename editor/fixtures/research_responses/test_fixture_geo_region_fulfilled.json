@@ -1,0 +1,90 @@
+{
+ "schema": "frr-research-response/0.1",
+ "request_id": "<set when loaded>",
+ "status": "fulfilled",
+ "produced_by": "TEST FIXTURE: simulated Research Engine",
+ "notes": "TEST FIXTURE. Simulates a fulfilled geographic breakdown with synthetic regions and values. Not China Re data.",
+ "sources": [
+  {
+   "id": "src.fx.engine_test",
+   "title": "[TEST FIXTURE] Simulated Research Engine output, not real data",
+   "publisher": "Test fixture (synthetic)",
+   "source_type": "other",
+   "origin": "fixture",
+   "notes": "Used only to exercise the editor's research-response handling."
+  }
+ ],
+ "evidence": [
+  {
+   "id": "ev.fx.geo.region_a.fy2025",
+   "source_id": "src.fx.engine_test",
+   "kind": "metric_value",
+   "statement": "TEST FIXTURE: synthetic insurance revenue for Region A (test), FY2025.",
+   "page": 1,
+   "excerpt": "Region A (test) 61.0",
+   "locator": "fixture p.1",
+   "subject": "Region A (test)",
+   "metric_id": "m.insurance_revenue_by_region",
+   "value": 61.0,
+   "unit": "RMB billion (synthetic)",
+   "period": "FY2025",
+   "verification": "verified",
+   "verified_by": "TEST FIXTURE (not a real verification)"
+  },
+  {
+   "id": "ev.fx.geo.region_b.fy2025",
+   "source_id": "src.fx.engine_test",
+   "kind": "metric_value",
+   "statement": "TEST FIXTURE: synthetic insurance revenue for Region B (test), FY2025.",
+   "page": 1,
+   "excerpt": "Region B (test) 27.5",
+   "locator": "fixture p.1",
+   "subject": "Region B (test)",
+   "metric_id": "m.insurance_revenue_by_region",
+   "value": 27.5,
+   "unit": "RMB billion (synthetic)",
+   "period": "FY2025",
+   "verification": "verified",
+   "verified_by": "TEST FIXTURE (not a real verification)"
+  },
+  {
+   "id": "ev.fx.geo.region_c.fy2025",
+   "source_id": "src.fx.engine_test",
+   "kind": "metric_value",
+   "statement": "TEST FIXTURE: synthetic insurance revenue for Region C (test), FY2025.",
+   "page": 1,
+   "excerpt": "Region C (test) 14.6",
+   "locator": "fixture p.1",
+   "subject": "Region C (test)",
+   "metric_id": "m.insurance_revenue_by_region",
+   "value": 14.6,
+   "unit": "RMB billion (synthetic)",
+   "period": "FY2025",
+   "verification": "verified",
+   "verified_by": "TEST FIXTURE (not a real verification)"
+  }
+ ],
+ "visualization": {
+  "type": "barchart",
+  "title": "TEST FIXTURE: insurance revenue by region, FY2025 (RMB bn, synthetic)",
+  "fmt": {
+   "decimals": 1,
+   "suffix": ""
+  },
+  "items": [
+   {
+    "label": "Region A (test)",
+    "evidence_id": "ev.fx.geo.region_a.fy2025"
+   },
+   {
+    "label": "Region B (test)",
+    "evidence_id": "ev.fx.geo.region_b.fy2025"
+   },
+   {
+    "label": "Region C (test)",
+    "evidence_id": "ev.fx.geo.region_c.fy2025"
+   }
+  ]
+ },
+ "unavailable": []
+}

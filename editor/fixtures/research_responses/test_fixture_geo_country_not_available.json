@@ -1,0 +1,17 @@
+{
+ "schema": "frr-research-response/0.1",
+ "request_id": "<set when loaded>",
+ "status": "not_available",
+ "produced_by": "TEST FIXTURE: simulated Research Engine",
+ "notes": "TEST FIXTURE. Simulates a search that finds no country-level disclosure. No figures are returned.",
+ "sources": [],
+ "evidence": [],
+ "visualization": null,
+ "unavailable": [
+  {
+   "description": "Revenue by country (top five), FY2025",
+   "reason": "not disclosed (simulated): filings reviewed give only a domestic/overseas aggregate",
+   "alternative": "show the disclosed domestic vs overseas aggregate, or the segment revenue chart already on the slide"
+  }
+ ]
+}

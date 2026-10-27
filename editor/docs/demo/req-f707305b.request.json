@@ -1,0 +1,706 @@
+{
+ "schema": "frr-slide-change-request/0.1",
+ "request_id": "req-f707305b",
+ "project": "china_re_overview",
+ "created": "2026-10-26T18:48:26Z",
+ "instruction": "Replace this box with a chart of revenue by country (top five countries, FY2025).",
+ "kind": "element",
+ "slide_size": {
+  "w": 1280,
+  "h": 720
+ },
+ "scope_rect": {
+  "x": 32,
+  "y": 466,
+  "w": 384,
+  "h": 86
+ },
+ "scope_element_ids": [
+  "geo-gap"
+ ],
+ "elements_in_scope": [
+  {
+   "id": "geo-gap",
+   "type": "gap",
+   "x": 32,
+   "y": 466,
+   "w": 384,
+   "h": 86,
+   "gap_id": "gap.cr.geography",
+   "text": "Geographic revenue split not found in the sources reviewed. Not estimated; research request open.",
+   "refs": {
+    "gaps": [
+     "gap.cr.geography"
+    ]
+   },
+   "style": {
+    "fill": "#fff7e6",
+    "borderColor": "#e0a100",
+    "color": "#6b4e00"
+   }
+  }
+ ],
+ "other_elements": [
+  {
+   "id": "title",
+   "type": "text",
+   "x": 32,
+   "y": 20,
+   "w": 1216,
+   "h": 40
+  },
+  {
+   "id": "subtitle",
+   "type": "text",
+   "x": 32,
+   "y": 62,
+   "w": 1216,
+   "h": 20
+  },
+  {
+   "id": "rule",
+   "type": "panel",
+   "x": 32,
+   "y": 88,
+   "w": 1216,
+   "h": 2
+  },
+  {
+   "id": "profile-bg",
+   "type": "panel",
+   "x": 32,
+   "y": 100,
+   "w": 384,
+   "h": 124
+  },
+  {
+   "id": "profile-h",
+   "type": "text",
+   "x": 44,
+   "y": 108,
+   "w": 360,
+   "h": 16
+  },
+  {
+   "id": "profile",
+   "type": "text",
+   "x": 44,
+   "y": 128,
+   "w": 360,
+   "h": 132
+  },
+  {
+   "id": "owner-bg",
+   "type": "panel",
+   "x": 32,
+   "y": 234,
+   "w": 384,
+   "h": 112
+  },
+  {
+   "id": "owner-h",
+   "type": "text",
+   "x": 44,
+   "y": 242,
+   "w": 360,
+   "h": 16
+  },
+  {
+   "id": "owner",
+   "type": "text",
+   "x": 44,
+   "y": 262,
+   "w": 360,
+   "h": 80
+  },
+  {
+   "id": "ratings-bg",
+   "type": "panel",
+   "x": 32,
+   "y": 356,
+   "w": 384,
+   "h": 98
+  },
+  {
+   "id": "ratings-h",
+   "type": "text",
+   "x": 44,
+   "y": 364,
+   "w": 360,
+   "h": 16
+  },
+  {
+   "id": "ratings",
+   "type": "text",
+   "x": 44,
+   "y": 384,
+   "w": 360,
+   "h": 66
+  },
+  {
+   "id": "kpi-income",
+   "type": "metric",
+   "x": 432,
+   "y": 100,
+   "w": 195,
+   "h": 88
+  },
+  {
+   "id": "kpi-profit",
+   "type": "metric",
+   "x": 639,
+   "y": 100,
+   "w": 195,
+   "h": 88
+  },
+  {
+   "id": "kpi-roe",
+   "type": "metric",
+   "x": 846,
+   "y": 100,
+   "w": 195,
+   "h": 88
+  },
+  {
+   "id": "kpi-assets",
+   "type": "metric",
+   "x": 1053,
+   "y": 100,
+   "w": 195,
+   "h": 88
+  },
+  {
+   "id": "seg-chart",
+   "type": "barchart",
+   "x": 432,
+   "y": 200,
+   "w": 404,
+   "h": 244
+  },
+  {
+   "id": "cr-table",
+   "type": "table",
+   "x": 848,
+   "y": 200,
+   "w": 400,
+   "h": 136
+  },
+  {
+   "id": "solv-table",
+   "type": "table",
+   "x": 848,
+   "y": 346,
+   "w": 400,
+   "h": 100
+  },
+  {
+   "id": "takeaways-bg",
+   "type": "panel",
+   "x": 432,
+   "y": 456,
+   "w": 816,
+   "h": 140
+  },
+  {
+   "id": "takeaways-h",
+   "type": "text",
+   "x": 446,
+   "y": 464,
+   "w": 790,
+   "h": 16
+  },
+  {
+   "id": "takeaways",
+   "type": "text",
+   "x": 446,
+   "y": 484,
+   "w": 790,
+   "h": 108
+  },
+  {
+   "id": "sources",
+   "type": "sources",
+   "x": 32,
+   "y": 608,
+   "w": 1216,
+   "h": 56
+  },
+  {
+   "id": "footer",
+   "type": "text",
+   "x": 32,
+   "y": 670,
+   "w": 1216,
+   "h": 18
+  },
+  {
+   "id": "p-682d3365",
+   "type": "panel",
+   "x": 32,
+   "y": 562,
+   "w": 384,
+   "h": 36
+  },
+  {
+   "id": "t-b4eff26a",
+   "type": "text",
+   "x": 42,
+   "y": 566,
+   "w": 366,
+   "h": 28
+  }
+ ],
+ "evidence_in_scope": {},
+ "evidence_available": {
+  "ev.cr.total_income.fy2025": {
+   "metric_id": "m.revenue",
+   "subject": "Group",
+   "period": "FY2025",
+   "value": 124927594,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Group total income, FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.total_income.fy2024": {
+   "metric_id": "m.revenue",
+   "subject": "Group",
+   "period": "FY2024",
+   "value": 118132916,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Group total income, FY2024 (comparative).",
+   "verification": "verified"
+  },
+  "ev.cr.insurance_revenue.fy2025": {
+   "metric_id": "m.insurance_revenue",
+   "subject": "Group",
+   "period": "FY2025",
+   "value": 103087051,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Group insurance revenue (IFRS 17), FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.insurance_revenue.fy2024": {
+   "metric_id": "m.insurance_revenue",
+   "subject": "Group",
+   "period": "FY2024",
+   "value": 101363282,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Group insurance revenue (IFRS 17), FY2024 (comparative).",
+   "verification": "verified"
+  },
+  "ev.cr.net_profit_attr.fy2025": {
+   "metric_id": "m.net_profit",
+   "subject": "Group",
+   "period": "FY2025",
+   "value": 9771143,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Net profit attributable to shareholders of the parent company, FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.net_profit_attr.fy2024": {
+   "metric_id": "m.net_profit",
+   "subject": "Group",
+   "period": "FY2024",
+   "value": 10556993,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Net profit attributable to shareholders of the parent company, FY2024 (comparative).",
+   "verification": "verified"
+  },
+  "ev.cr.roe.fy2025": {
+   "metric_id": "m.roe",
+   "subject": "Group",
+   "period": "FY2025",
+   "value": 9.18,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Weighted average return on equity, FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.roe.fy2024": {
+   "metric_id": "m.roe",
+   "subject": "Group",
+   "period": "FY2024",
+   "value": 10.74,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Weighted average return on equity, FY2024 (comparative).",
+   "verification": "verified"
+  },
+  "ev.cr.total_assets.2025": {
+   "metric_id": "m.total_assets",
+   "subject": "Group",
+   "period": "31 Dec 2025",
+   "value": 527763431,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Group total assets at 31 December 2025.",
+   "verification": "verified"
+  },
+  "ev.cr.total_assets.2024": {
+   "metric_id": "m.total_assets",
+   "subject": "Group",
+   "period": "31 Dec 2024",
+   "value": 508347105,
+   "unit": "RMB thousand",
+   "kind": "metric_value",
+   "statement": "Group total assets at 31 December 2024.",
+   "verification": "verified"
+  },
+  "ev.cr.seg_rev.pc_re.fy2025": {
+   "metric_id": "m.insurance_revenue",
+   "subject": "P&C reinsurance segment",
+   "period": "FY2025",
+   "value": 45812,
+   "unit": "RMB million",
+   "kind": "metric_value",
+   "statement": "P&C reinsurance segment insurance revenue, FY2025, before inter-segment eliminations.",
+   "verification": "verified"
+  },
+  "ev.cr.seg_rev.lh_re.fy2025": {
+   "metric_id": "m.insurance_revenue",
+   "subject": "Life and health reinsurance segment",
+   "period": "FY2025",
+   "value": 10088,
+   "unit": "RMB million",
+   "kind": "metric_value",
+   "statement": "Life and health reinsurance segment insurance revenue, FY2025, before eliminations.",
+   "verification": "verified"
+  },
+  "ev.cr.seg_rev.primary_pc.fy2025": {
+   "metric_id": "m.insurance_revenue",
+   "subject": "Primary P&C insurance segment (China Continent Insurance)",
+   "period": "FY2025",
+   "value": 48869,
+   "unit": "RMB million",
+   "kind": "metric_value",
+   "statement": "Primary P&C insurance segment insurance revenue, FY2025, before eliminations.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.domestic_pc_re.fy2025": {
+   "metric_id": "m.combined_ratio",
+   "subject": "Domestic P&C reinsurance (China Re P&C)",
+   "period": "FY2025",
+   "value": 95.98,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Combined ratio, Domestic P&C reinsurance (China Re P&C), FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.domestic_pc_re.fy2024": {
+   "metric_id": "m.combined_ratio",
+   "subject": "Domestic P&C reinsurance (China Re P&C)",
+   "period": "FY2024",
+   "value": 92.77,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Combined ratio, Domestic P&C reinsurance (China Re P&C), FY2024.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.overseas_pc_chaucer.fy2025": {
+   "metric_id": "m.combined_ratio",
+   "subject": "Overseas P&C reinsurance and Chaucer",
+   "period": "FY2025",
+   "value": 81.19,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Combined ratio, Overseas P&C reinsurance and Chaucer, FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.overseas_pc_chaucer.fy2024": {
+   "metric_id": "m.combined_ratio",
+   "subject": "Overseas P&C reinsurance and Chaucer",
+   "period": "FY2024",
+   "value": 84.71,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Combined ratio, Overseas P&C reinsurance and Chaucer, FY2024.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.primary_pc.fy2025": {
+   "metric_id": "m.combined_ratio",
+   "subject": "Primary P&C insurance (China Continent Insurance)",
+   "period": "FY2025",
+   "value": 99.17,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Combined ratio, Primary P&C insurance (China Continent Insurance), FY2025.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.primary_pc.fy2024": {
+   "metric_id": "m.combined_ratio",
+   "subject": "Primary P&C insurance (China Continent Insurance)",
+   "period": "FY2024",
+   "value": 97.67,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Combined ratio, Primary P&C insurance (China Continent Insurance), FY2024.",
+   "verification": "verified"
+  },
+  "ev.cr.cr.primary_pc_incl_finance": {
+   "metric_id": null,
+   "subject": "Primary P&C insurance (China Continent Insurance)",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "Issuer note 4: including insurance finance expenses/income and change in premium reserves, the FY2025 primary P&C combined ratio was 100.41%.",
+   "verification": "verified"
+  },
+  "ev.cr.solvency_agg.2025": {
+   "metric_id": "m.solvency_ratio",
+   "subject": "Group",
+   "period": "31 Dec 2025",
+   "value": 189,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Group aggregated (comprehensive) solvency adequacy ratio at 31 December 2025.",
+   "verification": "verified"
+  },
+  "ev.cr.solvency_agg.2024": {
+   "metric_id": "m.solvency_ratio",
+   "subject": "Group",
+   "period": "31 Dec 2024",
+   "value": 194,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Group aggregated (comprehensive) solvency adequacy ratio at 31 December 2024.",
+   "verification": "verified"
+  },
+  "ev.cr.solvency_core.2025": {
+   "metric_id": "m.core_solvency_ratio",
+   "subject": "Group",
+   "period": "31 Dec 2025",
+   "value": 155,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Group core solvency adequacy ratio at 31 December 2025.",
+   "verification": "verified"
+  },
+  "ev.cr.solvency_core.2024": {
+   "metric_id": "m.core_solvency_ratio",
+   "subject": "Group",
+   "period": "31 Dec 2024",
+   "value": 159,
+   "unit": "percent",
+   "kind": "metric_value",
+   "statement": "Group core solvency adequacy ratio at 31 December 2024.",
+   "verification": "verified"
+  },
+  "ev.cr.solvency_unaudited": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The issuer states that 31 December 2025 solvency data has not been audited.",
+   "verification": "verified"
+  },
+  "ev.cr.business_lines": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The group's businesses are P&C reinsurance, life and health reinsurance, primary P&C insurance, asset management, insurance intermediary and other businesses.",
+   "verification": "verified"
+  },
+  "ev.cr.history": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "China Re originates from the People's Insurance Company of China (established October 1949) and was restructured into a joint-stock limited company in October 2007.",
+   "verification": "verified"
+  },
+  "ev.cr.listing": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "China Re listed on the Main Board of the Hong Kong Stock Exchange on 26 October 2015 (stock code 1508).",
+   "verification": "verified"
+  },
+  "ev.cr.shareholders": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The Ministry of Finance holds 11.45% and Central Huijin Investment Ltd. holds 71.56% of China Re.",
+   "verification": "verified"
+  },
+  "ev.cr.controlling_shareholder": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The issuer identifies Central Huijin as its controlling shareholder.",
+   "verification": "verified"
+  },
+  "ev.cr.ratings_issuer": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "quote",
+   "statement": "The issuer reports that during 2025 it maintained an \"A (Excellent)\" rating from A.M. Best and an \"A\" rating from S&P Global Ratings. Rating type and outlook are not stated there.",
+   "verification": "verified"
+  },
+  "ev.cr.agri_decline": {
+   "metric_id": null,
+   "subject": "P&C reinsurance segment",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The issuer attributes the 0.5% fall in P&C reinsurance segment insurance revenue mainly to lower earned premiums from domestic agriculture insurance business.",
+   "verification": "verified"
+  },
+  "ev.cr.cat_losses": {
+   "metric_id": null,
+   "subject": "Overseas P&C reinsurance and Chaucer",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The issuer reports that overseas P&C business was hit in H1 2025 by catastrophe losses, including the California wildfires and severe convective storms (SCS).",
+   "verification": "verified"
+  },
+  "ev.cr.investment_yield": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "Total investment yield was 4.66% in FY2025 versus 4.83% in FY2024 (issuer definition, note 4, p.20).",
+   "verification": "verified"
+  },
+  "ev.cr.ifrs17": {
+   "metric_id": null,
+   "subject": "Group",
+   "period": null,
+   "value": null,
+   "unit": null,
+   "kind": "fact",
+   "statement": "The group has applied IFRS 17 and IFRS 9 from 1 January 2023, so FY2024-FY2025 figures share a basis but are not comparable with pre-2023 reporting.",
+   "verification": "verified"
+  }
+ },
+ "gaps": {
+  "gap.cr.geography": {
+   "description": "No revenue split by country or region was found in the two sources reviewed. The full FY2025 annual report has not been reviewed.",
+   "reason": "not_found",
+   "suggested_action": "Review the FY2025 annual report segment and geographic notes."
+  },
+  "gap.cr.group_combined_ratio": {
+   "description": "No group-level combined ratio was found in the results announcement; only segment ratios are recorded.",
+   "reason": "not_found",
+   "suggested_action": "Check the annual report; otherwise present segment ratios with their scopes."
+  },
+  "gap.cr.ratings_primary": {
+   "description": "Ratings are issuer-reported only. Agency rating type, action date, outlook and rationale have not been checked at A.M. Best or S&P.",
+   "reason": "needs_verification",
+   "suggested_action": "Retrieve the latest rating action from each agency."
+  },
+  "gap.cr.solvency_minimum": {
+   "description": "Regulatory minimum solvency requirements (C-ROSS) are not sourced, so the headroom above minimum is not stated.",
+   "reason": "not_yet_researched",
+   "suggested_action": "Cite the NFRA solvency rules for core and comprehensive minimums."
+  },
+  "gap.cr.shareholder_support": {
+   "description": "The record shows who controls China Re, not whether or how the state would support it; no source on support willingness or capacity has been reviewed.",
+   "reason": "not_yet_researched",
+   "suggested_action": "Review rating agency support assessments (e.g. government-related issuer analysis)."
+  },
+  "gap.cr.risk_disclosures": {
+   "description": "The issuer's principal risk and risk-management disclosures have not been reviewed; the risks recorded are FY2025 performance pressure points only, and mitigants are not covered.",
+   "reason": "not_yet_researched",
+   "suggested_action": "Review the annual report risk management section and any rating agency risk discussion."
+  },
+  "gap.cr.solvency_audit": {
+   "description": "The 31 December 2025 solvency figures are unaudited per the issuer.",
+   "reason": "needs_verification",
+   "suggested_action": "Re-check against the audited or NFRA-published solvency report when available."
+  }
+ },
+ "rules": [
+  "Only change elements listed in scope_element_ids; new elements must fit inside scope_rect.",
+  "Never write financial figures as text. Show numbers with metric/table/barchart elements bound to an evidence_id from evidence_available.",
+  "Do not change evidence_id, refs, ids or types of existing elements, and do not remove citations.",
+  "If the instruction needs data that is not in evidence_available, add a research_requests entry instead of inventing a number.",
+  "Keep text concise and factual; interpretations must stay consistent with the cited claims."
+ ],
+ "patch_schema": {
+  "type": "object",
+  "required": [
+   "request_id",
+   "ops"
+  ],
+  "properties": {
+   "request_id": {
+    "type": "string"
+   },
+   "summary": {
+    "type": "string"
+   },
+   "ops": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "op"
+     ],
+     "properties": {
+      "op": {
+       "enum": [
+        "update",
+        "add",
+        "delete"
+       ]
+      },
+      "id": {
+       "type": "string"
+      },
+      "set": {
+       "type": "object"
+      },
+      "element": {
+       "type": "object"
+      }
+     }
+    }
+   },
+   "research_requests": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "description"
+     ],
+     "properties": {
+      "description": {
+       "type": "string"
+      }
+     }
+    }
+   }
+  }
+ }
+}

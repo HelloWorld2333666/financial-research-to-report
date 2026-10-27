@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide Preview Editor</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="tb-left">
+    <span class="logo" aria-hidden="true">▣</span>
+    <strong id="projTitle">Slide preview</strong>
+    <span id="saveState" class="chip">Saved</span>
+  </div>
+  <div class="tb-mid">
+    <button data-act="undo" class="icon" title="Undo (⌘Z)" aria-label="Undo">↶</button>
+    <button data-act="redo" class="icon" title="Redo (⇧⌘Z)" aria-label="Redo">↷</button>
+    <button data-act="revert" title="Revert selected elements (or the whole slide) to the last save">Revert</button>
+  </div>
+  <div class="tb-right">
+    <span id="openCount" class="chip warn" hidden></span>
+    <button data-act="save" class="primary" title="Save (⌘S)">Save</button>
+    <button data-act="export" title="Export a clean 2560×1440 PNG">Export PNG</button>
+  </div>
+</header>
+
+<div id="workspace">
+  <nav id="rail" aria-label="Tools">
+    <button data-act="mode-select" class="tool on" title="Select and move (V)"><span>↖</span>Select</button>
+    <button data-act="mode-region" class="tool ai" title="Draw a region and describe a change (R)"><span>✦</span>AI region</button>
+    <hr>
+    <button data-act="add-text" class="tool" title="Text box"><span>T</span>Text</button>
+    <button data-act="add-panel" class="tool" title="Content panel"><span>▭</span>Panel</button>
+    <button data-act="add-ellipse" class="tool" title="Shape"><span>◯</span>Shape</button>
+    <button data-act="add-chart" class="tool" title="Bar chart from verified evidence"><span>▤</span>Chart</button>
+    <button data-act="add-table" class="tool" title="Table from verified evidence"><span>▦</span>Table</button>
+    <button data-act="add-metric" class="tool" title="Metric card from verified evidence"><span>#</span>Metric</button>
+  </nav>
+
+  <section id="viewport">
+    <div id="stageScaler">
+      <div id="stage" class="slide"></div>
+      <div id="annotLayer"></div>
+    </div>
+    <div id="ctxbar" hidden></div>
+    <div id="popover" hidden></div>
+    <div id="hintbar"></div>
+    <div id="zoom"></div>
+  </section>
+
+  <aside id="side">
+    <nav id="tabs">
+      <button data-tab="props" class="on">Inspect</button>
+      <button data-tab="requests">Requests <span id="reqCount"></span></button>
+      <button data-tab="integrity">Data <span id="intCount"></span></button>
+    </nav>
+    <div id="pane-props" class="pane on"></div>
+    <div id="pane-requests" class="pane"></div>
+    <div id="pane-integrity" class="pane"></div>
+  </aside>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="pickDlg">
+  <form method="dialog">
+    <h3 id="pickTitle">Insert from verified evidence</h3>
+    <p class="hint" id="pickHint">Only verified figures can be shown. If the data you need is not here, draw an AI region and ask for research instead.</p>
+    <label class="row">Filter <input id="pickFilter" placeholder="e.g. combined ratio, FY2025, segment"></label>
+    <div id="pickList"></div>
+    <label class="row">Title <input id="pickLabel"></label>
+    <p id="pickWarn" class="warnline"></p>
+    <menu>
+      <button value="research" type="submit">Data missing → research request</button>
+      <span class="grow"></span>
+      <button value="cancel" type="submit">Cancel</button>
+      <button value="ok" type="submit" class="primary" id="pickOk">Insert</button>
+    </menu>
+  </form>
+</dialog>
+<script src="vendor/moveable.min.js"></script>
+<script src="vendor/selecto.min.js"></script>
+<script src="vendor/html-to-image.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
