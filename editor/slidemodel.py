@@ -34,13 +34,16 @@ SCHEMA = "frr-slide/0.2"
 LEGACY_SCHEMA = "frr-slide/0.1"  # single slide, no slide_id; upgraded by migrate()
 SLIDE_W, SLIDE_H = 1280, 720
 MAX_SLIDES = 12
-ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "timeline", "sources", "gap", "pending"}
+ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "timeline", "sources", "gap", "pending",
+                 "chart", "datatable"}  # chart / datatable read from project datasets (charts.py)
 GEOMETRY = ("x", "y", "w", "h")
 # Fields an AI patch may change on an existing element. Bound-evidence fields,
 # refs, ids, types and audit fields are deliberately absent.
 PATCHABLE = {"x", "y", "w", "h", "style", "text", "label", "title", "note", "fmt", "group",
              "shape", "footnote", "prefix", "columns", "rows", "bars"}
 NUMBER_RE = re.compile(r"(?<![\w.])[-+−]?\d[\d,]*(?:\.\d+)?")
+# Instrument tenors ("10Y", "5-year", "30-yr") name a maturity, not a figure.
+TENOR_RE = re.compile(r"(?<![\w.])\d{1,2}(?:Y\b|-year\b|-yr\b| year (?=bond|yield|benchmark))", re.I)
 
 
 def now_iso() -> str:
@@ -225,7 +228,7 @@ def free_texts(el: dict) -> list[str]:
 
 def numbers_in(text: str) -> set[str]:
     out = set()
-    for m in NUMBER_RE.findall(text):
+    for m in NUMBER_RE.findall(TENOR_RE.sub(" ", text)):
         n = m.replace(",", "").replace("−", "-").lstrip("+-")
         if n:
             out.add(n.rstrip("0").rstrip(".") if "." in n else n)
@@ -300,6 +303,9 @@ def validate_project(project: dict) -> list[str]:
     for a in project["annotations"]:
         if a.get("kind") not in ("region", "element"):
             errors.append(f"annotation {a.get('id')}: kind must be region or element")
+    if "datasets" in project or "charts" in project:
+        import charts  # local import: charts is optional for projects without datasets
+        errors += charts.validate(project)
     return errors
 
 
@@ -372,6 +378,9 @@ def check_integrity(project: dict) -> list[dict]:
         if t.get("status") == "pending_adaptation" and t.get("target_slide_id") not in sids:
             add("warning", "transfer_target_missing", None,
                 f"transfer {t['id']} targets slide {t.get('target_slide_id')}, which was deleted")
+    if project.get("datasets"):
+        import charts
+        issues += charts.integrity(project, lambda el: slide_of(project, el))
     return issues
 
 

@@ -94,3 +94,17 @@ Both held 60 fps.
 - A real-mouse drag on a low-end laptop.
 
 The proposed acceptance budgets for the future workspace are in 05-architecture.md §6.
+
+## Update: workspace prototype measured (2026-11-01, later session)
+
+`editor/static/bench/workspace-bench.js` measures the prototype (`/workspace/index.html`) with the same method as `editor-bench.js`. Both scripts now yield between iterations with `MessageChannel` instead of animation frames, and all timed sections are synchronous.
+
+The two editors were measured in the same session, with the app window not in view (renderer deprioritised; absolute values about 9× the baseline above):
+
+| Slides | Old editor commit | Prototype commit |
+|---|---|---|
+| 3 | 17–21 ms | 1.1–2.4 ms |
+| 10 | 62–65 ms | 1.8–2.9 ms |
+| 30 | 176–196 ms | 2.7–5.1 ms |
+
+The prototype's commit cost is nearly flat in deck size; that's the per-element memoisation and thumbnail identity from 05-architecture.md §6. Re-run both with the window visible to get absolute budgets.

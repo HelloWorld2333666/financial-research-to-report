@@ -19,6 +19,7 @@ Then open one of:
 
 | Project | URL |
 |---|---|
+| **Workspace prototype** (new architecture slice; see `docs/workspace-prototype/README.md`) | http://127.0.0.1:8765/workspace/index.html |
 | **Multi-slide deck** (overview plus two blank pages, ready to drag between) | http://127.0.0.1:8765/?project=china_re_deck |
 | **Transfer demo** (after four scripted drops; see below) | http://127.0.0.1:8765/?project=china_re_deck_demo&tab=requests |
 | Initial slide | http://127.0.0.1:8765/?project=china_re_overview |

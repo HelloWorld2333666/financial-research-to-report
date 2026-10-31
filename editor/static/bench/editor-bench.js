@@ -3,7 +3,9 @@
 // It duplicates slides in memory only (nothing is saved) and reports medians in ms.
 const now = () => performance.now();
 const median = (a) => { const s = [...a].sort((x, y) => x - y); return +s[Math.floor(s.length / 2)].toFixed(2); };
-const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+// Yield between iterations without relying on animation frames (throttled when the window is not in view);
+// all timed sections are synchronous, so the yield method does not affect the numbers.
+const frame = () => new Promise((r) => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
 
 async function timeRender(E, runs = 9) {
   const t = [];
