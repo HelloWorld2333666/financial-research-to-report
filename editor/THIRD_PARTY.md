@@ -12,6 +12,15 @@
 - The full license texts are in `editor/static/vendor/licenses/`.
 - Moveable and Selecto were last pushed in mid-2024, so they are stable but not actively developed.
 
+## Benchmark-only libraries (`editor/static/bench/vendor/`, not used by the editor)
+
+| Library | Version | License | File | SHA-256 |
+|---|---|---|---|---|
+| Apache ECharts | 6.1.0 | Apache-2.0 (LICENSE and NOTICE in `bench/vendor/licenses/`) | `echarts.min.js` | `b66b25aeb4df84e33199dc21694014d336d222cbd9deb0e5a7c14bd6aa0d0fd0` |
+| Konva | 10.8.0 | MIT | `konva.min.js` | `dc77264b77311f161cc459656b7f4e70f2f787164f0449cdb162638c524f7b9d` |
+
+These are unmodified builds from the npm registry tarballs, downloaded on 2026-11-01, and used only by the rendering benchmark (`docs/workspace-study/07-benchmark.md`).
+
 ## Design patterns studied (no code copied)
 
 | Project | License | What informed this spike |

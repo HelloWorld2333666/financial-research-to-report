@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rendering benchmark</title>
+<style>
+  body { font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; color: #18212b; background: #fff; }
+  table { border-collapse: collapse; margin-top: 12px; } td, th { border-bottom: 1px solid #e3e7ed; padding: 4px 10px; text-align: left; font-variant-numeric: tabular-nums; }
+  .warn { color: #a15c00; }
+</style>
+</head>
+<body>
+<h1>Rendering benchmark</h1>
+<p class="warn">All country figures used here are SYNTHETIC (seeded random walks). They measure rendering cost only.</p>
+<p>Keep this tab visible while it runs (background tabs throttle timers). Results are medians of repeated runs, in milliseconds.</p>
+<button id="run">Run all suites</button> <span id="status"></span>
+<div id="out"></div>
+<script src="vendor/echarts.min.js"></script>
+<script src="vendor/konva.min.js"></script>
+<script type="module">
+  import { runAll } from "./bench.js";
+  const run = async () => {
+    document.querySelector("#status").textContent = "running…";
+    const r = await runAll(); window.__benchResult = r;
+    const keys = [...new Set(r.results.flatMap(Object.keys))];
+    document.querySelector("#out").innerHTML = `<pre>${JSON.stringify(r.env, null, 1)}</pre><table><tr>${keys.map((k) => `<th>${k}</th>`).join("")}</tr>` +
+      r.results.map((x) => `<tr>${keys.map((k) => `<td>${x[k] ?? ""}</td>`).join("")}</tr>`).join("") + `</table>`;
+    document.querySelector("#status").textContent = "done";
+    return r;
+  };
+  window.__bench = { run };
+  document.querySelector("#run").onclick = run;
+</script>
+</body>
+</html>
