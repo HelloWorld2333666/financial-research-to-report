@@ -6,7 +6,7 @@
   "w": 1280,
   "h": 720
  },
- "created": "2026-10-31T19:44:22Z",
+ "created": "2026-10-31T20:24:57Z",
  "slides": [
   {
    "id": "overview",
@@ -1416,7 +1416,19 @@
    "x": 40,
    "y": 128,
    "w": 720,
-   "h": 420,
+   "h": 350,
+   "style": {},
+   "refs": {}
+  },
+  {
+   "id": "el-debt-bar",
+   "slide_id": "s-france-debt",
+   "type": "chart",
+   "chart_id": "ch.debt_bar",
+   "x": 784,
+   "y": 128,
+   "w": 456,
+   "h": 230,
    "style": {},
    "refs": {}
   },
@@ -1425,9 +1437,9 @@
    "slide_id": "s-france-debt",
    "type": "datatable",
    "x": 784,
-   "y": 128,
+   "y": 376,
    "w": 456,
-   "h": 170,
+   "h": 172,
    "title": "Debt, % of GDP (SAMPLE)",
    "dataset_ids": [
     "ds.fr.debt_gdp",
@@ -1449,10 +1461,10 @@
    "id": "el-debt-comment",
    "slide_id": "s-france-debt",
    "type": "text",
-   "x": 784,
-   "y": 318,
-   "w": 456,
-   "h": 230,
+   "x": 40,
+   "y": 496,
+   "w": 720,
+   "h": 150,
    "text": "• France's ratio keeps rising while Germany's is broadly flat: the gap looks structural.\n• Italy remains the most indebted, but its path has been steadier.\n• Market pricing (next slide) has reflected the divergence only partly.",
    "role": "body",
    "style": {},
@@ -1557,7 +1569,7 @@
    "gap_id": "gap.cr.geography",
    "status": "open",
    "source": "bundle gap",
-   "created": "2026-10-31T19:44:22Z",
+   "created": "2026-10-31T20:24:57Z",
    "description": "No revenue split by country or region was found in the two sources reviewed. The full FY2025 annual report has not been reviewed."
   }
  ],
@@ -1732,15 +1744,15 @@
      "status": "sample"
     }
    ],
-   "revisions": [
-    {
-     "date": "2024",
+   "working": {
+    "2024": {
      "value": 102.0,
      "by": "analyst (demo)",
-     "reason": "updated statistical vintage",
-     "status": "pending_verification"
+     "at": "2026-10-31T20:24:57Z",
+     "note": "updated statistical vintage",
+     "status": "manual_unverified"
     }
-   ]
+   }
   },
   "ds.de.debt_gdp": {
    "title": "Germany · general government debt",
@@ -1879,7 +1891,7 @@
      "status": "sample"
     }
    ],
-   "revisions": []
+   "working": {}
   },
   "ds.it.debt_gdp": {
    "title": "Italy · general government debt",
@@ -2018,7 +2030,7 @@
      "status": "sample"
     }
    ],
-   "revisions": []
+   "working": {}
   },
   "ds.fr.y10_m": {
    "title": "France · 10Y government bond yield",
@@ -3502,7 +3514,7 @@
      "status": "sample"
     }
    ],
-   "revisions": []
+   "working": {}
   },
   "ds.de.y10_m": {
    "title": "Germany · 10Y government bond yield",
@@ -4986,7 +4998,7 @@
      "status": "sample"
     }
    ],
-   "revisions": []
+   "working": {}
   },
   "ds.it.y10_m": {
    "title": "Italy · 10Y government bond yield",
@@ -6470,7 +6482,7 @@
      "status": "sample"
     }
    ],
-   "revisions": []
+   "working": {}
   },
   "ds.fr.primary_balance_q": {
    "title": "France · primary balance",
@@ -6714,7 +6726,7 @@
      "status": "sample"
     }
    ],
-   "revisions": []
+   "working": {}
   },
   "ds.fr.cds5y": {
    "title": "France · 5Y sovereign CDS",
@@ -6727,7 +6739,7 @@
    "verification": "missing",
    "source_note": "SAMPLE: synthetic series generated for the prototype; not official statistics.",
    "observations": [],
-   "revisions": [],
+   "working": {},
    "gap_note": "No verified source yet: request research instead of estimating."
   }
  },
@@ -6759,6 +6771,37 @@
    },
    "labels": "end",
    "missing": "gap",
+   "series": [
+    {
+     "dataset": "ds.fr.debt_gdp",
+     "label": "France",
+     "role": 0
+    },
+    {
+     "dataset": "ds.de.debt_gdp",
+     "label": "Germany",
+     "role": 1
+    },
+    {
+     "dataset": "ds.it.debt_gdp",
+     "label": "Italy",
+     "role": 2
+    }
+   ]
+  },
+  "ch.debt_bar": {
+   "type": "bar",
+   "title": "Debt, % of GDP, 2026 (SAMPLE)",
+   "x": {
+    "mode": "snapshot",
+    "date": "2026"
+   },
+   "y": {
+    "zero": true
+   },
+   "labels": "none",
+   "missing": "gap",
+   "data_labels": true,
    "series": [
     {
      "dataset": "ds.fr.debt_gdp",
@@ -6813,7 +6856,7 @@
    "messages": [
     {
      "role": "ai",
-     "at": "2026-10-31T19:44:22Z",
+     "at": "2026-10-31T20:24:57Z",
      "text": "Slide 2 assistant (simulated, rule-based). Select objects and describe a size or position change; I will return a proposal you can preview, apply or reject."
     }
    ]

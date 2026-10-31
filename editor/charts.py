@@ -1,14 +1,18 @@
-"""Datasets and deterministic chart specifications.
+"""Datasets (source + working data) and deterministic chart specifications.
 
-A project may hold ``datasets`` (series of dated observations with unit,
-frequency and observation type) and ``charts`` (ChartSpecs). A ChartSpec
-references datasets and never stores values: what is plotted is always derived
-from the dataset by ``chart_series``. Missing observations stay ``None`` (a gap
-in the line); nothing is interpolated.
+Two layers per dataset:
+  ``observations``  the SOURCE record: date, value, provenance. Never overwritten by editing.
+  ``working``       the user's edits, keyed by date: {"value": n | null, "deleted": bool, "by", "at",
+                    "note", "status": "manual_unverified" | "verified"}. A date absent from
+                    ``observations`` is an added observation.
 
-Slide elements use them through two element types:
-  ``chart``      {"chart_id": ...}
-  ``datatable``  {"dataset_ids": [...], "dates": [...]}  (cells read from datasets)
+Charts and dataset tables render the WORKING view (``effective_observations``), so manual edits
+move the geometry immediately; integrity reports every unverified edit so nothing is silently
+certified. "Restore original" simply deletes the working entry.
+
+A ChartSpec references datasets and never stores values. ``x.mode`` is "range" (time on the
+x-axis, ``from``/``to``) or "snapshot" (one bar per series at ``x.date``). Missing observations
+stay ``None``; nothing is interpolated.
 """
 
 from __future__ import annotations
@@ -17,10 +21,31 @@ FREQUENCIES = {"annual", "quarterly", "monthly", "daily", "point"}
 OBSERVATION_TYPES = {"annual_average", "end_of_period", "point_in_time", "flow"}
 CHART_TYPES = {"line", "bar"}
 VALUE_KEYS = {"values", "data", "points"}  # a spec (or series) holding any of these is storing numbers
+WORK_STATUSES = {"manual_unverified", "verified"}
 
 
 def _dataset(project: dict, dataset_id: str) -> dict | None:
     return project.get("datasets", {}).get(dataset_id)
+
+
+def effective_observations(ds: dict) -> list[dict]:
+    """Source observations with working edits applied, sorted by date.
+
+    Each item: {date, value, source_value, edited, status}. ``source_value`` is None for added dates."""
+    work = ds.get("working") or {}
+    out = {}
+    for o in ds.get("observations", []):
+        out[str(o["date"])] = {"date": str(o["date"]), "value": o.get("value"), "source_value": o.get("value"),
+                               "edited": False, "status": o.get("status", "source")}
+    for date, w in work.items():
+        base = out.get(str(date), {"date": str(date), "source_value": None})
+        out[str(date)] = {**base, "value": None if w.get("deleted") else w.get("value"), "edited": True,
+                          "status": "removed" if w.get("deleted") else w.get("status", "manual_unverified")}
+    return [out[d] for d in sorted(out)]
+
+
+def unverified_edits(ds: dict) -> list[str]:
+    return [str(d) for d, w in (ds.get("working") or {}).items() if w.get("status", "manual_unverified") != "verified"]
 
 
 def compatibility(project: dict, dataset_ids: list[str]) -> dict:
@@ -35,35 +60,33 @@ def compatibility(project: dict, dataset_ids: list[str]) -> dict:
         out[field] = vals[0] if len(vals) == 1 else None
         if len(vals) > 1:
             issues.append(f"mixed {field.replace('_', ' ')}: {', '.join(map(str, vals))}")
-    gaps = [f"{d.get('title')}: {o['date']}" for d in found for o in d.get("observations", []) if o.get("value") is None]
+    gaps = [f"{d.get('title')}: {o['date']}" for d in found for o in effective_observations(d) if o["value"] is None]
     out["gaps"] = gaps
     out["ok"] = bool(found) and not issues
     return out
 
 
-def current_value(obs: dict) -> float | None:
-    return obs.get("value")
-
-
 def chart_series(project: dict, chart_id: str) -> dict:
-    """Plotted series for a ChartSpec, aligned on the union of dates in range.
-
-    Values come straight from the datasets; a date a series does not have is
-    ``None``. User revisions are *not* applied: they are shown as pending until
-    verified (see ``revisions`` on the dataset)."""
+    """Plotted series for a ChartSpec, from the working view of each dataset."""
     spec = project["charts"][chart_id]
-    lo, hi = (spec.get("x") or {}).get("from"), (spec.get("x") or {}).get("to")
+    x = spec.get("x") or {}
+    if x.get("mode") == "snapshot":
+        labels, values = [], []
+        for s in spec.get("series", []):
+            obs = {o["date"]: o["value"] for o in effective_observations(_dataset(project, s["dataset"]) or {})}
+            labels.append(s.get("label"))
+            values.append(obs.get(str(x.get("date"))))
+        return {"x": labels, "series": [{"label": str(x.get("date")), "dataset": None, "values": values}]}
+    lo, hi = x.get("from"), x.get("to")
     in_range = lambda d: (lo is None or str(d) >= str(lo)) and (hi is None or str(d) <= str(hi))
-    by_series = []
-    dates: set[str] = set()
+    by_series, dates = [], set()
     for s in spec.get("series", []):
-        ds = _dataset(project, s["dataset"]) or {}
-        obs = {str(o["date"]): current_value(o) for o in ds.get("observations", []) if in_range(o["date"])}
+        obs = {o["date"]: o["value"] for o in effective_observations(_dataset(project, s["dataset"]) or {}) if in_range(o["date"])}
         dates |= set(obs)
         by_series.append((s, obs))
-    x = sorted(dates)
-    return {"x": x, "series": [{"label": s.get("label"), "dataset": s["dataset"], "values": [obs.get(d) for d in x]}
-                               for s, obs in by_series]}
+    xs = sorted(dates)
+    return {"x": xs, "series": [{"label": s.get("label"), "dataset": s["dataset"], "values": [obs.get(d) for d in xs]}
+                                for s, obs in by_series]}
 
 
 def element_dataset_ids(el: dict, project: dict) -> list[str]:
@@ -99,11 +122,18 @@ def validate(project: dict) -> list[str]:
             if "date" not in o or not (o.get("value") is None or isinstance(o.get("value"), (int, float))):
                 errors.append(f"dataset {did}: observation needs a date and a numeric or null value")
                 break
+        for date, w in (d.get("working") or {}).items():
+            if not w.get("deleted") and not (w.get("value") is None or isinstance(w.get("value"), (int, float))):
+                errors.append(f"dataset {did}: working value for {date} must be numeric or null")
+            if w.get("status", "manual_unverified") not in WORK_STATUSES:
+                errors.append(f"dataset {did}: working status for {date} must be one of {sorted(WORK_STATUSES)}")
     for cid, c in charts.items():
         if c.get("type") not in CHART_TYPES:
             errors.append(f"chart {cid}: type must be one of {sorted(CHART_TYPES)}")
         if VALUE_KEYS & set(c) or any((VALUE_KEYS | {"y"}) & set(s) for s in c.get("series", [])):
             errors.append(f"chart {cid}: chart specs reference datasets and must not store values")
+        if (c.get("x") or {}).get("mode") == "snapshot" and not (c.get("x") or {}).get("date"):
+            errors.append(f"chart {cid}: snapshot charts need x.date")
         for s in c.get("series", []):
             if s.get("dataset") not in datasets:
                 errors.append(f"chart {cid}: unknown dataset {s.get('dataset')}")
@@ -130,12 +160,15 @@ def integrity(project: dict, slide_of) -> list[dict]:
         synthetic = [d["title"] for d in known if d.get("origin") == "synthetic"]
         if synthetic:
             add("warning", "sample_data_on_slide", f"shows SAMPLE (synthetic) data: {', '.join(synthetic)}; not real statistics")
-        unverified = [d["title"] for d in known if d.get("verification") not in ("verified", "sample")]
+        manual = [d["title"] for d in known if d.get("origin") == "manual"]
+        if manual:
+            add("warning", "manual_series", f"shows manually entered series (no source): {', '.join(manual)}")
+        unverified = [d["title"] for d in known if d.get("verification") not in ("verified", "sample", "manual")]
         if unverified:
             add("warning", "unverified_value", f"shows unverified dataset(s): {', '.join(unverified)}")
-        pending = [f"{d['title']} {r['date']}" for d in known for r in d.get("revisions", []) if r.get("status") == "pending_verification"]
-        if pending:
-            add("warning", "revision_pending_verification", f"user revision awaiting verification (not plotted): {'; '.join(pending)}")
+        edits = sum(len(unverified_edits(d)) for d in known)
+        if edits:
+            add("warning", "manual_edits_unverified", f"{edits} manually edited observation{'s' if edits != 1 else ''} — pending verification")
         if el["type"] == "chart":
             c = compatibility(project, [i for i in ids if i in datasets])
             if not c["ok"] and not unknown:

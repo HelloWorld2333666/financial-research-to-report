@@ -19,6 +19,7 @@ Serves editor/static and a small JSON API. Binds to 127.0.0.1 only.
     POST /api/research/revert                      remove inserted research content, reopen the request
     GET  /api/fixtures                             list TEST FIXTURE responses (simulated engine output)
     POST /api/research/fixture                     load a TEST FIXTURE response for a request
+    POST /api/assets                               store an uploaded image (raster data URL) under static/assets
     POST /api/slides                               add / duplicate / delete a slide
     POST /api/transfer/preview                     what a cross-slide drop would do (no change)
     POST /api/transfer                             apply a cross-slide drop (move, copy or adaptive mode)
@@ -30,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import re
 import shlex
@@ -198,6 +200,14 @@ def make_handler(paths: Paths):
                 if r == ["api", "research", "revert"]:
                     new = research.revert_insertion(body["project"], body["request_id"])
                     return self.send_json({"project": new, "integrity": slidemodel.check_integrity(new)})
+                if r == ["api", "assets"]:  # uploaded images for the workspace (raster only; SVG can carry script)
+                    m = re.match(r"^data:image/(png|jpeg|webp|gif);base64,", body.get("data", ""))
+                    if not m:
+                        raise ValueError("expected a PNG, JPEG, WebP or GIF data URL")
+                    raw = base64.b64decode(body["data"].split(",", 1)[1], validate=True)
+                    name = hashlib.sha256(raw).hexdigest()[:20] + "." + {"jpeg": "jpg"}.get(m.group(1), m.group(1))
+                    atomic_write(paths.static / "assets" / name, raw)
+                    return self.send_json({"url": f"/assets/{name}", "bytes": len(raw)})
                 if r == ["api", "slides"]:
                     op, sid = body.get("op"), body.get("slide_id")
                     if op == "add":

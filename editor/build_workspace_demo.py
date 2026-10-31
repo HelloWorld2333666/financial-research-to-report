@@ -37,7 +37,7 @@ def dataset(title, entity, unit, frequency, obs_type, dates, values, definition)
     return {"title": title, "entity": entity, "unit": unit, "frequency": frequency, "observation_type": obs_type,
             "definition": definition, "origin": "synthetic", "verification": "sample", "source_note": SAMPLE_NOTE,
             "observations": [{"date": d, "value": v, "status": "missing" if v is None else "sample"}
-                             for d, v in zip(dates, values)], "revisions": []}
+                             for d, v in zip(dates, values)], "working": {}}
 
 
 def datasets() -> dict:
@@ -62,8 +62,8 @@ def datasets() -> dict:
     out["ds.fr.cds5y"] = {**dataset("France · 5Y sovereign CDS", "France", "bp", "daily", "point_in_time", [], [],
                                     "5-year senior CDS spread (to be researched)."), "verification": "missing",
                           "gap_note": "No verified source yet: request research instead of estimating."}
-    out["ds.fr.debt_gdp"]["revisions"].append({"date": "2024", "value": round(debt["fr"][22] + 0.4, 1), "by": "analyst (demo)",
-                                               "reason": "updated statistical vintage", "status": "pending_verification"})
+    out["ds.fr.debt_gdp"]["working"]["2024"] = {"value": round(debt["fr"][22] + 0.4, 1), "by": "analyst (demo)", "at": sm.now_iso(),
+                                                "note": "updated statistical vintage", "status": "manual_unverified"}
     return out
 
 
@@ -88,6 +88,10 @@ def build() -> dict:
                     "y": {"zero": False}, "labels": "end", "missing": "gap",
                     "series": [{"dataset": f"ds.{c}.debt_gdp", "label": n, "role": i}
                                for i, (c, n) in enumerate((("fr", "France"), ("de", "Germany"), ("it", "Italy")))]},
+        "ch.debt_bar": {"type": "bar", "title": "Debt, % of GDP, 2026 (SAMPLE)", "x": {"mode": "snapshot", "date": "2026"},
+                        "y": {"zero": True}, "labels": "none", "missing": "gap", "data_labels": True,
+                        "series": [{"dataset": f"ds.{c}.debt_gdp", "label": n, "role": i}
+                                   for i, (c, n) in enumerate((("fr", "France"), ("de", "Germany"), ("it", "Italy")))]},
         "ch.y10": {"type": "line", "title": "10-year government bond yield, %, month end (SAMPLE)", "x": {"from": "2002-01", "to": "2026-06"},
                    "y": {"zero": False}, "labels": "end", "missing": "gap",
                    "series": [{"dataset": f"ds.{c}.y10_m", "label": n, "role": i}
@@ -104,11 +108,12 @@ def build() -> dict:
     ]
     p["elements"] += frame(s2, "FRANCE · DEBT DYNAMICS", "France's debt ratio is diverging from core peers",
                            "General government gross debt, % of GDP · annual, end of period · SAMPLE DATA") + [
-        {"id": "el-debt-chart", "slide_id": s2, "type": "chart", "chart_id": "ch.debt", "x": 40, "y": 128, "w": 720, "h": 420, "style": {}, "refs": {}},
-        {"id": "el-debt-table", "slide_id": s2, "type": "datatable", "x": 784, "y": 128, "w": 456, "h": 170,
+        {"id": "el-debt-chart", "slide_id": s2, "type": "chart", "chart_id": "ch.debt", "x": 40, "y": 128, "w": 720, "h": 350, "style": {}, "refs": {}},
+        {"id": "el-debt-bar", "slide_id": s2, "type": "chart", "chart_id": "ch.debt_bar", "x": 784, "y": 128, "w": 456, "h": 230, "style": {}, "refs": {}},
+        {"id": "el-debt-table", "slide_id": s2, "type": "datatable", "x": 784, "y": 376, "w": 456, "h": 172,
          "title": "Debt, % of GDP (SAMPLE)", "dataset_ids": ["ds.fr.debt_gdp", "ds.de.debt_gdp", "ds.it.debt_gdp"],
          "dates": ["2024", "2025", "2026"], "fmt": {"decimals": 1}, "style": {}, "refs": {}},
-        text("el-debt-comment", s2, 784, 318, 456, 230,
+        text("el-debt-comment", s2, 40, 496, 720, 150,
              "• France's ratio keeps rising while Germany's is broadly flat: the gap looks structural.\n"
              "• Italy remains the most indebted, but its path has been steadier.\n"
              "• Market pricing (next slide) has reflected the divergence only partly.", "body"),
