@@ -1,0 +1,67 @@
+diff -ru a/packages/pptx-engine/src/chart.ts b/packages/pptx-engine/src/chart.ts
+--- a/packages/pptx-engine/src/chart.ts
++++ b/packages/pptx-engine/src/chart.ts
+@@ -198,6 +198,8 @@
+   legendColor?: string
+   /** <c:legend><c:overlay val="1"/>: the legend floats over the plot, reserving no space */
+   legendOverlay?: boolean
++  /** c:dispBlanksAs: how missing values plot ('gap' breaks lines, 'span' connects, 'zero' plots 0) */
++  dispBlanksAs?: 'gap' | 'span' | 'zero'
+   /** Series indices in PowerPoint's legend display order with c:legendEntry deletions applied
+    *  (absent = document order, nothing deleted) */
+   legendOrder?: number[]
+@@ -701,6 +703,8 @@
+   }
+ 
+   const model: ChartModel = { kind, categories, series }
++  const blanks = chart?.['c:dispBlanksAs']?.['@_val']
++  if (blanks === 'gap' || blanks === 'span' || blanks === 'zero') model.dispBlanksAs = blanks
+   if (ofPie) model.ofPie = ofPie
+   if (categoryGroups) model.categoryGroups = categoryGroups
+ 
+diff -ru a/packages/pptx-render/src/build-chart.ts b/packages/pptx-render/src/build-chart.ts
+--- a/packages/pptx-render/src/build-chart.ts
++++ b/packages/pptx-render/src/build-chart.ts
+@@ -1339,7 +1339,11 @@
+       }
+       const lineStack = k === 'line' && stacked && !secSer && model.kind === 'line'
+       const pts: number[] = []
++      // Line segments split at missing values: dispBlanksAs 'gap' (and an absent setting) must not
++      // join the neighbours of a blank; only 'span' connects across it.
++      const segs: number[][] = [[]]
+       ser.values.forEach((v, i) => {
++        if (i < n && v == null && segs[segs.length - 1]!.length) segs.push([])
+         if (v == null || i >= n) return
+         const x = plot.x + (catSlot(i) + 0.5) * slotW
+         let vv = v
+@@ -1349,6 +1353,7 @@
+         }
+         const y = yOfSer(vv)
+         pts.push(x, y)
++        segs[segs.length - 1]!.push(x, y)
+         if (k === 'line' && ser.marker) node.markers.push({ x, y, r: markerR, color })
+         dLbl(si, i, x, y - dlSize * 1.3, v, false)
+       })
+@@ -1370,13 +1375,15 @@
+         })
+       } else {
+         const w = ser.lineWidthPt ? Math.max(1, ptToPx(ser.lineWidthPt, vp.scale)) : lineW
+-        node.polylines.push({
+-          points: pts,
+-          color,
+-          widthPx: w,
+-          ...(ser.smooth ? { smooth: true } : {}),
+-          ...(ser.dash ? { dash: dashArray(ser.dash, w) } : {}),
+-        })
++        const runs = lineStack || model.dispBlanksAs === 'span' ? [pts] : segs.filter((g) => g.length >= 4)
++        for (const points of runs)
++          node.polylines.push({
++            points,
++            color,
++            widthPx: w,
++            ...(ser.smooth ? { smooth: true } : {}),
++            ...(ser.dash ? { dash: dashArray(ser.dash, w) } : {}),
++          })
+       }
+     })
+   }

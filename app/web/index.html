@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research-to-Report</title>
+  <style>
+    :root { --bg: #eef0f3; --surface: #fff; --ink: #1d2433; --muted: #667085; --line: #dde2e8; --accent: #1f4e9c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 13px -apple-system, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+    .app { display: flex; flex-direction: column; height: 100vh; }
+    .topbar { display: flex; align-items: center; gap: 16px; height: 44px; padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--line); position: relative; z-index: 10; }
+    .brand { font-weight: 600; } .muted { color: var(--muted); } .status { margin-left: auto; color: var(--muted); font-size: 12px; }
+    .body { flex: 1; display: flex; min-height: 0; }
+    .rail { width: 160px; padding: 12px; background: #f7f8fa; border-right: 1px solid var(--line); position: relative; z-index: 10; }
+    .thumb { aspect-ratio: 16 / 9; background: var(--surface); border: 2px solid var(--accent); display: flex; align-items: flex-end; padding: 4px; font-size: 11px; color: var(--muted); }
+    .stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+    .sheet { position: relative; background: var(--surface); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+    .panel { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--line); position: relative; z-index: 10; }
+    .error { position: absolute; top: 16px; color: #b42318; }
+  </style>
+</head>
+<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>

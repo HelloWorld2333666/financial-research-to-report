@@ -13,6 +13,7 @@ dependencies = ["pydantic>=2.7,<3"]
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 pdf = ["pypdf>=4"]
+app = ["starlette>=0.40", "uvicorn>=0.30", "httpx2>=2.16"]
 
 [project.scripts]
 frr = "frr.cli:main"
@@ -21,4 +22,4 @@ frr = "frr.cli:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "editor/tests"]
+testpaths = ["tests", "editor/tests", "app/server/tests"]
