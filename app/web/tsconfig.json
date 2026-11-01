@@ -1,8 +1,40 @@
 {
  "compilerOptions": {
-  "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler", "jsx": "react-jsx",
-  "strict": true, "skipLibCheck": true, "noEmit": true, "allowJs": true, "isolatedModules": true,
-  "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["vite/client"]
+  "target": "ES2022",
+  "module": "ESNext",
+  "moduleResolution": "Bundler",
+  "jsx": "react-jsx",
+  "strict": true,
+  "skipLibCheck": true,
+  "noEmit": true,
+  "allowJs": true,
+  "isolatedModules": true,
+  "lib": [
+   "ES2023",
+   "DOM",
+   "DOM.Iterable"
+  ],
+  "types": [
+   "vite/client"
+  ],
+  "baseUrl": ".",
+  "paths": {
+   "@genoffice/pptx-engine": [
+    "../../vendor/genoffice/src/packages/pptx-engine/src/index.ts"
+   ],
+   "@genoffice/pptx-ops": [
+    "../../vendor/genoffice/src/packages/pptx-ops/src/index.ts"
+   ],
+   "@genoffice/pptx-render": [
+    "../../vendor/genoffice/src/packages/pptx-render/src/index.ts"
+   ],
+   "@genoffice-slides/*": [
+    "../../vendor/genoffice/src/apps/slides/src/*"
+   ]
+  },
+  "resolveJsonModule": true
  },
- "include": ["src"]
+ "include": [
+  "src"
+ ]
 }

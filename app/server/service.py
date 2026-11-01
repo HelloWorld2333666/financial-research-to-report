@@ -1,20 +1,24 @@
 """Research-to-Report workspace service (Phase 3).
 
-    python3 app/server/service.py [--port 8791]
+    python3 app/server/service.py [--port 8791] [--projects DIR]
 
-Serves the JSON API under /api and the built web client (app/web/dist) at /. M0 provides health
-only; projects, evidence, agent and tasks arrive in M1–M5 (docs/workspace-prototype/PHASE3-PLAN.md).
+Serves the JSON API under /api and the built web client (app/web/dist) at /.
+M1: projects (bundle save/load, versions) and the deterministic composer. Evidence, agent and tasks
+arrive in M3–M5 (docs/workspace-prototype/PHASE3-PLAN.md).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(HERE))
 
 from starlette.applications import Starlette  # noqa: E402
 from starlette.requests import Request  # noqa: E402
@@ -22,20 +26,70 @@ from starlette.responses import JSONResponse  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 from starlette.staticfiles import StaticFiles  # noqa: E402
 
+from composer import compose  # noqa: E402
 from frr.schema import SCHEMA_VERSION  # noqa: E402
+from projects import BundleError, ProjectStore  # noqa: E402
 
 WEB_DIST = ROOT / "app" / "web" / "dist"
 MANIFEST = ROOT / "vendor" / "genoffice" / "manifest.json"
+PROJECTS = Path(os.environ.get("FRR_PROJECTS", HERE / "projects"))
 
 
-def health(_: Request) -> JSONResponse:
-    manifest = json.loads(MANIFEST.read_text())
-    return JSONResponse({"ok": True, "service": "frr-workspace", "evidence_schema": SCHEMA_VERSION,
-                         "genoffice_commit": manifest["commit"], "web_built": WEB_DIST.joinpath("index.html").exists()})
+def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS) -> Starlette:
+    store = ProjectStore(projects_root)
 
+    def guarded(fn):
+        async def handler(request: Request):
+            try:
+                return await fn(request)
+            except BundleError as e:
+                return JSONResponse({"error": str(e)}, status_code=404 if str(e) in ("not found", "unknown project") else 400)
+        return handler
 
-def create_app(web_dist: Path = WEB_DIST) -> Starlette:
-    routes = [Route("/api/health", health)]
+    async def health(_):
+        manifest = json.loads(MANIFEST.read_text())
+        return JSONResponse({"ok": True, "service": "frr-workspace", "evidence_schema": SCHEMA_VERSION,
+                             "genoffice_commit": manifest["commit"], "web_built": web_dist.joinpath("index.html").exists()})
+
+    async def list_projects(_):
+        return JSONResponse(store.list())
+
+    async def create_project(request: Request):
+        body = await request.json()
+        return JSONResponse(store.create(body.get("seed", "blank"), body.get("title") or "Untitled project"), status_code=201)
+
+    async def get_project(request: Request):
+        return JSONResponse(store.load(request.path_params["pid"]))
+
+    async def put_project(request: Request):
+        return JSONResponse(store.save(request.path_params["pid"], await request.json()))
+
+    async def post_version(request: Request):
+        body = await request.json()
+        return JSONResponse(store.save_version(request.path_params["pid"], body.get("label") or "Version"), status_code=201)
+
+    async def list_versions(request: Request):
+        return JSONResponse(store.versions(request.path_params["pid"]))
+
+    async def get_version(request: Request):
+        return JSONResponse(store.load_version(request.path_params["pid"], request.path_params["n"]))
+
+    async def post_compose(request: Request):
+        body = await request.json()
+        project = store.load(body["project"])["project"] if "project" in body else body["data"]
+        return JSONResponse({"kind": "deck_proposal", "slides": compose(project, body.get("country", "FR"), body.get("peer", "DE"))})
+
+    routes = [
+        Route("/api/health", health),
+        Route("/api/projects", list_projects, methods=["GET"]),
+        Route("/api/projects", guarded(create_project), methods=["POST"]),
+        Route("/api/projects/{pid}", guarded(get_project), methods=["GET"]),
+        Route("/api/projects/{pid}", guarded(put_project), methods=["PUT"]),
+        Route("/api/projects/{pid}/versions", guarded(list_versions), methods=["GET"]),
+        Route("/api/projects/{pid}/versions", guarded(post_version), methods=["POST"]),
+        Route("/api/projects/{pid}/versions/{n:int}", guarded(get_version), methods=["GET"]),
+        Route("/api/compose", guarded(post_compose), methods=["POST"]),
+    ]
     if web_dist.joinpath("index.html").exists():
         routes.append(Mount("/", StaticFiles(directory=web_dist, html=True), name="web"))
     return Starlette(routes=routes)
@@ -48,4 +102,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8791)
-    uvicorn.run(app, host="127.0.0.1", port=parser.parse_args().port, log_level="info")
+    parser.add_argument("--projects", type=Path, default=None)
+    args = parser.parse_args()
+    uvicorn.run(create_app(projects_root=args.projects) if args.projects else app, host="127.0.0.1", port=args.port, log_level="info")

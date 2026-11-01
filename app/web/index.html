@@ -18,6 +18,21 @@
     .sheet { position: relative; background: var(--surface); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
     .panel { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--line); position: relative; z-index: 10; }
     .error { position: absolute; top: 16px; color: #b42318; }
+    button { font: inherit; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
+    button:disabled { opacity: .45; cursor: default; } button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    a.brand { color: var(--ink); text-decoration: none; }
+    .topbar button { padding: 4px 9px; }
+    .picker { max-width: 760px; margin: 48px auto; padding: 0 16px; } .picker h1 { font-size: 22px; } .picker .row { display: flex; gap: 8px; flex-wrap: wrap; } .picker li { margin: 8px 0; }
+    .rail { overflow-y: auto; } .thumb { position: relative; width: 136px; height: 76.5px; margin-bottom: 10px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; padding: 0; display: block; }
+    .thumb.current { outline: 2px solid var(--accent); } .thumb span { position: absolute; left: 4px; bottom: 2px; font-size: 10px; color: var(--muted); }
+    .thumb-canvas { transform-origin: 0 0; pointer-events: none; width: 150px; }
+    .stage { flex-direction: column; gap: 10px; } .statusline { font-size: 12px; color: var(--muted); position: relative; z-index: 10; }
+    .good { color: #067647; } .bad { color: #b42318; }
+    .notice { position: absolute; top: 12px; z-index: 20; background: #1d2433; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+    .edit-overlay { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); font: 13px "Liberation Sans", Helvetica, sans-serif; z-index: 5; }
+    .panel { display: flex; flex-direction: column; overflow-y: auto; } .tabs { display: flex; gap: 4px; margin-bottom: 10px; } .tabs button { flex: 1; text-transform: capitalize; } .tabs button.on { background: #e8eef8; border-color: #c7d4ea; }
+    .journal { padding-left: 18px; font-size: 12px; } .journal li { margin: 4px 0; } .journal li[data-actor="ai"] b { color: #6941c6; } .journal li[data-actor="research"] b { color: #b54708; }
+    .claim { border-left: 3px solid #98a2b3; padding-left: 8px; margin-bottom: 8px; font-size: 12px; } .claim.supported { border-color: #12b76a; } .claim.mismatch { border-color: #f04438; }
   </style>
 </head>
 <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>

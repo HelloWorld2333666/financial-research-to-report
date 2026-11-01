@@ -1,0 +1,94 @@
+[
+ {
+  "key": "debt",
+  "kicker": "FRANCE · DEBT",
+  "title": "France's debt ratio rose from 111.4% to 115.7% of GDP (2022–2025); Germany's was 62.8% in 2025 (64.1% in 2022)",
+  "subtitle": "General government gross debt, % of GDP · Eurostat (gov_10dd_edpt1)",
+  "chart": {
+   "type": "line",
+   "title": "Gross debt, % of GDP",
+   "series": [
+    "ds.fr.debt",
+    "ds.de.debt"
+   ]
+  },
+  "bullets": [
+   "France: 115.7% of GDP in 2025, +4.3 pp since 2022.",
+   "Germany: 62.8% in 2025."
+  ]
+ },
+ {
+  "key": "fiscal",
+  "kicker": "FRANCE · FISCAL",
+  "title": "The deficit was 5.1% of GDP in 2025; interest costs reached 2.2% in 2025",
+  "subtitle": "Deficit and interest payable, % of GDP · Eurostat (gov_10dd_edpt1, gov_10a_main)",
+  "chart": {
+   "type": "line",
+   "title": "Deficit (-) / surplus (+), % of GDP",
+   "series": [
+    "ds.fr.deficit",
+    "ds.de.deficit"
+   ]
+  },
+  "table": {
+   "title": "Interest payable, % of GDP",
+   "datasets": [
+    "ds.fr.interest",
+    "ds.de.interest"
+   ],
+   "dates": [
+    "2023",
+    "2024",
+    "2025"
+   ]
+  }
+ },
+ {
+  "key": "market",
+  "kicker": "FRANCE · GROWTH & MARKETS",
+  "title": "Growth slowed to 0.8% in 2025; the 10-year spread over Germany was 76 bp in 2025",
+  "subtitle": "Real GDP growth, %; 10-year government bond yields, % · Eurostat (nama_10_gdp, irt_lt_mcby_a)",
+  "chart": {
+   "type": "line",
+   "title": "Real GDP growth, %",
+   "series": [
+    "ds.fr.growth",
+    "ds.de.growth"
+   ]
+  },
+  "table": {
+   "title": "10-year yield, %",
+   "datasets": [
+    "ds.fr.yield",
+    "ds.de.yield"
+   ],
+   "dates": [
+    "2023",
+    "2024",
+    "2025"
+   ]
+  },
+  "derived": {
+   "spread_bp": 76,
+   "inputs": [
+    "ds.fr.yield@2025",
+    "ds.de.yield@2025"
+   ]
+  }
+ },
+ {
+  "key": "ratings",
+  "kicker": "FRANCE · RATINGS",
+  "title": "Rating actions: pending a primary source",
+  "subtitle": "Agency press releases are not machine-accessible (bot protection / JavaScript apps); upload them or connect a data feed",
+  "placeholder": {
+   "label": "Rating history — pending research",
+   "request": {
+    "schema": "frr-research-request/0.1",
+    "topic": "rating actions",
+    "entity": "France",
+    "reason": "primary sources blocked in Experiment 2 (S&P 403, AFT 403, Fitch/Moody's JavaScript)"
+   }
+  }
+ }
+]

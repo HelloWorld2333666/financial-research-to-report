@@ -37,3 +37,4 @@ node_modules/
 vendor/genoffice/src/
 app/web/dist/
 app/server/projects/
+.patch-snapshot/

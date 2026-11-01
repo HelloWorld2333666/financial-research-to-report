@@ -1,0 +1,12 @@
+--- a/apps/slides/src/renderer/ChartBody.tsx
++++ b/apps/slides/src/renderer/ChartBody.tsx
+@@ -19,6 +19,9 @@
+ }) {
+   return (
+     <>
++      {/* Hit area: the whole chart frame is clickable, not only its drawn marks (thin lines were
++          nearly impossible to select). Transparent fill still registers on Konva's hit canvas. */}
++      <Rect x={0} y={0} width={chart.box.w} height={chart.box.h} fill="rgba(0,0,0,0)" />
+       {chart.bgFill && (
+         <Rect
+           x={0}
