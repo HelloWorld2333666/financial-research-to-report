@@ -1,5 +1,7 @@
 # Phase 2: open-source reuse and integration feasibility
 
+> **Superseded in part by [PHASE2B-ARCHITECTURE.md](PHASE2B-ARCHITECTURE.md).** The licence and code findings below still hold. The architecture recommendation and the PptxGenJS Phase 3 proposal have been withdrawn.
+
 **Branch:** `research/phase2-reuse` (from `feature/workspace-editable` 8b4155e). This is documentation only. Nothing was pushed, merged or installed.
 **Method:** I read each repository through the GitHub API and npm registry metadata. Nothing was cloned and run. No third-party script was executed. Presenton's export package was unpacked into a scratch folder only so I could read its manifest; it was never run.
 **Date:** 2026-11-01. Star counts and push dates are as of that day.
