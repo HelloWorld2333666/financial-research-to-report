@@ -1,0 +1,22 @@
+--- a/packages/pptx-render/src/build-chart.ts	2026-11-01 14:03:06
++++ b/packages/pptx-render/src/build-chart.ts	2026-11-01 14:03:06
+@@ -1370,8 +1370,17 @@
+         })
+       } else {
+         const w = ser.lineWidthPt ? Math.max(1, ptToPx(ser.lineWidthPt, vp.scale)) : lineW
+-        node.polylines.push({
+-          points: pts,
++        // EXP1 PATCH: honour dispBlanksAs="gap" (the engine writes it for app charts): break the line
++        // at missing values instead of joining the neighbours.
++        const segs: number[][] = [[]]
++        ser.values.forEach((v, i) => {
++          if (i >= n) return
++          if (v == null) { if (segs[segs.length - 1]!.length) segs.push([]); return }
++          const at = pts.indexOf(plot.x + (catSlot(i) + 0.5) * slotW)
++          if (at >= 0) segs[segs.length - 1]!.push(pts[at]!, pts[at + 1]!)
++        })
++        for (const seg of lineStack ? [pts] : segs) if (seg.length >= 4) node.polylines.push({
++          points: seg,
+           color,
+           widthPx: w,
+           ...(ser.smooth ? { smooth: true } : {}),

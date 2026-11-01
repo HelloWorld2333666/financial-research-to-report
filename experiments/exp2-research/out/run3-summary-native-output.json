@@ -1,0 +1,148 @@
+{
+ "seconds": 309,
+ "questions": 6,
+ "answered": 0,
+ "accepted": 0,
+ "rejected": 27,
+ "gaps": 6,
+ "tool_calls": 0,
+ "blocked": [],
+ "rejections": [
+  {
+   "q": "debt-level-trend",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's general government gross debt as a percentage of GDP was 114.7% in 2020, increased to 119.6"
+  },
+  {
+   "q": "debt-level-trend",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Comparatively, Germany's general government gross debt as a percentage of GDP was 71.5% in 2020, inc"
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Germany's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Germany's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Germany's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Germany's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Germany's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "EU's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "EU's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "EU's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "EU's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "fiscal-balance",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "EU's general government deficit trend over the last five years is as follows."
+  },
+  {
+   "q": "interest-burden",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's interest burden as a percentage of GDP in 2020 is 2.0 and in 2021 it is 2.5."
+  },
+  {
+   "q": "interest-burden",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "Germany's interest burden as a percentage of GDP in 2020 is 1.7 and in 2021 it is 1.9."
+  },
+  {
+   "q": "economic-growth",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "France's real GDP growth trend over the last five years has seen fluctuations, including negative gr"
+  },
+  {
+   "q": "economic-growth",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "In comparison, Germany's GDP growth showed a similar trend, with significant negative growth in 2020"
+  },
+  {
+   "q": "bond-yields",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "The latest 10-year bond yield according to Eurostat for France is 2.80% in 2021."
+  },
+  {
+   "q": "bond-yields",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "According to S&P Global Ratings, Germany has a AAA credit rating."
+  },
+  {
+   "q": "rating-actions",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "In November 2022, S&P Global Ratings affirmed France's long-term foreign and local currency sovereig"
+  },
+  {
+   "q": "rating-actions",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "In May 2022, Moody's Investors Service affirmed France's Aa2 rating for its issuer ratings and Baa1 "
+  },
+  {
+   "q": "rating-actions",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "In February 2023, Moody's Investors Service affirmed Germany's Aaa rating for its issuer ratings and"
+  },
+  {
+   "q": "rating-actions",
+   "why": "source_url was never retrieved by a tool in this run (not captured)",
+   "statement": "In June 2023, Fitch Ratings affirmed France's 'AA' Long-Term Foreign-Currency Issuer Default Rating "
+  }
+ ],
+ "plan_usage": "RunUsage(cache_read_tokens=6, input_tokens=191, output_tokens=614, requests=1)"
+}
