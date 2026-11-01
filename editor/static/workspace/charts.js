@@ -1,7 +1,7 @@
 // ChartSpec → ECharts option (SVG renderer). Pure: geometry depends only on the working data
 // series, the spec's visual fields, the DNA tokens and the box size. No animation, no smoothing,
 // nulls stay gaps (connectNulls: false). Sampling is never enabled.
-import { useEffect, useRef } from "preact/hooks";
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { html } from "./html.js";
 
 export function compileOption(spec, series, dna, { mini = false } = {}) {
@@ -35,11 +35,13 @@ export function compileOption(spec, series, dna, { mini = false } = {}) {
 
 export function ChartView({ spec, series, dna, w, h }) {
   const ref = useRef(null), chart = useRef(null);
-  useEffect(() => {
+  // Layout effects run synchronously after the DOM update. Plain effects wait for an animation frame,
+  // which is throttled when the window is not visible and left charts blank (Phase 1 defect).
+  useLayoutEffect(() => {
     chart.current = echarts.init(ref.current, null, { renderer: "svg", width: w, height: h });
     return () => chart.current.dispose();
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     chart.current.resize({ width: w, height: h });
     chart.current.setOption(compileOption(spec, series, dna), true);
   }, [spec, series, dna, w, h]);

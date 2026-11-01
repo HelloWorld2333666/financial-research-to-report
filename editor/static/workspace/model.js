@@ -55,6 +55,12 @@ export function effectiveObs(ds) {
   }
   return [...out.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
 }
+/** Unverified working edits on the observations a chart actually shows (its date, or its date range). */
+export function chartEdits(p, chartId) {
+  const spec = p.charts[chartId], x = spec?.x || {};
+  const shown = (d) => (x.mode === "snapshot" ? d === String(x.date) : (x.from == null || d >= String(x.from)) && (x.to == null || d <= String(x.to)));
+  return (spec?.series || []).reduce((n, s) => n + Object.entries(p.datasets[s.dataset]?.working || {}).filter(([d, w]) => shown(d) && (w.status || "manual_unverified") !== "verified").length, 0);
+}
 export const unverifiedEdits = (ds) => Object.values(ds?.working || {}).filter((w) => (w.status || "manual_unverified") !== "verified").length;
 
 export function chartSeries(p, chartId) {

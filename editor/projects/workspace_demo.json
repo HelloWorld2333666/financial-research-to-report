@@ -6,7 +6,7 @@
   "w": 1280,
   "h": 720
  },
- "created": "2026-10-31T20:24:57Z",
+ "created": "2026-11-01T01:18:56Z",
  "slides": [
   {
    "id": "overview",
@@ -659,11 +659,7 @@
    "w": 1216,
    "h": 40,
    "text": "China Re: state-controlled reinsurer; FY2025 earnings softened and solvency eased slightly",
-   "style": {
-    "fontSize": 22,
-    "fontWeight": 700,
-    "color": "#0f2742"
-   },
+   "style": {},
    "refs": {
     "claims": [
      "c.cr.state_control",
@@ -682,11 +678,7 @@
    "w": 1216,
    "h": 20,
    "text": "Company overview · FY2025 vs FY2024 · IFRS 17 basis · RMB",
-   "style": {
-    "fontSize": 11,
-    "fontWeight": 400,
-    "color": "#5b6b7f"
-   },
+   "style": {},
    "refs": {
     "evidence": [
      "ev.cr.ifrs17"
@@ -738,12 +730,7 @@
    "w": 360,
    "h": 16,
    "text": "PROFILE & HISTORY",
-   "style": {
-    "fontSize": 9.5,
-    "fontWeight": 700,
-    "color": "#c8102e",
-    "letterSpacing": "0.06em"
-   },
+   "style": {},
    "refs": {},
    "slide_id": "overview",
    "group": "g-profile",
@@ -799,12 +786,7 @@
    "w": 360,
    "h": 16,
    "text": "OWNERSHIP & CONTROL",
-   "style": {
-    "fontSize": 9.5,
-    "fontWeight": 700,
-    "color": "#c8102e",
-    "letterSpacing": "0.06em"
-   },
+   "style": {},
    "refs": {},
    "slide_id": "overview",
    "group": "g-owner",
@@ -862,12 +844,7 @@
    "w": 360,
    "h": 16,
    "text": "EXTERNAL RATINGS (ISSUER-REPORTED)",
-   "style": {
-    "fontSize": 9.5,
-    "fontWeight": 700,
-    "color": "#c8102e",
-    "letterSpacing": "0.06em"
-   },
+   "style": {},
    "refs": {},
    "slide_id": "overview",
    "group": "g-ratings",
@@ -1269,12 +1246,7 @@
    "w": 790,
    "h": 16,
    "text": "KEY TAKEAWAYS",
-   "style": {
-    "fontSize": 9.5,
-    "fontWeight": 700,
-    "color": "#c8102e",
-    "letterSpacing": "0.06em"
-   },
+   "style": {},
    "refs": {},
    "slide_id": "overview",
    "group": "g-takeaways",
@@ -1569,7 +1541,7 @@
    "gap_id": "gap.cr.geography",
    "status": "open",
    "source": "bundle gap",
-   "created": "2026-10-31T20:24:57Z",
+   "created": "2026-11-01T01:18:56Z",
    "description": "No revenue split by country or region was found in the two sources reviewed. The full FY2025 annual report has not been reviewed."
   }
  ],
@@ -1748,7 +1720,7 @@
     "2024": {
      "value": 102.0,
      "by": "analyst (demo)",
-     "at": "2026-10-31T20:24:57Z",
+     "at": "2026-11-01T01:18:56Z",
      "note": "updated statistical vintage",
      "status": "manual_unverified"
     }
@@ -6856,7 +6828,7 @@
    "messages": [
     {
      "role": "ai",
-     "at": "2026-10-31T20:24:57Z",
+     "at": "2026-11-01T01:18:56Z",
      "text": "Slide 2 assistant (simulated, rule-based). Select objects and describe a size or position change; I will return a proposal you can preview, apply or reject."
     }
    ]

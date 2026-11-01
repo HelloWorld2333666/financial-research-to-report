@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from "preact/hooks";
 import { html } from "./html.js";
 import { Icon } from "./icons.js";
-import { effectiveObs, chartSeries, compatibility, boundValue, fmtValue, evLabel, sourceTitle, unverifiedEdits } from "./model.js";
+import { effectiveObs, chartSeries, compatibility, boundValue, evLabel, sourceTitle, chartEdits } from "./model.js";
 import { setObservation, restoreObservation, restoreDataset, markVerified, addObservationDate, chartOps, barOps, setTableCell, restoreTableCell, tableOps } from "./edit.js";
 
 /** A cell input that commits on Enter/blur and reverts on Escape. Arrow/Enter move focus within the grid. */
 function Cell({ value, onCommit, cls = "", title = "", placeholder = "", onPaste, onFocus, align = "right" }) {
-  const [v, setV] = useState(value ?? ""); const focused = useRef(false);
-  useEffect(() => { if (!focused.current) setV(value ?? ""); }, [value]);
-  const commit = () => { if (String(v) !== String(value ?? "")) onCommit(v); };
+  const [v, setV] = useState(value ?? ""); const focused = useRef(false), committed = useRef(null);
+  useEffect(() => { committed.current = null; if (!focused.current) setV(value ?? ""); }, [value]);
+  // Enter commits and moves focus; the blur that follows must not commit the same value again (one undo step per edit)
+  const commit = () => { const s = String(v); if (s !== String(value ?? "") && s !== committed.current) { committed.current = s; onCommit(v); } };
   const move = (e, dr, dc) => { const td = e.target.closest("td"), tr = td.parentElement, idx = [...tr.children].indexOf(td);
     const target = dr ? tr[dr > 0 ? "nextElementSibling" : "previousElementSibling"]?.children[idx] : td[dc > 0 ? "nextElementSibling" : "previousElementSibling"];
     target?.querySelector("input")?.focus(); };
@@ -29,8 +30,8 @@ const status = (n) => n ? html`<span class="pill warn"><${Icon} name="warn" size
 const ROW_H = 30;
 export function ChartDataSheet({ store, p, el, onClose, toast }) {
   const spec = p.charts[el.chart_id], snap = spec.x?.mode === "snapshot", dsIds = spec.series.map((s) => s.dataset);
-  const [compare, setCompare] = useState(false), [scroll, setScroll] = useState(0), [newDate, setNewDate] = useState("");
-  const series = chartSeries(p, el.chart_id), edits = dsIds.reduce((n, id) => n + unverifiedEdits(p.datasets[id]), 0);
+  const [compare, setCompare] = useState(false), [scroll, setScroll] = useState(0), [newDate, setNewDate] = useState(""), [newSeries, setNewSeries] = useState(null);
+  const series = chartSeries(p, el.chart_id), edits = chartEdits(p, el.chart_id);
   const allDates = [...new Set(dsIds.flatMap((id) => effectiveObs(p.datasets[id]).map((o) => o.date)))].sort();
   const obsMap = Object.fromEntries(dsIds.map((id) => [id, new Map(effectiveObs(p.datasets[id]).map((o) => [o.date, o]))]));
   const rows = snap ? [] : allDates.filter((d) => (!spec.x?.from || d >= spec.x.from) && (!spec.x?.to || d <= spec.x.to));
@@ -42,8 +43,10 @@ export function ChartDataSheet({ store, p, el, onClose, toast }) {
       ${compare && o?.edited ? html`<span class="src">src ${o.source_value ?? "–"}</span>` : ""}
       ${o?.edited ? html`<button class="mini-btn" title="Restore source value" onClick=${() => restoreObservation(store, id, date)}><${Icon} name="restore" size=${13} /></button>` : ""}</td>`; };
   const addSeries = (e) => { const v = e.target.value; e.target.value = "";
-    if (v === "__manual") { const name = prompt("Name of the new series (values start empty):", "Spain"); if (name) chartOps.addManualSeries(store, el.chart_id, name, dsIds[0]); }
+    if (v === "__manual") setNewSeries("");
     else if (v) chartOps.addSeries(store, el.chart_id, v); };
+  const createSeries = () => { const name = (newSeries || "").trim(); if (!name) return;
+    chartOps.addManualSeries(store, el.chart_id, name, dsIds[0]); setNewSeries(null); toast(`Added “${name}”: values start empty (gaps) until you type them`); };
   return html`<section class="sheet" aria-label="Chart data">
     <header class="sheet-head">
       <div class="sh-title"><${Icon} name=${spec.type === "bar" ? "bar" : "linechart"} /> <b>Edit data</b><span class="muted">${spec.title}</span></div>
@@ -55,6 +58,8 @@ export function ChartDataSheet({ store, p, el, onClose, toast }) {
             <label class="inline"><input placeholder="Add date, e.g. 2027" value=${newDate} onInput=${(e) => setNewDate(e.target.value)} size="12" />
               <button class="btn sm" onClick=${() => { addObservationDate(store, dsIds, newDate, toast); setNewDate(""); }}><${Icon} name="plus" size=${14} /> Row</button></label>`}
         <select class="btn sm" onChange=${addSeries}><option value="">＋ Series…</option>${compatible.map(([id, d]) => html`<option value=${id}>${d.title}</option>`)}<option value="__manual">New manual series…</option></select>
+        ${newSeries !== null ? html`<label class="inline"><input autofocus placeholder="New series name" value=${newSeries} onInput=${(e) => setNewSeries(e.target.value)} onKeyDown=${(e) => { if (e.key === "Enter") createSeries(); if (e.key === "Escape") setNewSeries(null); }} size="14" />
+          <button class="btn sm primary" onClick=${createSeries}>Add</button><button class="btn sm ghost" onClick=${() => setNewSeries(null)}>Cancel</button></label>` : ""}
         <label class="inline"><input type="checkbox" checked=${compare} onChange=${(e) => setCompare(e.target.checked)} /> Compare with source</label>
         <button class="icon-btn" title="Close data editor (Esc)" onClick=${onClose}><${Icon} name="close" /></button>
       </div>

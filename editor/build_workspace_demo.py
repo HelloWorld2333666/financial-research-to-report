@@ -81,6 +81,8 @@ def build() -> dict:
             e["role"] = roles[e["id"]]
         elif e["id"].endswith("-h"):
             e["role"] = "kicker"
+        if e.get("role"):  # typography comes from Design DNA; inline styles are only for the user's own overrides
+            e["style"] = {k: v for k, v in e.get("style", {}).items() if k not in ("fontSize", "fontWeight", "color", "letterSpacing")}
     p["slides"][0]["title"] = "China Re overview"
     p["datasets"], p["design_dna"] = datasets(), DNA
     p["charts"] = {

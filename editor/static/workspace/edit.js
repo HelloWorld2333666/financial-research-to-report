@@ -46,7 +46,7 @@ export function setTableCell(store, id, r, c, input, toast) {
     if (cell.evidence_id) {
       if (raw === "") delete cell.working;
       else if (n === null) return toast?.("Sourced cells hold numbers; enter a number or clear to restore the source");
-      else cell.working = work(n);
+      else if (cell.working?.value !== n) cell.working = work(n);
     } else row.cells[c] = n === null ? { text: raw } : { value: n, ...(cell.fmt ? { fmt: cell.fmt } : {}) };
   });
 }
@@ -93,7 +93,7 @@ export function setObservation(store, dsId, date, input, toast) {
     const src = ds.observations.find((o) => String(o.date) === String(date));
     if (raw === "") ds.working[date] = { deleted: true, by: AUTHOR, at: now(), status: "manual_unverified" };
     else if (src && src.value === n) delete ds.working[date];  // typed the source value back: no edit
-    else ds.working[date] = work(n); });
+    else if (ds.working[date]?.value !== n || ds.working[date]?.deleted) ds.working[date] = work(n); });
 }
 export const restoreObservation = (store, dsId, date) => store.commit("Restored source value", (d) => { delete d.datasets[dsId].working?.[date]; });
 export const restoreDataset = (store, dsIds) => store.commit("Restored original data", (d) => dsIds.forEach((id) => { if (d.datasets[id]) d.datasets[id].working = {}; }));
@@ -124,7 +124,7 @@ export const barOps = {
   set: (store, id, i, input, toast) => { const n = parseNumber(input), raw = String(input).trim();
     if (raw !== "" && n === null) return toast?.("Enter a number, or clear to restore the source value");
     store.commit("Edited bar value", (d) => { const b = find(d, id).bars[i];
-      if (b.evidence_id) { if (raw === "") delete b.working; else b.working = work(n); } else b.value = n ?? 0; }); },
+      if (b.evidence_id) { if (raw === "") delete b.working; else if (b.working?.value !== n) b.working = work(n); } else b.value = n ?? 0; }); },
   label: (store, id, i, label) => store.commit("Renamed bar", (d) => { find(d, id).bars[i].label = label; }),
   add: (store, id) => store.commit("Added bar", (d) => { find(d, id).bars.push({ label: "New category", value: 0 }); }),
   remove: (store, id, i) => store.commit("Removed bar", (d) => { find(d, id).bars.splice(i, 1); }),

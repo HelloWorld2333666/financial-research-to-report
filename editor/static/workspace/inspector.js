@@ -3,7 +3,7 @@ import { html } from "./html.js";
 import { useStore } from "./store.js";
 import { Icon, ICON_LIBRARY } from "./icons.js";
 import { TableGrid, DataTableGrid } from "./sheets.js";
-import { TYPE_LABEL, elementName, boundValue, evLabel, sourceTitle, unverifiedEdits, fmtValue } from "./model.js";
+import { TYPE_LABEL, elementName, boundValue, evLabel, sourceTitle, unverifiedEdits, fmtValue, chartEdits } from "./model.js";
 import { setProp, setMetric, arrange, align, group, ungroup, del, setLock, chartOps } from "./edit.js";
 
 const FONTS = ["Helvetica Neue", "Inter", "Georgia", "Avenir Next", "Arial", "Times New Roman"];
@@ -115,7 +115,7 @@ function typeSection(el, { p, ctx, store, set, styleSet, st, toast, openSheet, o
       <${Row} label="Bars"><${Color} value=${st.bar || "#0f2742"} onChange=${styleSet("bar", "Bar colour")} /><span class="unit">Gap</span><${Num} w=${50} value=${st.barGap ?? 6} min=${0} max=${30} onChange=${styleSet("barGap", "Bar spacing")} /><//>
       <${Row} label="Decimals"><${Num} value=${el.fmt?.decimals ?? 1} min=${0} max=${3} onChange=${(d) => set("Changed decimals", (x) => { x.fmt = { ...x.fmt, decimals: d }; })} /><//><//>`;
     case "chart": { const spec = p.charts[el.chart_id], sst = spec.style || {}, cs = (label, fn) => chartOps.setSpec(store, el.chart_id, label, fn), ss = (k, label) => (v) => cs(label, (c) => { c.style = { ...(c.style || {}), [k]: v }; });
-      const edits = spec.series.reduce((n, s) => n + unverifiedEdits(p.datasets[s.dataset]), 0);
+      const edits = chartEdits(p, el.chart_id);
       return html`<${Section} title="Chart">
         <button class="btn primary wide" onClick=${() => openSheet(el.id)}><${Icon} name="table" size=${15} /> Edit data</button>
         ${edits ? html`<div class="note-box warn"><${Icon} name="warn" size=${15} /><div>${edits} manually edited observation${edits === 1 ? "" : "s"} — pending verification.</div></div>` : ""}

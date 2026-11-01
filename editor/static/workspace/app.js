@@ -149,14 +149,15 @@ function Canvas({ store, ctx, onReconstruct }) {
   const p = useStore(store, (s) => s.project), ui = useStore(store, (s) => s.ui);
   const els = elementsBySlide(p)[ui.slide] || [], dna = useMemo(() => dnaVars(p.design_dna), [p.design_dna]);
   const wrap = useRef(null), stage = useRef(null), mv = useRef(null), down = useRef(null), drop = useRef(null);
-  const [fit, setFit] = useState(0.5), [menu, setMenu] = useState(null), [tb, setTb] = useState(null);
+  const [fit, setFit] = useState(0.5), [menu, setMenu] = useState(null), [tb, setTb] = useState(null), [tick, setTick] = useState(0);
   const scale = ui.zoom || fit;
   useEffect(() => {
-    const f = () => { const r = wrap.current.getBoundingClientRect(); setFit(Math.max(0.2, Math.min((r.width - 64) / W, (r.height - 72) / H))); requestAnimationFrame(() => mv.current?.updateRect()); };
+    const f = () => { const r = wrap.current.getBoundingClientRect(); setFit(Math.max(0.2, Math.min((r.width - 64) / W, (r.height - 72) / H))); setTick((t) => t + 1); };
     f(); const ro = new ResizeObserver(f); ro.observe(wrap.current); return () => ro.disconnect();
   }, []);
-  // Moveable: transforms on the DOM during the gesture; one patch commit at the end.
-  useEffect(() => {
+  // Moveable: transforms on the DOM during the gesture; one patch commit at the end. A layout effect, declared
+  // before the selection effect below, so the instance exists when that effect first runs.
+  useLayoutEffect(() => {
     const m = new Moveable(wrap.current, { draggable: true, resizable: true, rotatable: true, snappable: true, snapThreshold: 5, isDisplaySnapDigit: true, throttleRotate: 1,
       snapDirections: { top: true, left: true, bottom: true, right: true, center: true, middle: true },
       elementSnapDirections: { top: true, left: true, bottom: true, right: true, center: true, middle: true }, origin: false });
@@ -182,7 +183,8 @@ function Canvas({ store, ctx, onReconstruct }) {
     mv.current = m; if (window.__ws) window.__ws.moveable = m; return () => m.destroy();
   }, []);
   useLayoutEffect(() => {
-    const m = mv.current, selEls = ui.selected.map((id) => els.find((e) => e.id === id)).filter(Boolean);
+    const m = mv.current; if (!m) return;
+    const selEls = ui.selected.map((id) => els.find((e) => e.id === id)).filter(Boolean);
     const nodes = ui.editing ? [] : selEls.filter((e) => !e.locked).map((e) => stage.current.querySelector(`.el[data-id="${CSS.escape(e.id)}"]`)).filter(Boolean);
     m.target = nodes; m.keepRatio = selEls.length === 1 && ["icon", "image"].includes(selEls[0].type); m.rotatable = nodes.length === 1;
     m.elementGuidelines = [...stage.current.querySelectorAll(".slide .el")].filter((n) => !nodes.includes(n)); m.updateRect();
@@ -192,15 +194,14 @@ function Canvas({ store, ctx, onReconstruct }) {
     const wr = wrap.current.getBoundingClientRect(), top = Math.min(...rects.map((r) => r.top)) - wr.top + wrap.current.scrollTop, bottom = Math.max(...rects.map((r) => r.bottom)) - wr.top + wrap.current.scrollTop;
     const cx = (Math.min(...rects.map((r) => r.left)) + Math.max(...rects.map((r) => r.right))) / 2 - wr.left + wrap.current.scrollLeft;
     setTb({ cx, y: top > 64 ? top - 52 : bottom + 12 });
-  }, [ui.selected, ui.editing, els, scale, ui.slide]);
+  }, [ui.selected, ui.editing, els, scale, ui.slide, tick]);
 
   const expand = (ids) => { const g = new Set(ids.map((id) => els.find((e) => e.id === id)?.group).filter(Boolean)); return [...new Set([...ids, ...els.filter((e) => e.group && g.has(e.group)).map((e) => e.id)])]; };
   const startEdit = (id, node) => {
     const el = els.find((e) => e.id === id); if (!el || !node || document.querySelector(".slide .editing")) return;  // one edit session at a time
     const cell = node.dataset.cell, field = node.dataset.field;
     node.classList.add("editing");
-    store.ui({ editing: id, selected: [id] });
-    setTimeout(() => {  // after Preact's (microtask) re-render; not rAF, which stalls in background tabs
+    (() => {  // set up synchronously, so keystrokes typed right after the double-click land in the editor
       const before = node.innerHTML; let cancelled = false;
       if (cell) {  // show the raw editable value (number without formatting)
         const [a, b] = cell.split(":");
@@ -236,7 +237,8 @@ function Canvas({ store, ctx, onReconstruct }) {
       };
       node.addEventListener("keydown", key);
       node.addEventListener("blur", finish, { once: true });
-    }, 0);
+    })();
+    if (node.isContentEditable) store.ui({ editing: id, selected: [id] });
   };
   window.__startEdit = (id, sel) => startEdit(id, stage.current.querySelector(`.el[data-id="${CSS.escape(id)}"] ${sel || "[data-field]"}`));
 
@@ -268,7 +270,7 @@ function Canvas({ store, ctx, onReconstruct }) {
     if (node && !ui.selected.includes(node.dataset.id)) store.ui({ selected: expand([node.dataset.id]) });
     const wr = wrap.current.getBoundingClientRect(); setMenu({ x: ev.clientX - wr.left + wrap.current.scrollLeft, y: ev.clientY - wr.top + wrap.current.scrollTop, onEl: !!node }); };
   const pv = ui.preview;
-  return html`<div id="canvasWrap" ref=${wrap} onMouseDown=${onDown} onClick=${onClick} onDblClick=${onDbl} onContextMenu=${onCtx} onScroll=${() => mv.current?.updateRect()}>
+  return html`<div id="canvasWrap" ref=${wrap} onMouseDown=${onDown} onClick=${onClick} onDblClick=${onDbl} onContextMenu=${onCtx} onScroll=${() => setTick((t) => t + 1)}>
     <div class="stagebox" style=${`width:${W * scale}px;height:${H * scale}px`}>
       <div class="s1280" ref=${stage} style=${`transform:scale(${scale})`}>
         <${SlideView} els=${els} ctx=${ctx} dnaStyle=${dna} selected=${ui.selected.join(",")} editing=${ui.editing || ""} remount=${ui.remount || ""} />
@@ -323,8 +325,14 @@ function ContextToolbar({ store, p, ui, els, pos, openMenu }) {
 function ContextMenu({ store, p, ui, els, pos, close, onReconstruct }) {
   const sel = ui.selected.map((id) => els.find((e) => e.id === id)).filter(Boolean), el = sel[0];
   const run = (f) => () => { f(); close(); };
+  const ref = useRef(null);
+  useLayoutEffect(() => {  // keep the menu inside the visible canvas area
+    const m = ref.current, w = m?.parentElement; if (!m || !w) return;
+    m.style.top = `${Math.max(w.scrollTop + 8, Math.min(pos.y, w.scrollTop + w.clientHeight - m.offsetHeight - 8))}px`;
+    m.style.left = `${Math.max(w.scrollLeft + 8, Math.min(pos.x, w.scrollLeft + w.clientWidth - m.offsetWidth - 8))}px`;
+  }, [pos.x, pos.y]);
   const I = ({ icon, label, kb, onClick, disabled }) => html`<button class="mi" disabled=${disabled} onClick=${run(onClick)}><${Icon} name=${icon} size=${15} /><span>${label}</span><span class="kb">${kb || ""}</span></button>`;
-  return html`<div class="ctxmenu" style=${`left:${pos.x}px;top:${pos.y}px`} onMouseDown=${(e) => e.stopPropagation()}>
+  return html`<div class="ctxmenu" ref=${ref} style=${`left:${pos.x}px;top:${pos.y}px`} onMouseDown=${(e) => e.stopPropagation()}>
     ${pos.onEl && sel.length ? html`
       ${el.type === "chart" || el.type === "barchart" ? html`<${I} icon="table" label="Edit data" onClick=${() => store.ui({ sheet: el.id })} />` : ""}
       ${el.type === "table" || el.type === "datatable" ? html`<${I} icon="table" label="Edit table" onClick=${() => store.ui({ panel: "props", panelOpen: true })} />` : ""}
