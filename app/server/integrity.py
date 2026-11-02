@@ -177,10 +177,14 @@ def _chart(z: zipfile.ZipFile, part: str) -> dict:
     for ser in root.iter(f"{{{NS['c']}}}ser"):
         def pts(node):
             return {int(pt.get("idx")): (pt.findtext("c:v", namespaces=NS)) for pt in node.iter(f"{{{NS['c']}}}pt")} if node is not None else {}
-        cats, vals = pts(ser.find("c:cat", NS)), pts(ser.find("c:val", NS))
-        count = ser.find("c:val//c:ptCount", NS)
+        # scatter charts keep points in c:xVal / c:yVal instead of c:cat / c:val
+        yv = ser.find("c:val", NS) if ser.find("c:val", NS) is not None else ser.find("c:yVal", NS)
+        xv = ser.find("c:xVal", NS)
+        cats, vals, xs = pts(ser.find("c:cat", NS)), pts(yv), pts(xv)
+        count = yv.find(".//c:ptCount", NS) if yv is not None else None
         n = int(count.get("val")) if count is not None else (max(vals) + 1 if vals else 0)
-        series.append({"categories": [cats.get(i) for i in range(n)], "values": [float(vals[i]) if i in vals else None for i in range(n)]})
+        series.append({"categories": [cats.get(i) for i in range(n)], "values": [float(vals[i]) if i in vals else None for i in range(n)],
+                       **({"x": [float(xs[i]) if i in xs else None for i in range(n)]} if xv is not None else {})})
     return {"series": series}
 
 
@@ -238,7 +242,27 @@ def check(deck: bytes | None, project: dict, sidecar: dict) -> dict:
         res["resolved"] += 1
         if b["kind"] == "placeholder":
             res["placeholders"].append({"element": durable, "slide": b.get("slide"), "label": b.get("label")})
-        if b["kind"] == "chart":
+        if b["kind"] == "viz":
+            import viz  # noqa: PLC0415 (viz imports this module)
+            try:
+                want = viz.realized(project, b["spec"])
+            except viz.VizError as exc:
+                res["mismatch"].append({"element": durable, "detail": f"visual “{b['spec'].get('title')}”: {exc}"})
+                continue
+            got = (el.get("chart") or {}).get("series", [])
+            for si, s in enumerate(want["series"]):
+                for i, v in enumerate(s["values"]):
+                    res["points"] += 1
+                    g = got[si]["values"][i] if si < len(got) and i < len(got[si]["values"]) else None
+                    if not ((v is None and g is None) or (v is not None and g is not None and abs(v - g) < 1e-9)):
+                        res["mismatch"].append({"element": durable, "detail": f"{s['name']} {want['categories'][i]}: data {v}, chart {g}"})
+            if want["shape"] == "pairs":
+                gx = got[0].get("x", []) if got else []
+                if [round(x, 9) for x in want["x"]] != [round(x, 9) if x is not None else None for x in gx[: len(want["x"])]]:
+                    res["mismatch"].append({"element": durable, "detail": f"{b['spec']['title']}: x values differ from the data"})
+            elif got and [c for c in got[0]["categories"]] != want["categories"]:
+                res["mismatch"].append({"element": durable, "detail": f"{b['spec']['title']}: categories differ from the data"})
+        if b["kind"] == "chart":  # M1-M5 binding in a deck saved before VIS V1 (the client migrates it on open)
             want = chart_data(project, b["chart"])
             got = (el.get("chart") or {}).get("series", [])
             for si, s in enumerate(want["series"]):

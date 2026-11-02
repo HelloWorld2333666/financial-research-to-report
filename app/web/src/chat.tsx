@@ -30,7 +30,8 @@ export function describeSelection(store: Store) {
       const figures = textNumbers(text, b.numbers, p).filter((n) => n.status === 'ok' && n.ref).map((n, i) => ({ key: `n${i + 1}`, text: n.ref!.text, evidence: n.ref!.evidence, derivation: n.ref!.derivation }))
       return { id, kind: 'text', role: b.role, label: b.role, text, figures }
     }
-    if (b?.kind === 'chart') return { id, kind: 'chart', label: b.chart.title, metric: p.datasets[b.chart.series[0]]?.metric ?? null, datasets: b.chart.series }
+    // to the agent a visual is a chart: its title, metric and datasets (from the spec)
+    if (b?.kind === 'viz') return { id, kind: 'chart', label: b.spec.title, family: b.spec.family, metric: p.datasets[b.spec.view.datasets[0]!]?.metric ?? null, datasets: b.spec.view.datasets }
     if (b?.kind === 'table') return { id, kind: 'table', label: b.table.title, metric: p.datasets[b.table.datasets[0]]?.metric ?? null, datasets: b.table.datasets }
     return { id, kind: b?.kind ?? 'element', label: b?.label ?? null }
   })
@@ -107,9 +108,9 @@ function RewriteTool(props: any) {
   if (!r) return <Running what="Rewording" />
   if (r.kind !== 'rewrite_proposal') return <ErrorNote r={r} />
   const p = store.project, b: any = store.sidecar.bindings[r.element]
-  const chart: any = b && Object.values(store.sidecar.bindings).find((x: any) => x.kind === 'chart' && x.slide === b.slide)
+  const chart: any = b && Object.values(store.sidecar.bindings).find((x: any) => x.kind === 'viz' && x.slide === b.slide)
   const nums = textNumbers(r.after, r.numbers, p)
-  const claims = checkText(r.after, p, 'France', chart ? p.datasets[chart.chart.series[0]]?.metric ?? null : null)
+  const claims = checkText(r.after, p, 'France', chart ? p.datasets[chart.spec.view.datasets[0]]?.metric ?? null : null)
   const bad = nums.filter((n) => n.status !== 'ok').map((n) => `${n.text} ${n.status}`).concat(claims.filter((c) => c.status === 'mismatch').map((c) => c.detail))
   const gone = !findEl(store.deck, r.element)
   return (

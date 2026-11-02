@@ -104,7 +104,7 @@ function Workspace({ store }: { store: Store }) {
   const onTransformMulti = (items: any[]) => exec({ kind: 'elements.transform', items: items.map((it) => ({ id: durable(it.sourceId)!, box: { x: it.box.x * K, y: it.box.y * K, w: it.box.w * K, h: it.box.h * K }, rotDeg: it.box.rotationDeg })).filter((it) => it.id) })
   const onEditText = (sourceId: string, caret?: any) => {
     const d = durable(sourceId); const b = d ? store.sidecar.bindings[d] : undefined
-    if (b && b.kind !== 'text') return say(`${b.kind === 'chart' ? 'Chart' : 'This'} content comes from data; edit the data instead`)
+    if (b && b.kind !== 'text') return say(`${b.kind === 'viz' ? 'Chart' : 'This'} content comes from data; edit the data instead`)
     if (d && nodeOf(sourceId)) setEditing({ id: d, caret })
   }
   // GenOffice's rich-text editor commits EditParagraph[] (runs keep bold/italic/size/colour); Escape cancels

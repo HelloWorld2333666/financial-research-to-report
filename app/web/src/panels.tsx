@@ -7,6 +7,7 @@ import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { cellText, derivationValue, effectiveObs, evidenceIndex, evidenceValue, RATING_COLUMNS, ratingCells, textNumbers } from './core/evidence'
 import type { Project } from './core/types'
+import { check, type Cell, type Projected } from './core/viz'
 import { Thumb } from './chat'
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -58,6 +59,42 @@ function Row({ label, value, status, children }: { label: string; value: string;
   )
 }
 
+/** One projected value's provenance: the evidence behind a working value, or a derived value's formula and inputs. */
+function CellProvenance({ p, cell }: { p: Project; cell: Cell }) {
+  if (!cell) return <div className="bad">No value (gap)</div>
+  if ('derived' in cell) return (
+    <div className="ev-card" data-derived>
+      <div className="formula" data-formula>{cell.derived.formula}</div>
+      {Object.entries(cell.derived.inputs).map(([name, x]) => (
+        <div key={name} className="ev-input"><span className="formula">{name}</span> = {x.value ?? '—'} ({x.dataset}, {x.period})
+          {x.evidence ? <EvidenceCard p={p} id={x.evidence} /> : <div className="bad">manual value, no source evidence</div>}</div>
+      ))}
+    </div>
+  )
+  return cell.evidence ? <EvidenceCard p={p} id={cell.evidence} /> : <div className="bad">Manual value with no source evidence</div>
+}
+
+/** Every value a visual shows, from its spec's projection (VIS V1). */
+function VizEvidence({ p, spec }: { p: Project; spec: any }) {
+  let pr: Projected
+  try { pr = check(p, spec) } catch (e: any) { return <p className="bad">This visual no longer fits its data: {e.message}</p> }
+  const status = (c: Cell) => (!c ? 'unsourced' : 'derived' in c ? 'ok' : !c.evidence ? 'unsourced' : c.edited ? 'edited' : 'ok')
+  return (
+    <div className="evidence" data-viz={spec.id}>
+      <div className="muted small">{spec.family}{spec.subtype && spec.subtype !== 'clustered' ? ` · ${spec.subtype}` : ''} · {pr.label} · {pr.unit}</div>
+      {pr.x && <div className="ev-series"><h4>x: {p.datasets[pr.x.dataset]?.title}</h4>{pr.x.values.map((v, i) => (
+        <Row key={i} label={pr.categories[i]!} value={String(v)} status={status(pr.x!.cells[i]!)}><CellProvenance p={p} cell={pr.x!.cells[i]!} /></Row>))}</div>}
+      {pr.series.map((s, si) => (
+        <div key={si} className="ev-series"><h4>{s.dataset ? p.datasets[s.dataset]?.title : s.name}</h4>
+          {s.values.map((v, i) => v == null && !s.cells[i] ? null : (
+            <Row key={i} label={pr.categories[i]!} value={v == null ? 'gap' : String(v)} status={status(s.cells[i]!)}><CellProvenance p={p} cell={s.cells[i]!} /></Row>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** Every number on the selected element and what it resolves to. */
 export function EvidencePanel({ store }: { store: Store }) {
   const p = store.project, sel = store.selection
@@ -80,7 +117,7 @@ export function EvidencePanel({ store }: { store: Store }) {
       </div>
     )
   }
-  if (b.kind === 'chart') return <div className="evidence">{b.chart.series.map((d) => series(d))}</div>
+  if (b.kind === 'viz') return <VizEvidence p={p} spec={b.spec} />
   if (b.kind === 'table') return <div className="evidence">{b.table.datasets.map((d) => series(d, b.table.dates))}</div>
   if (b.kind === 'placeholder') return <PlaceholderPanel store={store} id={id} b={b} />
   if (b.kind === 'ratings') return (
@@ -110,7 +147,7 @@ export function EvidencePanel({ store }: { store: Store }) {
 export function DataPanel({ store, exec }: { store: Store; exec: Store['exec'] }) {
   const p = store.project
   const b = store.selection.length === 1 ? store.sidecar.bindings[store.selection[0]!] : undefined
-  const fromSel = b?.kind === 'chart' ? b.chart.series : b?.kind === 'table' ? b.table.datasets : []
+  const fromSel = b?.kind === 'viz' ? b.spec.view.datasets : b?.kind === 'table' ? b.table.datasets : []
   const ids = Object.keys(p.datasets)
   const [pick, setPick] = useState<string | null>(null)
   useEffect(() => { if (fromSel[0]) setPick(fromSel[0]) }, [store.selection.join()])

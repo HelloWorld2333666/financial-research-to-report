@@ -86,14 +86,14 @@ def jsonstat(values: dict[str, float]) -> bytes:
 
 def test_add_comparison_fetches_twice_and_keeps_only_confirmed_values(setup):
     store, pid, b, _ = setup
-    cid, cb = binding(b, "chart")
+    cid, cb = binding(b, "viz")
     first = jsonstat({"2022": 138.4, "2023": 134.0, "2024": 134.3, "2025": 136.7})
     second = jsonstat({"2022": 138.4, "2023": 134.0, "2024": 134.3, "2025": 137.0})  # 2025 disagrees
     calls = []
     def get(url):
         calls.append(url)
         return first if len(calls) == 1 else second
-    st = A.WorkspaceState(project=pid, selection=[A.Selected(id=cid, kind="chart", label=cb["chart"]["title"], metric="debt", datasets=cb["chart"]["series"])])
+    st = A.WorkspaceState(project=pid, selection=[A.Selected(id=cid, kind="chart", label=cb["spec"]["title"], metric="debt", datasets=cb["spec"]["view"]["datasets"])])
     r = tool_result(A.create_agent(store, scripted("add_comparison", {"country": "IT"}), get=get).run_sync("Compare with Italy", deps=StateDeps(st)))
     assert len(calls) == 2 and calls[0] == calls[1] and "geo=IT" in calls[0] and "sinceTimePeriod=2022" in calls[0]
     assert r["kind"] == "series_proposal" and r["rejected"] == 1 and [o["date"] for o in r["dataset"]["observations"]] == ["2022", "2023", "2024"]
@@ -106,7 +106,7 @@ def test_add_comparison_needs_a_chart_and_reuses_project_data(setup):
     store, pid, b, _ = setup
     r = tool_result(A.create_agent(store, scripted("add_comparison", {"country": "IT"}), get=lambda u: b"").run_sync("x", deps=StateDeps(A.WorkspaceState(project=pid))))
     assert r == {"kind": "error", "message": "Select a chart on the canvas first."}
-    cid, cb = binding(b, "chart", slide="s_3")  # growth chart: FR and DE already there
+    cid, cb = binding(b, "viz", slide="s_3")  # growth chart: FR and DE already there
     st = A.WorkspaceState(project=pid, selection=[A.Selected(id=cid, kind="chart", label="g", metric="growth", datasets=["ds.fr.growth"])])
     r = tool_result(A.create_agent(store, scripted("add_comparison", {"country": "DE"}), get=lambda u: 1 / 0).run_sync("x", deps=StateDeps(st)))
     assert r["kind"] == "series_proposal" and not r["retrieved"] and r["evidence"]  # from the project, no fetch

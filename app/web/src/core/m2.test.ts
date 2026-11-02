@@ -65,7 +65,7 @@ describe('M2 editing quality', () => {
 
   it('moves several elements as one undo step', async () => {
     const s = await deck()
-    const [chart] = ids(s, (b) => b.kind === 'chart' && b.slide === 's_1'), [body] = ids(s, (b) => b.kind === 'text' && b.role === 'body' && b.slide === 's_1')
+    const [chart] = ids(s, (b) => b.kind === 'viz' && b.slide === 's_1'), [body] = ids(s, (b) => b.kind === 'text' && b.role === 'body' && b.slide === 's_1')
     const n = s.undoStack.length, a = box(s, chart!), b = box(s, body!)
     expect(s.exec({ kind: 'elements.transform', items: [{ id: chart!, box: { ...a, y: a.y + 20 } }, { id: body!, box: { ...b, y: b.y + 20 } }] }).ok).toBe(true)
     expect(s.undoStack.length).toBe(n + 1)
@@ -75,7 +75,7 @@ describe('M2 editing quality', () => {
 
   it('aligns and distributes top-level elements', async () => {
     const s = await deck()
-    const [chart] = ids(s, (b) => b.kind === 'chart' && b.slide === 's_1'), [body] = ids(s, (b) => b.kind === 'text' && b.role === 'body' && b.slide === 's_1')
+    const [chart] = ids(s, (b) => b.kind === 'viz' && b.slide === 's_1'), [body] = ids(s, (b) => b.kind === 'text' && b.role === 'body' && b.slide === 's_1')
     expect(s.exec({ kind: 'elements.align', ids: [chart!, body!], mode: 'top' }).ok).toBe(true)
     expect(Math.round(box(s, chart!).y)).toBe(Math.round(box(s, body!).y))
     const three = ids(s, (b) => b.kind === 'text' && ['kicker', 'title', 'subtitle'].includes(b.role) && b.slide === 's_2')

@@ -1,0 +1,441 @@
+{
+ "working": {
+  "dataset": "ds.fr.debt",
+  "date": "2023",
+  "entry": {
+   "deleted": true,
+   "by": "you",
+   "at": "t",
+   "status": "manual_unverified"
+  }
+ },
+ "cases": [
+  {
+   "name": "column",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt",
+    "family": "column",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "none"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      111.4,
+      null,
+      112.6,
+      115.7
+     ],
+     [
+      64.1,
+      61.8,
+      61.4,
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "column stacked",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Interest",
+    "family": "column",
+    "view": {
+     "datasets": [
+      "ds.fr.interest",
+      "ds.de.interest"
+     ],
+     "transform": "none",
+     "from": "2018"
+    },
+    "missing": "gap",
+    "subtype": "stacked"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2020",
+     "2021",
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      1.3,
+      1.4,
+      1.9,
+      1.9,
+      2,
+      2.2
+     ],
+     [
+      0.6,
+      0.6,
+      0.7,
+      0.9,
+      1,
+      1.1
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "column 100%",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Interest",
+    "family": "column",
+    "view": {
+     "datasets": [
+      "ds.fr.interest",
+      "ds.de.interest"
+     ],
+     "transform": "none",
+     "from": "2018"
+    },
+    "missing": "gap",
+    "subtype": "percent"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2020",
+     "2021",
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      1.3,
+      1.4,
+      1.9,
+      1.9,
+      2,
+      2.2
+     ],
+     [
+      0.6,
+      0.6,
+      0.7,
+      0.9,
+      1,
+      1.1
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "bar ranked",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Deficit 2025",
+    "family": "bar",
+    "view": {
+     "datasets": [
+      "ds.fr.deficit",
+      "ds.de.deficit"
+     ],
+     "transform": "rank"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "Germany",
+     "France"
+    ],
+    "series": [
+     [
+      -2.9,
+      -5.1
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "bar change",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt change",
+    "family": "bar",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "diff",
+     "between": [
+      "2022",
+      "2025"
+     ]
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "France",
+     "Germany"
+    ],
+    "series": [
+     [
+      4.3,
+      -1.3
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "line",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt",
+    "family": "line",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "none"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      111.4,
+      null,
+      112.6,
+      115.7
+     ],
+     [
+      64.1,
+      61.8,
+      61.4,
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "area",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt",
+    "family": "area",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "none"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      111.4,
+      null,
+      112.6,
+      115.7
+     ],
+     [
+      64.1,
+      61.8,
+      61.4,
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "pie",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt 2025",
+    "family": "pie",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "latest"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "France",
+     "Germany"
+    ],
+    "series": [
+     [
+      115.7,
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "doughnut",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt 2025",
+    "family": "doughnut",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "latest"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "France",
+     "Germany"
+    ],
+    "series": [
+     [
+      115.7,
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "scatter",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Yield vs debt",
+    "family": "scatter",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.fr.yield"
+     ],
+     "transform": "none"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "pairs",
+    "categories": [
+     "111.4",
+     "112.6",
+     "115.7"
+    ],
+    "series": [
+     [
+      1.7,
+      2.97,
+      3.34979
+     ]
+    ],
+    "x": [
+     111.4,
+     112.6,
+     115.7
+    ]
+   }
+  },
+  {
+   "name": "combo",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt and yield",
+    "family": "combo",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.fr.yield"
+     ],
+     "transform": "none"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      111.4,
+      null,
+      112.6,
+      115.7
+     ],
+     [
+      1.7,
+      2.99,
+      2.97,
+      3.34979
+     ]
+    ],
+    "x": null
+   }
+  }
+ ]
+}

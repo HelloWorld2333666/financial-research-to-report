@@ -1,6 +1,6 @@
 """Deterministic deck composer: slide proposals written from verified datasets.
 
-The model chooses (later, M4); this code writes every number and claim from the project's data,
+The model chooses (M4); this code writes every number and claim from the project's data,
 so generated text is correct by construction (Experiments 2-3). Each proposal also says where
 every written number comes from (schema 0.2 ``NumberRef``): ``numbers[role]`` lists, in reading
 order, each figure as written and its evidence id or derivation id. Computed figures (a change in
@@ -50,6 +50,11 @@ class Writer:
         return slide
 
 
+def line_viz(title: str, datasets: list[str]) -> dict:
+    """A time-series line visual (frr-viz/1). VIS V2 chooses the family from intent and data."""
+    return {"schema": "frr-viz/1", "title": title, "family": "line", "view": {"datasets": datasets, "transform": "none"}, "missing": "gap"}
+
+
 def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
     g, p = geo.lower(), peer.lower()
     name, pname = NAMES.get(geo, geo), NAMES.get(peer, peer)
@@ -79,7 +84,7 @@ def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
             bullets.append(f"{pname}: {w.ev('body', fmt(debt_p[last(debt_p)]) + '%', f'ds.{p}.debt', last(debt_p))} in {last(debt_p)}.")
         slides.append(w.take({"key": "debt", "kicker": f"{name.upper()} · DEBT", "title": claim,
                               "subtitle": "General government gross debt, % of GDP · Eurostat (gov_10dd_edpt1)",
-                              "chart": {"type": "line", "title": "Gross debt, % of GDP", "series": [f"ds.{g}.debt"] + ([f"ds.{p}.debt"] if debt_p else [])},
+                              "viz": line_viz("Gross debt, % of GDP", [f"ds.{g}.debt"] + ([f"ds.{p}.debt"] if debt_p else [])),
                               "bullets": bullets}))
     if defi and intr:
         yd, yi = last(defi), last(intr)
@@ -90,7 +95,7 @@ def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
             + f" of GDP in {yd}; interest costs reached {w.ev('title', fmt(intr[yi]) + '%', f'ds.{g}.interest', yi)} in {yi}")
         slides.append(w.take({"key": "fiscal", "kicker": f"{name.upper()} · FISCAL", "title": title,
                               "subtitle": "Deficit and interest payable, % of GDP · Eurostat (gov_10dd_edpt1, gov_10a_main)",
-                              "chart": {"type": "line", "title": "Deficit (-) / surplus (+), % of GDP", "series": [f"ds.{g}.deficit"] + ([f"ds.{p}.deficit"] if series(project, f"ds.{p}.deficit") else [])},
+                              "viz": line_viz("Deficit (-) / surplus (+), % of GDP", [f"ds.{g}.deficit"] + ([f"ds.{p}.deficit"] if series(project, f"ds.{p}.deficit") else [])),
                               "table": {"title": "Interest payable, % of GDP", "datasets": [f"ds.{g}.interest"] + ([f"ds.{p}.interest"] if series(project, f"ds.{p}.interest") else []), "dates": sorted(intr)[-3:]}}))
     if grow and yld:
         yg, yy = last(grow), last(yld)
@@ -109,7 +114,7 @@ def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
                            f"({name} {w.ev('body', fmt(yld[yy], 2) + '%', f'ds.{g}.yield', yy)} − {pname} {w.ev('body', fmt(yld_p[yy], 2) + '%', f'ds.{p}.yield', yy)}).")
         slides.append(w.take({"key": "market", "kicker": f"{name.upper()} · GROWTH & MARKETS", "title": title,
                               "subtitle": "Real GDP growth, %; 10-year government bond yields, % · Eurostat (nama_10_gdp, irt_lt_mcby_a)",
-                              "chart": {"type": "line", "title": "Real GDP growth, %", "series": [f"ds.{g}.growth"] + ([f"ds.{p}.growth"] if series(project, f"ds.{p}.growth") else [])},
+                              "viz": line_viz("Real GDP growth, %", [f"ds.{g}.growth"] + ([f"ds.{p}.growth"] if series(project, f"ds.{p}.growth") else [])),
                               "table": {"title": "10-year yield, %", "datasets": [f"ds.{g}.yield"] + ([f"ds.{p}.yield"] if yld_p else []), "dates": sorted(yld)[-3:]},
                               "bullets": bullets}))
     slides.append(w.take({"key": "ratings", "kicker": f"{name.upper()} · RATINGS", "title": "Rating actions: pending a primary source",

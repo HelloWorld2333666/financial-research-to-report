@@ -57,7 +57,7 @@ describe('M5 research results', () => {
 
   it('refuses to fill something that is not a placeholder, and adds datasets once', async () => {
     const s = await deck()
-    const chart = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'chart')![0]
+    const chart = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'viz')![0]
     expect(s.exec(fill(chart)).error).toMatch(/not a research placeholder/)
     const ds = { ...structuredClone(s.project.datasets['ds.fr.debt']!), id: 'ds.es.debt', geo: 'ES', entity: 'Spain', observations: [{ date: '2025', value: 101.8, status: 'verified', evidence_id: 'ev.live.es.debt.2025' }] }
     const ev = { 'ev.live.es.debt.2025': { id: 'ev.live.es.debt.2025', value: 101.8, retrieval: { method: 'api', query_url: 'https://ec.europa.eu/eurostat/api/x' } } }

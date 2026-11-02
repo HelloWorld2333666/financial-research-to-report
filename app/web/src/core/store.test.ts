@@ -20,7 +20,7 @@ async function deck() {
 }
 const ig = (s: Store) => integrity(s.deck, s.project, s.sidecar)
 const byRole = (s: Store, role: string, slide = 's_1') => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'text' && b.role === role && b.slide === slide)![0]
-const chartOn = (s: Store, slide: string) => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'chart' && b.slide === slide)![0]
+const chartOn = (s: Store, slide: string) => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'viz' && b.slide === slide)![0]
 
 describe('store and commands', () => {
   it('composes four slides as four undoable AI steps with full integrity', async () => {
@@ -35,8 +35,8 @@ describe('store and commands', () => {
     const s = await deck()
     for (const [id, b] of Object.entries(s.sidecar.bindings)) {
       if (b.kind !== 'text' || !['title', 'body'].includes(b.role)) continue
-      const chart = Object.values(s.sidecar.bindings).find((x) => x.kind === 'chart' && x.slide === b.slide) as any
-      const metric = chart ? s.project.datasets[chart.chart.series[0]]!.metric : null
+      const chart = Object.values(s.sidecar.bindings).find((x) => x.kind === 'viz' && x.slide === b.slide) as any
+      const metric = chart ? s.project.datasets[chart.spec.view.datasets[0]]!.metric : null
       expect(checkText(textOf(findEl(s.deck, id)!.el), s.project, 'France', metric).filter((c) => c.status === 'mismatch')).toEqual([])
     }
   })
@@ -68,9 +68,11 @@ describe('store and commands', () => {
     const r = s.exec({ kind: 'clipboard.paste', slide: 's_1', items: s.clipboard })
     expect(r.ok).toBe(true)
     const copy = r.created![0]!
-    expect((s.sidecar.bindings[copy] as any).chart.series).toEqual((s.sidecar.bindings[orig] as any).chart.series)
-    expect(s.exec({ kind: 'chart.addSeries', id: copy, dataset: s.project.datasets['ds.de.growth']! }).ok).toBe(true)
-    expect((s.sidecar.bindings[orig] as any).chart.series).toEqual(['ds.fr.debt', 'ds.de.debt'])
+    expect((s.sidecar.bindings[copy] as any).spec.view.datasets).toEqual((s.sidecar.bindings[orig] as any).spec.view.datasets)
+    // VIS V1: one axis shows one unit, so growth (%) cannot join a debt chart (% of GDP)
+    expect(s.exec({ kind: 'chart.addSeries', id: copy, dataset: s.project.datasets['ds.de.growth']! }).error).toMatch(/different units/)
+    expect(s.exec({ kind: 'chart.addSeries', id: copy, dataset: s.project.datasets['ds.fr.interest']! }).ok).toBe(true)
+    expect((s.sidecar.bindings[orig] as any).spec.view.datasets).toEqual(['ds.fr.debt', 'ds.de.debt'])
     expect(findEl(s.deck, orig)!.el.chart.series.length).toBe(2)
     expect(findEl(s.deck, copy)!.el.chart.series.length).toBe(3)
     expect(ig(s).ok).toBe(true)

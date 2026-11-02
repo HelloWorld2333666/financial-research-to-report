@@ -1,4 +1,5 @@
 // Shared types for the workspace: Evidence Core project, bindings sidecar, journal and bundle.
+import type { VizSpec } from './viz'
 
 export type Actor = 'user' | 'ai' | 'research'
 
@@ -17,12 +18,14 @@ export interface Project {
 /** A number computed from evidence (schema 0.2 Derivation): formula over named inputs (evidence or derivation ids). */
 export interface Derivation { id: string; statement: string; formula: string; inputs: Record<string, string>; value: number; unit: string; period?: string; rounding?: number }
 
+/** M1-M5 chart binding payload; migrated to a VizSpec on load (core/viz.ts fromChartSpec). */
 export interface ChartSpec { type: 'line' | 'bar'; title: string; series: string[] }
 export interface TableSpec { title: string; datasets: string[]; dates: string[] }
 /** What an element on a slide is bound to. Keys of the sidecar are GenOffice durable element ids. */
 export type Binding =
   | { kind: 'text'; slide: string; role: string; numbers?: NumberRef[] }
-  | { kind: 'chart'; slide: string; chart: ChartSpec }
+  /** a chart realized from a renderer-independent spec (frr-viz/1); the spec is authoritative */
+  | { kind: 'viz'; slide: string; spec: VizSpec }
   | { kind: 'table'; slide: string; table: TableSpec }
   | { kind: 'placeholder'; slide: string; label: string; request: any }
   /** a table of rating actions; each row is one verified evidence item (page + excerpt from an agency document) */

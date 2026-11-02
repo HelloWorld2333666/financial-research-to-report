@@ -3,10 +3,11 @@
 // wraps it in one undo snapshot and one journal entry. Numbers always come from the project.
 import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } from '@genoffice/pptx-engine'
 import { runTxn, type Op } from '@genoffice/pptx-ops'
-import { cellText, chartColors, chartData, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
+import { cellText, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
+import { check, fromChartSpec, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
 import { findEl, slideIndex, walk } from './deck'
 import { chartKindRefusal } from './vocabulary'
-import type { Binding, ChartSpec, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
+import type { Binding, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
 
 export const EMU = 9525 // EMU per slide px; slides are 1280 x 720 px
 /** Built-in table style driven by the theme's accent1 (Design DNA navy) instead of PowerPoint's default orange. */
@@ -42,6 +43,8 @@ export type Command =
   | { kind: 'batch'; commands: Command[]; summary?: string }
   | { kind: 'data.addDatasets'; datasets: Dataset[]; evidence: Record<string, any> }
   | { kind: 'placeholder.fill'; id: string; evidence: any[]; title?: string; subtitle?: string; source_note: string }
+  | { kind: 'viz.update'; id: string; spec: VizSpec }
+  | { kind: 'viz.change'; id: string; family: Family; subtype?: Subtype; transform?: Transform; at?: string; between?: [string, string] }
 
 export interface Ctx { deck: OpenedPptx; project: Project; sidecar: Sidecar }
 export interface Outcome { summary: string; slides: string[]; created?: string[] }
@@ -73,9 +76,7 @@ export function reproject(ctx: Ctx, dsIds: Set<string>, only?: string): string[]
   for (const [durable, b] of Object.entries(ctx.sidecar.bindings)) {
     if (only && durable !== only) continue
     const f = findEl(ctx.deck, durable); if (!f) continue
-    if (b.kind === 'chart' && b.chart.series.some((d) => dsIds.has(d))) {
-      txn(ctx, [{ op: 'setChart', target: { slide: f.index, el: f.el.id }, patch: { ...chartData(ctx.project, b.chart), colorScheme: chartColors(ctx.project, b.chart) } }]); touched.add(f.index)
-    }
+    if (b.kind === 'viz' && vizDatasets(b.spec).some((d) => dsIds.has(d))) { txn(ctx, [realizeOp(ctx, f.index, f.el.id, b.spec)]); touched.add(f.index) }
     if (b.kind === 'table' && b.table.datasets.some((d) => dsIds.has(d))) { txn(ctx, tableFill(ctx, f.el.id, f.index, b.table)); touched.add(f.index) }
   }
   touched.forEach((i) => materializeSlide(ctx.deck, i))
@@ -88,6 +89,18 @@ export function ratingFill(ctx: Ctx, el: string, index: number, rows: string[]):
   RATING_COLUMNS.forEach((h, c) => ops.push({ op: 'setTableCell', target: tg, row: 0, col: c, paragraphs: [{ runs: [{ text: h, bold: true, fontSize: 9 }] }] }))
   rows.forEach((id, r) => ratingCells(ctx.project.evidence[id]).forEach((t, c) => ops.push({ op: 'setTableCell', target: tg, row: r + 1, col: c, paragraphs: [{ runs: [{ text: t, fontSize: 9, bold: c === 3 }] }] })))
   return ops
+}
+
+/** setChart that rebuilds the chart from the spec: type, direction and the FULL data (never old values). */
+export function realizeOp(ctx: Ctx, index: number, el: string, spec: VizSpec): Op {
+  const r = realize(ctx.project, spec)
+  return { op: 'setChart', target: { slide: index, el }, patch: { kind: r.kind, ...(r.barDir ? { barDir: r.barDir } : {}), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme } }
+}
+/** A spec from a proposal: frr-viz/1 ('viz') or the M1-M5 shape ('chart': {type, title, series}). */
+function proposalSpec(p: any): VizSpec | null {
+  if (p.viz) return { schema: 'frr-viz/1', missing: 'gap', ...structuredClone(p.viz), id: newVizId() }
+  if (p.chart) return fromChartSpec(p.chart)
+  return null
 }
 
 // ------------------------------------------------------------------ slide composition (from proposals)
@@ -104,11 +117,13 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   text('title', p.title, [40, 44, 1200, 44], 17, d.ink, true)
   text('subtitle', p.subtitle, [40, 92, 1200, 18], 9, d.muted)
   out.push({ op: { op: 'addElement', kind: 'rect', offset: off(40, 116, 1200, 2), fill: d.rule }, bind: (slide) => ({ kind: 'decor', slide }) })
-  if (p.chart) {
-    const refusal = chartKindRefusal(p.chart.type)
+  const spec = proposalSpec(p)
+  if (spec) {
+    const refusal = chartKindRefusal(p.chart?.type)
     if (refusal) throw new Error(refusal)
-    const spec: ChartSpec = { type: p.chart.type, title: p.chart.title, series: [...p.chart.series] }
-    out.push({ op: { op: 'addChart', kind: spec.type, offset: off(40, 136, p.table || p.bullets ? 720 : 1200, 400), title: spec.title, ...chartData(ctx.project, spec), colorScheme: chartColors(ctx.project, spec) }, bind: (slide) => ({ kind: 'chart', slide, chart: spec }) })
+    const r = realize(ctx.project, spec) // validates the spec against the data (VizError with the reason)
+    out.push({ op: { op: 'addChart', kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: off(40, 136, p.table || p.bullets ? 720 : 1200, 400), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme },
+      bind: (slide) => ({ kind: 'viz', slide, spec }) })
   }
   if (p.table) {
     const t: TableSpec = { title: p.table.title, datasets: [...p.table.datasets], dates: [...p.table.dates] }
@@ -200,12 +215,14 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
     }
     case 'chart.addSeries': {
       const b = ctx.sidecar.bindings[cmd.id]
-      if (!b || b.kind !== 'chart') throw new Error('selected element is not a bound chart')
+      if (!b || b.kind !== 'viz') throw new Error('selected element is not a bound chart')
       ctx.project.datasets[cmd.dataset.id] ??= structuredClone(cmd.dataset)
       Object.assign(ctx.project.evidence, cmd.evidence ?? {})
-      if (b.chart.series.includes(cmd.dataset.id)) throw new Error(`${cmd.dataset.entity} is already on this chart`)
-      b.chart.series = [...b.chart.series, cmd.dataset.id]
-      return { summary: `Add ${cmd.dataset.entity} to “${b.chart.title}”`, slides: reproject(ctx, new Set([cmd.dataset.id]), cmd.id) }
+      if (b.spec.view.datasets.includes(cmd.dataset.id)) throw new Error(`${cmd.dataset.entity} is already on this chart`)
+      if (b.spec.family === 'scatter') throw new Error('a scatter pairs two datasets; it does not take another series')
+      b.spec = { ...b.spec, view: { ...b.spec.view, datasets: [...b.spec.view.datasets, cmd.dataset.id] } }
+      check(ctx.project, b.spec)
+      return { summary: `Add ${cmd.dataset.entity} to “${b.spec.title}”`, slides: reproject(ctx, new Set([cmd.dataset.id]), cmd.id) }
     }
     case 'element.group': {
       const found = cmd.ids.map((id) => must(ctx, id))
@@ -238,7 +255,13 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       materializeSlide(ctx.deck, si)
       // created ids are transaction-local; the pasted elements are the new durable ids, in paste order
       const fresh = (ctx.deck.deck.slides[si] as any).elements.map((e: any) => elementDurableId(e)).filter((d: string) => d && !before.has(d)) as string[]
-      fresh.forEach((d, i) => { const b = cmd.items[i]?.binding; if (b) ctx.sidecar.bindings[d] = { ...structuredClone(b), slide: cmd.slide } })
+      fresh.forEach((d, i) => {
+        const b = cmd.items[i]?.binding
+        if (!b) return
+        const copy: Binding = { ...structuredClone(b), slide: cmd.slide }
+        if (copy.kind === 'viz') copy.spec = { ...copy.spec, id: newVizId() } // a pasted chart is a new visual
+        ctx.sidecar.bindings[d] = copy
+      })
       return { summary: `Paste ${fresh.length}`, slides: [cmd.slide], created: fresh }
     }
     case 'placeholder.add': {
@@ -283,6 +306,26 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       }
       materializeSlide(ctx.deck, si)
       return { summary: `Replace the placeholder with ${rows.length} verified rating action${rows.length === 1 ? '' : 's'}`, slides: [slide], created: [tid] }
+    }
+    case 'viz.update': {
+      const f = must(ctx, cmd.id), b = ctx.sidecar.bindings[cmd.id]
+      if (b?.kind !== 'viz') throw new Error('that element is not a bound chart')
+      const spec = { ...structuredClone(cmd.spec), id: b.spec.id }
+      txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)]) // realizeOp validates (VizError) before anything changes
+      b.spec = spec
+      materializeSlide(ctx.deck, f.index)
+      return { summary: `Update visual “${spec.title}”`, slides: [sid(ctx, f.index)] }
+    }
+    case 'viz.change': {
+      // change the visual, keep the data: same datasets, units, title and provenance; only the view shape may change
+      const f = must(ctx, cmd.id), b = ctx.sidecar.bindings[cmd.id]
+      if (b?.kind !== 'viz') throw new Error('that element is not a bound chart')
+      const view = { ...b.spec.view, ...(cmd.transform ? { transform: cmd.transform } : {}), ...(cmd.at ? { at: cmd.at } : {}), ...(cmd.between ? { between: cmd.between } : {}) }
+      const spec: VizSpec = { ...b.spec, family: cmd.family, ...(cmd.subtype ? { subtype: cmd.subtype } : { subtype: undefined }), view }
+      txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)])
+      b.spec = spec
+      materializeSlide(ctx.deck, f.index)
+      return { summary: `Change “${spec.title}” to ${cmd.family}${cmd.subtype && cmd.subtype !== 'clustered' ? ` (${cmd.subtype})` : ''}${cmd.transform ? `, ${cmd.transform}` : ''}`, slides: [sid(ctx, f.index)] }
     }
     case 'deck.reproject': {
       // Re-project every bound chart and table from the working layer (e.g. after a formatting change)

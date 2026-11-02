@@ -18,7 +18,7 @@ export async function runChecks() {
   const ig = () => integrity(s.deck, s.project, s.sidecar)
   const shape = () => JSON.stringify({ e: s.deck.deck.slides.map((x: any) => x.elements.length), b: Object.keys(s.sidecar.bindings).length, u: s.undoStack.length })
   const byRole = (role: string, slide = 's_1') => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'text' && b.role === role && b.slide === slide)![0]
-  const chartOn = (slide: string) => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'chart' && b.slide === slide)![0]
+  const chartOn = (slide: string) => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'viz' && b.slide === slide)![0]
   const { slides: props } = await (await fetch('/api/compose', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ project: s.project.id }) })).json()
 
   await safe('preview_renders_without_touching_live', () => {
@@ -30,8 +30,8 @@ export async function runChecks() {
   check('integrity_after_compose', ig().ok && ig().points > 0 && ig().cells > 0, JSON.stringify(ig()).slice(0, 160))
   await safe('generated_claims_all_supported', () => {
     const bad = Object.entries(s.sidecar.bindings).filter(([, b]) => b.kind === 'text' && ['title', 'body'].includes((b as any).role)).flatMap(([id, b]) => {
-      const ch: any = Object.values(s.sidecar.bindings).find((x) => x.kind === 'chart' && x.slide === b.slide)
-      return checkText(textOf(findEl(s.deck, id)!.el), s.project, 'France', ch ? s.project.datasets[ch.chart.series[0]]!.metric : null).filter((c) => c.status === 'mismatch')
+      const ch: any = Object.values(s.sidecar.bindings).find((x) => x.kind === 'viz' && x.slide === b.slide)
+      return checkText(textOf(findEl(s.deck, id)!.el), s.project, 'France', ch ? s.project.datasets[ch.spec.view.datasets[0]]!.metric : null).filter((c) => c.status === 'mismatch')
     })
     check('generated_claims_all_supported', bad.length === 0, bad.map((c) => c.text).join(' | ') || 'none flagged')
   })
@@ -57,10 +57,11 @@ export async function runChecks() {
   })
   await safe('add_series_one_step_and_undo', () => {
     const n = s.undoStack.length, id = chartOn('s_1')
-    const ok = s.exec({ kind: 'chart.addSeries', id, dataset: s.project.datasets['ds.de.growth']! }).ok
-    const after = (s.sidecar.bindings[id] as any).chart.series.length
+    // same unit as the debt chart (% of GDP): a visual shows one unit per axis (VIS V1)
+    const ok = s.exec({ kind: 'chart.addSeries', id, dataset: s.project.datasets['ds.fr.interest']! }).ok
+    const after = (s.sidecar.bindings[id] as any).spec.view.datasets.length
     s.undo()
-    check('add_series_one_step_and_undo', ok && after === 3 && s.undoStack.length === n && (s.sidecar.bindings[id] as any).chart.series.length === 2, `${after} → ${(s.sidecar.bindings[id] as any).chart.series.length}`)
+    check('add_series_one_step_and_undo', ok && after === 3 && s.undoStack.length === n && (s.sidecar.bindings[id] as any).spec.view.datasets.length === 2, `${after} → ${(s.sidecar.bindings[id] as any).spec.view.datasets.length}`)
   })
   await safe('text_edit_after_ai', () => {
     const t = byRole('title')
@@ -93,7 +94,7 @@ export async function runChecks() {
     const orig = chartOn('s_3'); s.copy([orig])
     const p = s.exec({ kind: 'clipboard.paste', slide: 's_3', items: s.clipboard })
     const copy = p.created![0]!
-    const a = s.exec({ kind: 'chart.addSeries', id: copy, dataset: s.project.datasets['ds.de.debt']! })
+    const a = s.exec({ kind: 'chart.addSeries', id: copy, dataset: s.project.datasets['ds.fr.yield']! }) // growth chart: %, same unit
     check('pasted_chart_edits_alone', p.ok && a.ok && findEl(s.deck, orig)!.el.chart.series.length === 2 && findEl(s.deck, copy)!.el.chart.series.length === 3 && ig().ok, `${p.error ?? ''} ${a.error ?? ''}`)
   })
   await safe('save_reopen_identical', async () => {
@@ -135,7 +136,7 @@ export async function runChecks() {
     const sourced = (eid?: string) => !!eid && !!s.project.evidence[eid]?.retrieval?.query_url && /ec\.europa\.eu\/eurostat\/api/.test(s.project.evidence[eid].retrieval.query_url)
     for (const [id, b] of Object.entries(s.sidecar.bindings)) {
       const el = findEl(s.deck, id)?.el
-      if (b.kind === 'chart') for (const d of b.chart.series) for (const o of effectiveObs(s.project.datasets[d])) { n++; if (!o.edited && !sourced(o.evidence_id)) missing.push(`${d} ${o.date}`) }
+      if (b.kind === 'viz') for (const d of b.spec.view.datasets) for (const o of effectiveObs(s.project.datasets[d])) { n++; if (!o.edited && !sourced(o.evidence_id)) missing.push(`${d} ${o.date}`) }
       if (b.kind === 'table') for (const d of b.table.datasets) for (const x of b.table.dates) { n++; const o = effectiveObs(s.project.datasets[d]).find((y) => y.date === x); if (!sourced(o?.evidence_id)) missing.push(`${d} ${x}`) }
       if (b.kind === 'text' && b.role !== 'source') for (const t of textNumbers(textOf(el), b.numbers, s.project)) {
         n++

@@ -4,13 +4,18 @@
   "kicker": "FRANCE \u00b7 DEBT",
   "title": "France's debt ratio rose from 111.4% to 115.7% of GDP (2022\u20132025); Germany's was 62.8% in 2025 (64.1% in 2022)",
   "subtitle": "General government gross debt, % of GDP \u00b7 Eurostat (gov_10dd_edpt1)",
-  "chart": {
-   "type": "line",
+  "viz": {
+   "schema": "frr-viz/1",
    "title": "Gross debt, % of GDP",
-   "series": [
-    "ds.fr.debt",
-    "ds.de.debt"
-   ]
+   "family": "line",
+   "view": {
+    "datasets": [
+     "ds.fr.debt",
+     "ds.de.debt"
+    ],
+    "transform": "none"
+   },
+   "missing": "gap"
   },
   "bullets": [
    "France: 115.7% of GDP in 2025, +4.3 pp since 2022.",
@@ -71,13 +76,18 @@
   "kicker": "FRANCE \u00b7 FISCAL",
   "title": "The deficit was 5.1% of GDP in 2025; interest costs reached 2.2% in 2025",
   "subtitle": "Deficit and interest payable, % of GDP \u00b7 Eurostat (gov_10dd_edpt1, gov_10a_main)",
-  "chart": {
-   "type": "line",
+  "viz": {
+   "schema": "frr-viz/1",
    "title": "Deficit (-) / surplus (+), % of GDP",
-   "series": [
-    "ds.fr.deficit",
-    "ds.de.deficit"
-   ]
+   "family": "line",
+   "view": {
+    "datasets": [
+     "ds.fr.deficit",
+     "ds.de.deficit"
+    ],
+    "transform": "none"
+   },
+   "missing": "gap"
   },
   "table": {
    "title": "Interest payable, % of GDP",
@@ -123,13 +133,18 @@
   "kicker": "FRANCE \u00b7 GROWTH & MARKETS",
   "title": "Growth slowed to 0.8% in 2025; the 10-year spread over Germany was 76 bp in 2025",
   "subtitle": "Real GDP growth, %; 10-year government bond yields, % \u00b7 Eurostat (nama_10_gdp, irt_lt_mcby_a)",
-  "chart": {
-   "type": "line",
+  "viz": {
+   "schema": "frr-viz/1",
    "title": "Real GDP growth, %",
-   "series": [
-    "ds.fr.growth",
-    "ds.de.growth"
-   ]
+   "family": "line",
+   "view": {
+    "datasets": [
+     "ds.fr.growth",
+     "ds.de.growth"
+    ],
+    "transform": "none"
+   },
+   "missing": "gap"
   },
   "table": {
    "title": "10-year yield, %",

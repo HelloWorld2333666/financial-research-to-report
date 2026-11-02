@@ -50,6 +50,10 @@ def validate_bundle(b: dict) -> bytes | None:
         raise BundleError(f"sidecar binding keys must be durable element ids, got {bad[:3]}")
     if not isinstance(b.get("journal", []), list) or not isinstance(b.get("threads", {}), dict):
         raise BundleError("journal must be a list and threads an object")
+    import viz  # noqa: PLC0415
+    bad_specs = [f"{k}: {msg}" for k, v in sidecar.get("bindings", {}).items() if v.get("kind") == "viz" for msg in viz.validate_spec(v.get("spec") or {})]
+    if bad_specs:
+        raise BundleError("visual specs refused: " + "; ".join(bad_specs[:3]))
     problems = validate_working(b["project"])
     if problems:
         raise BundleError("working data refused: " + "; ".join(problems[:5]))
