@@ -1,7 +1,7 @@
 # Phase 3 · M5 Research and tasks: results
 
 **Branch:** `feature/workspace-v2`. Local commits only.
-**Date:** 2026-11-02. Verified in the built-in Chromium against `app/server/service.py`, with local Qwen 2.5 14B (Ollama). No paid API was called. **One acceptance check is still pending: a real agency PDF** (see the end).
+**Date:** 2026-11-02. Verified in the built-in Chromium against `app/server/service.py`, with local Qwen 2.5 14B (Ollama). No paid API was called. Both acceptance checks pass, the second with a **real Morningstar DBRS press release** that you downloaded and uploaded.
 
 ## Delivered
 
@@ -19,7 +19,7 @@
 | Criterion (PHASE3-PLAN M5) | Result |
 |---|---|
 | A background task keeps running while the user edits and reloads | **Pass (real keyboard).** In the project thread I typed "Research Spain's fiscal and economic data from Eurostat". The model called `start_research`, and the chat showed "Started a background task…". At 60% (Spain · growth) I pressed real Cmd+Z on the canvas and reloaded the page. After the reload the task was **still running at 60% on the same step**, and finished 23 s after it started: 5 series, 55 values, each confirmed by re-fetch, logged per series. A real **Apply** in Tasks added the 5 datasets as one `research` step. Each value carries its query URL (`…irt_lt_mcby_a?…geo=ES…`), time and response hash `fab2e89f…` |
-| An uploaded rating-agency press release PDF yields at least one verified rating-action evidence item (page + excerpt) that replaces the ratings placeholder through a proposal | **Pipeline passes; a real agency PDF is pending (it needs you).** With the **fictional-agency test PDF**: I selected the placeholder (real click), attached the file to the upload control by script (a file picker can't be clicked), and **local Qwen** quoted 2 candidates in 8 s while the pattern finder found 4. Verified: "Example Ratings GmbH has affirmed the Republic of France's long-term issuer rating at AA- with a Negative Outlook." (p. 1); 2 candidates rejected. A real **Apply** replaced the placeholder with the table (Example Ratings · 2025-03-14 · affirmed · AA- · negative) and the new title, as one `research` step. Client and server integrity OK, 0 placeholders left. I then undid it, so the placeholder is free for the real PDF. **Real PDF:** you approved downloading Morningstar DBRS's public release "Confirms Republic of France at AA (high), Stable Trend" (22 Mar 2024). Its Download button opens a popup, and the browser pane only allows popups from **your** own click. I didn't work around that (a probe of the site's hidden download address was refused, rightly) |
+| An uploaded rating-agency press release PDF yields at least one verified rating-action evidence item (page + excerpt) that replaces the ratings placeholder through a proposal | **Pass, with a real agency PDF and your own clicks.** You downloaded Morningstar DBRS's public release "Morningstar DBRS Confirms Republic of France at AA (high), Stable Trend" (22 March 2024; `430026.pdf`, 7 pages, 50 KB, SHA-256 `cc703928a54a…`) and uploaded it on the placeholder. The local model quoted 3 candidates and the pattern finder 6. Verified: **"Morningstar DBRS Confirms Republic of France at AA (high)," (p. 1)**, plus the ratings-table line on p. 6 ("22-Mar-24 Long-Term Local Currency - Issuer Rating Confirmed AA (high) Stb…"). You applied it: the placeholder became the ratings table with the title "Rating actions: Morningstar DBRS confirmed France at AA (high), outlook stable". Client and **server** integrity OK (22 table cells), 0 placeholders, and export has nothing blocking or to acknowledge. **Rejected, correctly:** the model's quote of the main sentence was shortened ("Morningstar DBRS confirmed…" where the page says "DBRS Ratings GmbH (Morningstar DBRS) confirmed…"), so it isn't verbatim. A short-term R-1 (high) sentence is outside the long-term scales, and "The trend on all ratings is Stable." states no rating. Earlier, I also ran the same path on the fictional-agency test PDF (attached by script; Apply by real click), then undid it |
 
 ## Found and fixed along the way
 
@@ -32,7 +32,12 @@
    - A change made **while a save was in flight** was marked saved without being written.
 
    Selection now isn't a document change, and an in-flight save records only what it sent (new vitest).
-6. `editor/research.py` already existed, and both folders put bare module names on `sys.path` in one pytest run, so mine is `research_runs.py`.
+6. **The real DBRS PDF found two more gaps** (fixed after your apply; your table predates them):
+   - **No date:** the PDF's text reads "MARCH 22, 2024PRESS RELEASE", with the year running into the next word, so the date pattern now ends the year at "no further digit".
+   - **Near-duplicate rows:** the headline and the ratings-table line state the same action, so rows are now merged by (rating, action).
+
+   Re-run on the same file, the result is **one row: Morningstar DBRS · 2024-03-22 · confirmed · AA (high) · stable (p. 1)**. Your applied table still shows the earlier two undated rows. Undo history isn't kept across reloads, so replacing it would need a "replace ratings table" command, which isn't built.
+7. `editor/research.py` already existed, and both folders put bare module names on `sys.path` in one pytest run, so mine is `research_runs.py`.
 
 ## Tests
 
@@ -59,6 +64,6 @@
 - **Tasks live in the single server process.** A restart interrupts them (marked, retryable); there is no distributed queue.
 - **The uploaded file is trusted as the user's choice.** Verification proves the evidence matches the document, not that the document is authentic.
 
-## To finish acceptance
+## Uploads in this project
 
-In the browser pane's DBRS tab, click **Download** yourself and save the PDF. Then in the app, select the ratings placeholder on slide 4, open **Evidence**, and choose the file in "Upload the agency press release (PDF)". I'll then check the task's result and apply it.
+`app/server/projects/` is gitignored; uploads stay there and are never committed. This project now holds three uploads: the fictional test PDF, the DBRS release, and a third PDF you uploaded ("Deep Research Backing Conversation…"). Its task found no rating action, and I have not opened it.

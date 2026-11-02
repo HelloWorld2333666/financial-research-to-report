@@ -32,8 +32,9 @@ RATING_RE = re.compile(rf"(?<![A-Za-z])({RATING})(?![A-Za-z0-9+\-])")
 VERB_RE = re.compile(rf"\b({VERBS})\b", re.I)
 OUTLOOK_RE = re.compile(r"\b(stable|negative|positive|developing)\b(?:\s+(?:outlook|trend))?|\b(?:outlook|trend)s?\s+(?:to\s+|is\s+|at\s+)?(stable|negative|positive|developing)\b", re.I)
 MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"], 1)}
-DATE_RES = [re.compile(r"\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b", re.I),
-            re.compile(r"\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+(\d{1,2}),\s+(20\d{2})\b", re.I)]
+# the year may run into the next word in extracted text ("MARCH 22, 2024PRESS RELEASE"), so it ends at "no further digit"
+DATE_RES = [re.compile(r"\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})(?!\d)", re.I),
+            re.compile(r"\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+(\d{1,2}),\s+(20\d{2})(?!\d)", re.I)]
 ACTION = {"affirm": "affirmed", "confirm": "confirmed", "downgrad": "downgraded", "upgrad": "upgraded", "lower": "downgraded",
           "rais": "upgraded", "assign": "assigned", "revis": "outlook revised", "plac": "placed on watch"}
 MAX_PDF = 20 * 1024 * 1024
@@ -157,7 +158,7 @@ def rating_evidence(data: bytes, filename: str, entity: str, candidates: list[di
         if not ok:
             rejected.append({**c, "reason": why})
             continue
-        key = (ok["rating"], ok["action"], ok["page"])
+        key = (ok["rating"], ok["action"])  # the same action restated (headline, body, ratings table) is one row
         if key in seen:
             continue
         seen.add(key)

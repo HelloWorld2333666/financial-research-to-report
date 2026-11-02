@@ -41,6 +41,8 @@ def test_pdf_pages_and_candidates():
     assert rr.agency_of(pages) == "Example Ratings" and rr.find_date(pages[0]).isoformat() == "2025-03-14"
     with pytest.raises(rr.ResearchError):
         rr.pdf_pages(b"not a pdf")
+    assert rr.find_date("MARCH 22, 2024PRESS RELEASE").isoformat() == "2024-03-22"  # year glued to the next word
+    assert rr.find_date("Mar 22, 2024") and rr.find_date("22 March 2024") and rr.find_date("in 20245 cases") is None
 
 
 def test_only_verbatim_excerpts_on_their_page_become_evidence():
