@@ -1,4 +1,5 @@
 import './platform/polyfill'
+import './styles.css'
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SlideCanvas } from '@genoffice-slides/renderer/SlideCanvas'
@@ -12,9 +13,11 @@ import { effectiveObs } from './core/evidence'
 import { runChecks } from './checks'
 import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
 import { ChatPanel } from './chat'
+import { Icon, IconButton, Menu, TooltipProvider, isDark, useTheme } from './ui'
+import * as Dialog from '@radix-ui/react-dialog'
 
-const FIT = 800
-const K = 1280 / FIT // canvas px -> slide px
+const FIT = 800 // default canvas width (self-test); the workspace fits the canvas to the stage
+const PANEL_BREAK = 1280 // below this the panel is a drawer (Phase 1 defect 1)
 const params = new URLSearchParams(location.search)
 
 function useStore(store: Store | null) {
@@ -28,9 +31,9 @@ function Picker({ onOpen }: { onOpen: (s: Store) => void }) {
   const create = async (seed: string, title: string) => { setBusy(true); const s = await Store.create(seed, title); history.replaceState(null, '', `?project=${s.project.id}`); onOpen(s) }
   return (
     <div className="picker">
-      <h1>Projects</h1>
-      <div className="row"><button disabled={busy} onClick={() => create('france', 'France sovereign credit')}>New France project (verified Eurostat data)</button><button disabled={busy} onClick={() => create('blank', 'Untitled project')}>New blank project</button></div>
-      {list?.length ? <ul>{list.map((p) => <li key={p.id}><a href={`?project=${p.id}`}>{p.title}</a> <span className="muted">saved {p.saved?.replace('T', ' ').slice(0, 16)} · {p.slides ?? 0} slides · {p.journal} journal entries</span></li>)}</ul> : <p className="muted">{list ? 'No projects yet.' : 'Loading…'}</p>}
+      <div className="picker-head"><span className="brand-mark">R</span><h1>Research-to-Report</h1></div>
+      <div className="row"><button className="primary" disabled={busy} onClick={() => create('france', 'France sovereign credit')}>New France project (verified Eurostat data)</button><button disabled={busy} onClick={() => create('blank', 'Untitled project')}>New blank project</button></div>
+      {list?.length ? <ul className="project-grid">{list.map((p) => <li key={p.id}><a className="project-card" href={`?project=${p.id}`}><b>{p.title}</b><span>{p.slides ?? 0} slides · {p.journal} journal entries</span><span>Saved {p.saved?.replace('T', ' ').slice(0, 16)} UTC</span></a></li>)}</ul> : <p className="muted">{list ? 'No projects yet.' : 'Loading…'}</p>}
     </div>
   )
 }
@@ -44,12 +47,28 @@ function Workspace({ store }: { store: Store }) {
   useEffect(() => { const go = (e: any) => setTab(e.detail); addEventListener('frr:tab', go); return () => removeEventListener('frr:tab', go) }, [])
   const [exporting, setExporting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [saveState, setSaveState] = useState('Saved')
+  const [saveState, setSaveState] = useState<{ state: 'saved' | 'dirty' | 'saving' | 'error'; text: string }>({ state: 'saved', text: 'Saved' })
+  const [theme, setTheme] = useTheme()
+  const [panelOpen, setPanelOpen] = useState(() => innerWidth >= PANEL_BREAK)
+  useEffect(() => { // crossing the breakpoint resets the panel to that layout's default
+    let wide = innerWidth >= PANEL_BREAK
+    const on = () => { const w = innerWidth >= PANEL_BREAK; if (w !== wide) { wide = w; setPanelOpen(w) } }
+    addEventListener('resize', on); return () => removeEventListener('resize', on)
+  }, [])
+  // the canvas fills the stage (M2-M5 used a fixed 800 px): width bounded by the stage's width and height
+  const stageRef = useRef<HTMLElement | null>(null)
+  const [fit, setFit] = useState(FIT)
+  useEffect(() => {
+    const el = stageRef.current; if (!el) return
+    const ro = new ResizeObserver(([e]) => { const { width, height } = e!.contentRect; setFit(Math.round(Math.max(420, Math.min(1280, width - 72, ((height - 96) * 16) / 9)))) })
+    ro.observe(el); return () => ro.disconnect()
+  }, [])
+  const K = 1280 / fit // canvas px -> slide px
   const [versions, setVersions] = useState<any[]>([])
   const clickedOutside = useRef(false)
   const slides = store.slides()
   const index = Math.min(cur, slides.length - 1)
-  const slide = useMemo(() => render(store.deck, index, FIT, store.metrics), [store.revision, index])
+  const slide = useMemo(() => render(store.deck, index, fit, store.metrics), [store.revision, index, fit])
   const thumbs = useMemo(() => slides.map((s) => render(store.deck, s.index, 150, store.metrics)), [store.revision, slides.length])
   const ig = useMemo(() => integrity(store.deck, store.project, store.sidecar), [store.revision])
   const say = (m: string) => { setNotice(m); setTimeout(() => setNotice((n) => (n === m ? null : n)), 4000) }
@@ -58,8 +77,8 @@ function Workspace({ store }: { store: Store }) {
   // autosave 1.5 s after the last change
   useEffect(() => {
     if (!store.dirty) return
-    setSaveState('Unsaved changes')
-    const t = setTimeout(async () => { setSaveState('Saving…'); const r = await store.save(); setSaveState(r.ok ? 'Saved' : `Save failed: ${r.error}`) }, 1500)
+    setSaveState({ state: 'dirty', text: 'Unsaved changes' })
+    const t = setTimeout(async () => { setSaveState({ state: 'saving', text: 'Saving…' }); const r = await store.save(); setSaveState(r.ok ? { state: 'saved', text: 'Saved' } : { state: 'error', text: `Save failed: ${r.error}` }) }, 1500)
     return () => clearTimeout(t)
   }, [store.revision])
   // leaving within the autosave delay would drop the last change: warn, and save right away
@@ -68,7 +87,6 @@ function Workspace({ store }: { store: Store }) {
     addEventListener('beforeunload', leave); return () => removeEventListener('beforeunload', leave)
   }, [store])
   const loadVersions = () => fetch(`/api/projects/${store.project.id}/versions`).then((r) => r.json()).then(setVersions)
-  useEffect(() => { if (tab === 'versions') loadVersions() }, [tab])
 
   // ---- canvas -> commands (selection is held as durable ids)
   const durable = (sourceId: string) => durableOfSource(store.deck, index, sourceId)
@@ -118,7 +136,8 @@ function Workspace({ store }: { store: Store }) {
   // ---- keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (editing || (e.target as HTMLElement).closest('input,textarea')) return
+      // typing in fields, dialogs and menus never reaches the canvas (Backspace would delete the selection)
+      if (editing || (e.target as HTMLElement).closest('input,textarea,[role=dialog],[role=menu]')) return
       const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase(), sel = store.selection
       if (m && k === 'z') { e.preventDefault(); e.shiftKey ? store.redo() : store.undo() }
       else if (m && k === 'g' && !e.shiftKey && sel.length >= 2) { e.preventDefault(); exec({ kind: 'element.group', ids: sel }) }
@@ -139,33 +158,52 @@ function Workspace({ store }: { store: Store }) {
   const enteredSource = entered ? sourceIdsFor(slide, [entered])[0] ?? null : null
   ;(window as any).__ws = { store, setCur }
 
+  const saveVersion = async () => { const v = await store.saveVersion(`Version ${new Date().toLocaleString()}`); say(`Saved version ${v.version}`); loadVersions() }
+  const canDraft = slides.length === 1 && !store.deck.deck.slides[0]!.elements.length && Object.keys(store.project.datasets).length > 0
+  const reprojectable = ig.mismatch.some((m) => !m.startsWith('text says'))
+  const openTab = (t: typeof tab) => { setTab(t); setPanelOpen(true) }
+  const primary = [['chat', 'Chat', 'chat'], ['evidence', 'Evidence', 'evidence'], ['data', 'Data', 'data'], ['tasks', 'Tasks', 'tasks']] as const
+  const secondary = [['journal', 'Journal'], ['integrity', 'Integrity'], ['claims', 'Claims'], ['versions', 'Versions']] as const
+  useEffect(() => { loadVersions() }, [])
+
   return (
-    <div className="app">
+    <div className="app" data-panel={panelOpen ? 'open' : 'closed'}>
       <header className="topbar">
-        <a className="brand" href="./">Research-to-Report</a><span>{store.project.title}</span>
-        <button onClick={() => store.undo()} disabled={!store.undoStack.length}>Undo</button><button onClick={() => store.redo()} disabled={!store.redoStack.length}>Redo</button>
-        {slides.length === 1 && !store.deck.deck.slides[0]!.elements.length && Object.keys(store.project.datasets).length > 0 && <button className="primary" onClick={draftDeck}>Draft deck from evidence</button>}
-        <button onClick={async () => { const v = await store.saveVersion(`Version ${new Date().toLocaleString()}`); say(`Saved version ${v.version}`); if (tab === 'versions') loadVersions() }}>Save version</button>
-        {editing && !editing.cell && <span className="format" role="toolbar" aria-label="Text format">
-          {/* mousedown + preventDefault keeps focus and the selection in the editor; the editor reads bold/italic/underline back from the DOM on commit */}
-          {([['bold', 'B'], ['italic', 'I'], ['underline', 'U']] as const).map(([cmd, label]) => <button key={cmd} title={cmd} className={'fmt-' + cmd} onMouseDown={(e) => { e.preventDefault(); document.execCommand(cmd) }}>{label}</button>)}
-        </span>}
-        {store.selection.length >= 2 && <span className="align" role="toolbar" aria-label="Align">
-          {(['left', 'centerH', 'right', 'top', 'centerV', 'bottom'] as const).map((m) => <button key={m} title={`Align ${m}`} onClick={() => exec({ kind: 'elements.align', ids: store.selection, mode: m })}>{{ left: '⇤', centerH: '↔', right: '⇥', top: '⤒', centerV: '↕', bottom: '⤓' }[m]}</button>)}
-          {store.selection.length >= 3 && (['horizontal', 'vertical'] as const).map((a) => <button key={a} title={`Distribute ${a}`} onClick={() => exec({ kind: 'elements.distribute', ids: store.selection, axis: a })}>{a === 'horizontal' ? '⋯' : '⋮'}</button>)}
-        </span>}
-        <span className="status" data-save={saveState}>{saveState}</span>
-        <button onClick={() => setExporting(true)} disabled={!store.deck.deck.slides[0]?.elements.length}>Export…</button>
+        <a className="brand" href="./" aria-label="All projects"><span className="brand-mark">R</span></a>
+        <div className="crumb"><a className="home muted" href="./">Projects</a><span className="sep">/</span><b title={store.project.title}>{store.project.title}</b></div>
+        <span className="save-pill" data-save={saveState.text} data-state={saveState.state}>{saveState.text}</span>
+        <div className="tools">
+          <IconButton icon="undo" label="Undo" kbd="⌘Z" onClick={() => store.undo()} disabled={!store.undoStack.length} />
+          <IconButton icon="redo" label="Redo" kbd="⇧⌘Z" onClick={() => store.redo()} disabled={!store.redoStack.length} />
+          {editing && !editing.cell && <><span className="vsep" /><span className="group format" role="toolbar" aria-label="Text format">
+            {/* mousedown + preventDefault keeps focus and the selection in the editor; the editor reads bold/italic/underline back from the DOM on commit */}
+            {([['bold', 'B', '⌘B'], ['italic', 'I', '⌘I'], ['underline', 'U', '⌘U']] as const).map(([cmd, label, k]) => <button key={cmd} title={`${cmd} (${k})`} className={'icon-btn fmt-' + cmd} onMouseDown={(e) => { e.preventDefault(); document.execCommand(cmd) }}>{label}</button>)}
+          </span></>}
+          {store.selection.length >= 2 && <><span className="vsep" /><span className="group align" role="toolbar" aria-label="Align">
+            {(['left', 'centerH', 'right', 'top', 'centerV', 'bottom'] as const).map((m) => <button key={m} title={`Align ${m}`} className="icon-btn" onClick={() => exec({ kind: 'elements.align', ids: store.selection, mode: m })}>{{ left: '⇤', centerH: '↔', right: '⇥', top: '⤒', centerV: '↕', bottom: '⤓' }[m]}</button>)}
+            {store.selection.length >= 3 && (['horizontal', 'vertical'] as const).map((a) => <button key={a} title={`Distribute ${a}`} className="icon-btn" onClick={() => exec({ kind: 'elements.distribute', ids: store.selection, axis: a })}>{a === 'horizontal' ? '⋯' : '⋮'}</button>)}
+          </span></>}
+        </div>
+        <span className="spacer" />
+        <div className="top-actions">
+          {canDraft && <button className="primary" onClick={draftDeck}><span className="label">Draft deck from evidence</span></button>}
+          <Menu trigger={<button className="ghost" aria-label="Versions"><span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><Icon name="history" /><span className="label">Versions</span></span></button>}
+            items={[{ label: 'Save version now', icon: 'check', onSelect: saveVersion, testId: 'save-version' }, { separator: true, label: '' }, { heading: true, label: versions.length ? 'Saved versions' : 'No versions yet' },
+              ...[...versions].reverse().slice(0, 6).map((v) => ({ label: `${v.version}. ${v.label}`, disabled: true }))]} />
+          <IconButton icon={isDark(theme) ? 'sun' : 'moon'} label={isDark(theme) ? 'Light chrome' : 'Dark chrome'} onClick={() => setTheme(isDark(theme) ? 'light' : 'dark')} />
+          <IconButton icon="panel" label={panelOpen ? 'Hide panel' : 'Show panel'} on={panelOpen} onClick={() => setPanelOpen(!panelOpen)} />
+          <button className="primary" onClick={() => setExporting(true)} disabled={!store.deck.deck.slides[0]?.elements.length}><span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><Icon name="export" />Export</span></button>
+        </div>
       </header>
       <main className="body">
-        <aside className="rail">{thumbs.map((t, i) => (
-          <div key={slides[i]!.id} className={'thumb' + (i === index ? ' current' : '')} data-slide={slides[i]!.id} onClick={() => { setCur(i); store.select([]) }}>
-            <div className="thumb-canvas" style={{ transform: `scale(${150 / t.widthPx})` }}><SlideCanvas slide={t} selectedIds={[]} images={new Map()} zoom={1} onSelect={() => {}} onEditText={() => {}} onTransform={() => {}} onEditTableCell={() => {}} onContextMenu={() => {}} onTableColResize={() => {}} /></div>
-            <span>{i + 1}</span>
+        <aside className="rail" aria-label="Slides">{thumbs.map((t, i) => (
+          <div key={slides[i]!.id} className={'thumb-row' + (i === index ? ' current' : '')} data-slide={slides[i]!.id} onClick={() => { setCur(i); store.select([]) }}>
+            <span className="no">{i + 1}</span>
+            <div className="thumb"><div className="thumb-canvas" style={{ transform: `scale(${136 / t.widthPx})` }}><SlideCanvas slide={t} selectedIds={[]} images={new Map()} zoom={1} onSelect={() => {}} onEditText={() => {}} onTransform={() => {}} onEditTableCell={() => {}} onContextMenu={() => {}} onTableColResize={() => {}} /></div></div>
           </div>))}</aside>
-        <section className="stage">
+        <section className="stage" ref={stageRef}>
           {notice && <div className="notice" role="status">{notice}</div>}
-          <div className="sheet" style={{ width: FIT, height: (FIT * 9) / 16 }}>
+          <div className="sheet" style={{ width: fit, height: (fit * 9) / 16 }}>
             <SlideCanvas slide={slide} selectedIds={sourceIdsFor(slide, store.selection)} images={new Map()} zoom={1}
               onSelect={onSelect} onEditText={onEditText} onTransform={onTransform} onTransformMulti={onTransformMulti} onEditTableCell={onEditTableCell}
               onContextMenu={() => {}} onTableColResize={() => {}} onMarqueeSelect={(ids) => store.select(ids.map(durable).filter(Boolean) as string[])}
@@ -176,22 +214,42 @@ function Workspace({ store }: { store: Store }) {
               : (() => { const src = sourceIdsFor(slide, [editing.id])[0]; const n = src && nodeOf(src)
                   return n ? <TextEditOverlay key={editing.id} node={n} scale={slide.scale} caretPoint={editing.caret} onCommit={commitText} onCancel={() => setEditing(null)} zoom={1} /> : null })())}
           </div>
-          <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>{ig.mismatch.some((m) => !m.startsWith('text says')) && <> <button onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button></>}{ig.mismatch.some((m) => m.startsWith('text says')) && <> <button className="link" onClick={() => setTab('integrity')}>text disagrees with data</button></>} · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.sourced}/{ig.figures} figures in text sourced · {ig.unverified} unverified edits · selected {store.selection.length}</div>
+          <div className="statusline">
+            <span className={'ig-pill ' + (ig.ok ? 'good' : 'bad')}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>
+            {reprojectable && <button className="link" onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button>}
+            {ig.mismatch.some((m) => m.startsWith('text says')) && <button className="link" onClick={() => openTab('integrity')}>text disagrees with data</button>}
+            <span>{ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.sourced}/{ig.figures} figures in text sourced · {ig.unverified} unverified edits · selected {store.selection.length}</span>
+          </div>
         </section>
-        <aside className="panel">
-          <nav className="tabs">{(['chat', 'evidence', 'data', 'tasks', 'journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{t}</button>)}</nav>
-          {/* always mounted: a request in flight survives switching tabs */}
-          <ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} />
-          {tab === 'evidence' && <EvidencePanel store={store} />}
-          {tab === 'data' && <DataPanel store={store} exec={exec} />}
-          {tab === 'tasks' && <TasksPanel store={store} />}
-          {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {j.at.slice(11, 19)}</span></li>)}</ol>}
-          {tab === 'integrity' && <div>{ig.ok ? <p className="good">Every bound value matches the working layer.</p> : ig.mismatch.slice(0, 20).map((m) => <p key={m} className="bad">{m}</p>)}</div>}
-          {tab === 'claims' && <div>{claims.length ? claims.map((c, i) => <div key={i} className={'claim ' + c.status}><div>{c.text}</div><div className="muted">{c.status}: {c.detail}</div></div>) : <p className="muted">No numeric claims on this slide.</p>}</div>}
-          {tab === 'versions' && <ul>{versions.map((v) => <li key={v.version}>{v.version}. {v.label} <span className="muted">· {v.journal} entries</span></li>)}</ul>}
+        <div className="scrim" onClick={() => setPanelOpen(false)} />
+        <aside className="panel" aria-label="Assistant and evidence">
+          <nav className="tabs">
+            {primary.map(([t, label, icon]) => <button key={t} className={'tab' + (tab === t ? ' on' : '')} data-tab={t} onClick={() => setTab(t)}><Icon name={icon} /><span className="label">{label}</span></button>)}
+            <span className="spacer" />
+            <Menu trigger={<button className={'tab' + (secondary.some(([t]) => t === tab) ? ' on' : '')} aria-label="More panels" data-tab-more><Icon name="more" />{secondary.find(([t]) => t === tab)?.[1] ?? ''}</button>}
+              items={secondary.map(([t, label]) => ({ label, onSelect: () => setTab(t), testId: t }))} />
+          </nav>
+          <div className="panel-body">
+            {/* always mounted: a request in flight survives switching tabs */}
+            <ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} />
+            {tab === 'evidence' && <EvidencePanel store={store} />}
+            {tab === 'data' && <DataPanel store={store} exec={exec} />}
+            {tab === 'tasks' && <TasksPanel store={store} />}
+            {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {j.at.slice(11, 19)}</span></li>)}</ol>}
+            {tab === 'integrity' && <div>{ig.ok ? <p className="good">Every bound value matches the working layer.</p> : ig.mismatch.slice(0, 20).map((m) => <p key={m} className="bad">{m}</p>)}</div>}
+            {tab === 'claims' && <div>{claims.length ? claims.map((c, i) => <div key={i} className={'claim ' + c.status}><div>{c.text}</div><div className="muted">{c.status}: {c.detail}</div></div>) : <p className="muted">No numeric claims on this slide.</p>}</div>}
+            {tab === 'versions' && <div><button onClick={saveVersion}>Save version now</button><ul>{versions.map((v) => <li key={v.version}>{v.version}. {v.label} <span className="muted">· {v.journal} entries</span></li>)}</ul></div>}
+          </div>
         </aside>
       </main>
-      {exporting && <ExportDialog store={store} close={() => setExporting(false)} reproject={() => exec({ kind: 'deck.reproject' })} />}
+      <Dialog.Root open={exporting} onOpenChange={setExporting}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="dialog-overlay" />
+          <Dialog.Content className="dialog" aria-describedby={undefined}>
+            {exporting && <ExportDialog store={store} close={() => setExporting(false)} reproject={() => exec({ kind: 'deck.reproject' })} />}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
@@ -211,7 +269,7 @@ function App() {
   }, [])
   if (params.has('checks')) return <div className="picker"><h1>Running checks…</h1></div>
   if (error) return <div className="picker"><h1>Could not open the project</h1><p>{error}</p><a href="./">Back to projects</a></div>
-  return store ? <Workspace store={store} /> : <Picker onOpen={(s) => loadFonts().then((m) => { s.metrics = m; setStore(s) })} />
+  return <TooltipProvider>{store ? <Workspace store={store} /> : <Picker onOpen={(s) => loadFonts().then((m) => { s.metrics = m; setStore(s) })} />}</TooltipProvider>
 }
 
 createRoot(document.getElementById('root')!).render(<App />)

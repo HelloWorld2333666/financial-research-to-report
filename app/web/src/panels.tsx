@@ -8,6 +8,7 @@ import { findEl, render, slideIndex, textOf } from './core/deck'
 import { cellText, derivationValue, effectiveObs, evidenceIndex, evidenceValue, RATING_COLUMNS, ratingCells, textNumbers } from './core/evidence'
 import type { Project } from './core/types'
 import { Thumb } from './chat'
+import * as Dialog from '@radix-ui/react-dialog'
 
 const when = (iso?: string) => (iso ? iso.replace('T', ' ').slice(0, 16) + ' UTC' : '—')
 
@@ -150,7 +151,7 @@ export function DataPanel({ store, exec }: { store: Store; exec: Store['exec'] }
   )
 }
 
-/** Export: the server re-checks the saved deck and enforces the policy; this dialog only asks. */
+/** Export: the server re-checks the saved deck and enforces the policy; this dialog only asks. Rendered inside a Radix Dialog (focus trap, Escape). */
 export function ExportDialog({ store, close, reproject }: { store: Store; close: () => void; reproject: () => void }) {
   const [mode, setMode] = useState<'draft' | 'final'>('draft')
   const [pol, setPol] = useState<any>(null), [ack, setAck] = useState<Record<string, boolean>>({})
@@ -172,9 +173,8 @@ export function ExportDialog({ store, close, reproject }: { store: Store; close:
     const a = document.createElement('a'); a.href = j.url; a.download = j.file; a.click()
   }
   return (
-    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="modal" role="dialog" aria-label="Export deck">
-        <h3>Export deck (.pptx)</h3>
+    <>
+        <Dialog.Title asChild><h3>Export deck (.pptx)</h3></Dialog.Title>
         <div className="seg">{(['draft', 'final'] as const).map((m) => <button key={m} className={mode === m ? 'on' : ''} onClick={() => { setMode(m); setResult(null) }}>{m === 'draft' ? 'Draft' : 'Final report'}</button>)}</div>
         {!pol ? <p className="muted">{error ?? 'Checking the saved deck…'}</p> : <>
           <p className="muted small">Server check of the saved deck: {pol.integrity.resolved}/{pol.integrity.bindings} bindings, {pol.integrity.points} chart points, {pol.integrity.cells} table cells, {pol.integrity.sourced}/{pol.integrity.figures} figures in text sourced.</p>
@@ -193,8 +193,7 @@ export function ExportDialog({ store, close, reproject }: { store: Store; close:
           {pol.exports?.length > 0 && <p className="muted small">Previous exports: {pol.exports.slice(-3).map((x: any) => `${x.mode} ${when(x.at)}`).join(' · ')}</p>}
         </>}
         <div className="row end"><button onClick={close}>Close</button><button className="primary" disabled={!ready || busy} onClick={go}>{busy ? 'Exporting…' : mode === 'final' ? 'Export final' : 'Export draft'}</button></div>
-      </div>
-    </div>
+    </>
   )
 }
 

@@ -216,7 +216,7 @@ export function ChatPanel({ store, slideId, slideNo, visible }: { store: Store; 
           <button className={scope === 'project' ? 'on' : ''} onClick={() => setScope('project')} data-scope="project">Project</button>
           <button className={scope === 'slide' ? 'on' : ''} onClick={() => setScope('slide')} data-scope="slide" disabled={!slideId}>Slide {slideNo}</button>
         </div>
-        <div className="muted small" data-model>{cfg ? `${cfg.model ?? 'model'} via ${cfg.provider ?? '?'} · ${cfg.reachable ? 'ready' : 'not reachable'}` : 'Checking model…'}{selection.length ? ` · selected: ${selection.map((s) => s.label ?? s.kind).join(', ')}` : ''}</div>
+        <div className="model-line" data-model data-ready={cfg ? String(!!cfg.reachable) : undefined}>{cfg ? `${cfg.model ?? 'model'} via ${cfg.provider ?? '?'} · ${cfg.reachable ? 'ready' : 'not reachable'}` : 'Checking model…'}{selection.length ? ` · selected: ${selection.map((s) => s.label ?? s.kind).join(', ')}` : ''}</div>
         {ids.map((t) => {
           const slide = t.slice(pid.length + 1)
           return <ThreadHost key={t} store={store} threadId={t} visible={t === current} placeholder={slide === 'project' ? 'Project thread: ask for a deck, research, or changes across slides.' : `Slide thread: ask about ${slide}.`}
