@@ -11,6 +11,13 @@
    "geo": "FR",
    "metric": "debt",
    "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -51,6 +58,13 @@
    "geo": "DE",
    "metric": "debt",
    "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -91,6 +105,13 @@
    "geo": "FR",
    "metric": "deficit",
    "unit": "% of GDP",
+   "measure": {
+    "kind": "balance_ratio",
+    "of": "GDP",
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -143,6 +164,13 @@
    "geo": "DE",
    "metric": "deficit",
    "unit": "% of GDP",
+   "measure": {
+    "kind": "balance_ratio",
+    "of": "GDP",
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -195,6 +223,13 @@
    "geo": "DE",
    "metric": "interest",
    "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -247,6 +282,13 @@
    "geo": "FR",
    "metric": "interest",
    "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -299,6 +341,13 @@
    "geo": "DE",
    "metric": "growth",
    "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -351,6 +400,13 @@
    "geo": "FR",
    "metric": "growth",
    "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -403,6 +459,13 @@
    "geo": "DE",
    "metric": "yield",
    "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",
@@ -443,6 +506,13 @@
    "geo": "FR",
    "metric": "yield",
    "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
    "frequency": "annual",
    "origin": "eurostat",
    "verification": "verified",

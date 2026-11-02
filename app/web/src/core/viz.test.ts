@@ -9,7 +9,17 @@ import { findEl } from './deck'
 import { check, project as projectView, VizError, type VizSpec } from './viz'
 import { BUNDLE_SCHEMA, type Project } from './types'
 
-const P = () => structuredClone(project) as Project
+/** The France fixture plus a synthetic, test-only pair of datasets that ARE parts of one total (debt by
+ *  holder), so part-to-whole visuals can be exercised; no real dataset in the project is additive. */
+const P = () => {
+  const p = structuredClone(project) as Project
+  const years = ['2022', '2023', '2024', '2025']
+  for (const [id, entity, vals] of [['ds.fr.hold.dom', 'Domestic holders', [46.0, 45.5, 45.2, 44.8]], ['ds.fr.hold.for', 'Non-resident holders', [54.0, 54.5, 54.8, 55.2]]] as const)
+    p.datasets[id] = { id, title: `France · debt held by ${entity.toLowerCase()} (test)`, entity, geo: 'FR', metric: 'holders', unit: '% of debt', frequency: 'annual', origin: 'test',
+      verification: 'test', source_url: '', source_note: 'synthetic test fixture', working: {}, observations: years.map((date, i) => ({ date, value: vals[i]!, status: 'test' })),
+      measure: { kind: 'share', signed: false, additive_parts_of: 'fr.debt.total', scale: 'interval' } } as any
+  return p
+}
 const spec = (family: VizSpec['family'], view: VizSpec['view'], extra: Partial<VizSpec> = {}): VizSpec => ({ schema: 'frr-viz/1', id: 'viz_test', title: 'T', family, view, missing: 'gap', ...extra })
 const fresh = () => Store.fromBundle({ schema: BUNDLE_SCHEMA, project: P(), sidecar: { schema: 'frr-sidecar/1', bindings: {} }, journal: [], threads: {}, deck: null })
 const vizOf = (s: Store) => Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'viz') as [string, any]
@@ -66,17 +76,18 @@ describe('VIS V1 refusals (shape rules; meaning rules come in V2)', () => {
   })
 })
 
+const HOLDERS = ['ds.fr.hold.dom', 'ds.fr.hold.for']
 const FAMILIES: Array<[string, Omit<VizSpec, 'schema' | 'id' | 'missing'>]> = [
   ['column', { title: 'Debt', family: 'column', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'none' } }],
-  ['column stacked', { title: 'Interest', family: 'column', subtype: 'stacked', view: { datasets: ['ds.fr.interest', 'ds.de.interest'], transform: 'none', from: '2018' } }],
-  ['column 100%', { title: 'Interest', family: 'column', subtype: 'percent', view: { datasets: ['ds.fr.interest', 'ds.de.interest'], transform: 'none', from: '2018' } }],
+  ['column stacked', { title: 'Holders', family: 'column', subtype: 'stacked', view: { datasets: HOLDERS, transform: 'none' } }],
+  ['column 100%', { title: 'Holders', family: 'column', subtype: 'percent', view: { datasets: HOLDERS, transform: 'none' } }],
   ['bar ranked', { title: 'Deficit 2025', family: 'bar', view: { datasets: ['ds.fr.deficit', 'ds.de.deficit'], transform: 'rank' } }],
   ['bar change', { title: 'Debt change', family: 'bar', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'diff', between: ['2022', '2025'] } }],
   ['line', { title: 'Debt', family: 'line', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'none' } }],
-  ['area', { title: 'Debt', family: 'area', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'none' } }],
-  ['pie', { title: 'Debt 2025', family: 'pie', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'latest' } }],
-  ['doughnut', { title: 'Debt 2025', family: 'doughnut', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'latest' } }],
-  ['scatter', { title: 'Yield vs debt', family: 'scatter', view: { datasets: ['ds.fr.debt', 'ds.fr.yield'], transform: 'none' } }],
+  ['area', { title: 'Debt', family: 'area', view: { datasets: ['ds.fr.debt'], transform: 'none' } }],
+  ['pie', { title: 'Holders 2025', family: 'pie', view: { datasets: HOLDERS, transform: 'latest' } }],
+  ['doughnut', { title: 'Holders 2025', family: 'doughnut', view: { datasets: HOLDERS, transform: 'latest' } }],
+  ['scatter', { title: 'Growth vs interest', family: 'scatter', view: { datasets: ['ds.fr.interest', 'ds.fr.growth'], transform: 'none' } }],
   ['combo', { title: 'Debt and yield', family: 'combo', view: { datasets: ['ds.fr.debt', 'ds.fr.yield'], transform: 'none' } }],
 ]
 
@@ -126,8 +137,10 @@ describe('VIS V1 change visual and data edits', () => {
     const { s } = await withVisual(FAMILIES[5]![1])
     const [id, b] = vizOf(s), before = JSON.stringify(b.spec), n = s.undoStack.length
     expect(s.exec({ kind: 'viz.change', id, family: 'pie' }).error).toMatch(/one series at one period/)
+    // V2 meaning rule: debt ratios of two countries are not parts of a total, at any period
+    expect(s.exec({ kind: 'viz.change', id, family: 'pie', transform: 'latest' }).error).toMatch(/not parts of a total/)
     expect([JSON.stringify((s.sidecar.bindings[id] as any).spec), s.undoStack.length]).toEqual([before, n])
-    expect(s.exec({ kind: 'viz.change', id, family: 'pie', transform: 'latest' }).ok).toBe(true)
+    expect(s.exec({ kind: 'viz.change', id, family: 'bar', transform: 'rank' }).ok).toBe(true)
   })
   it('re-ranks a bar chart when the data changes', async () => {
     const { s } = await withVisual(FAMILIES[3]![1])
@@ -160,5 +173,6 @@ it.runIf((globalThis as any).process?.env?.WRITE_FIXTURES)('writes the Python pa
     const pr = check(p, sp)
     return { name, spec: sp, expected: { shape: pr.shape, categories: pr.categories, series: pr.series.map((x) => x.values), x: pr.x?.values ?? null } }
   })
-  writeFileSync(new URL('../../../server/tests/fixtures/viz-parity.json', import.meta.url), JSON.stringify({ working, cases }, null, 1))
+  const extra = Object.fromEntries(HOLDERS.map((id) => [id, p.datasets[id]])) // synthetic test datasets the server fixture lacks
+  writeFileSync(new URL('../../../server/tests/fixtures/viz-parity.json', import.meta.url), JSON.stringify({ working, extra, cases }, null, 1))
 })

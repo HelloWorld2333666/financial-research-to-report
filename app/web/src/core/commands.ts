@@ -4,7 +4,8 @@
 import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } from '@genoffice/pptx-engine'
 import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
-import { check, fromChartSpec, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
+import { check, fromChartSpec, gate, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
+import { recommend } from './recommend'
 import { findEl, slideIndex, walk } from './deck'
 import { chartKindRefusal } from './vocabulary'
 import type { Binding, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
@@ -23,7 +24,7 @@ export function themeOps(d: Project['design_dna']): Op[] {
 export type Box = { x: number; y: number; w: number; h: number }
 export interface ClipItem { item: any; binding?: Binding }
 export type Command =
-  | { kind: 'slide.compose'; proposal: any }
+  | { kind: 'slide.compose'; proposal: any; accept?: string[] }
   | { kind: 'element.transform'; id: string; box: Box; rotDeg?: number }
   | { kind: 'elements.transform'; items: { id: string; box: Box; rotDeg?: number }[] }
   | { kind: 'elements.align'; ids: string[]; mode: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom' }
@@ -32,7 +33,7 @@ export type Command =
   | { kind: 'data.set'; dataset: string; date: string; value: number | null }
   | { kind: 'data.verify'; dataset: string; date: string }
   | { kind: 'data.restore'; dataset: string; date: string }
-  | { kind: 'chart.addSeries'; id: string; dataset: Dataset; evidence?: Record<string, any> }
+  | { kind: 'chart.addSeries'; id: string; dataset: Dataset; evidence?: Record<string, any>; accept?: string[] }
   | { kind: 'element.group'; ids: string[] }
   | { kind: 'element.ungroup'; id: string }
   | { kind: 'element.delete'; ids: string[] }
@@ -43,8 +44,8 @@ export type Command =
   | { kind: 'batch'; commands: Command[]; summary?: string }
   | { kind: 'data.addDatasets'; datasets: Dataset[]; evidence: Record<string, any> }
   | { kind: 'placeholder.fill'; id: string; evidence: any[]; title?: string; subtitle?: string; source_note: string }
-  | { kind: 'viz.update'; id: string; spec: VizSpec }
-  | { kind: 'viz.change'; id: string; family: Family; subtype?: Subtype; transform?: Transform; at?: string; between?: [string, string] }
+  | { kind: 'viz.update'; id: string; spec: VizSpec; accept?: string[] }
+  | { kind: 'viz.change'; id: string; family: Family; subtype?: Subtype; transform?: Transform; at?: string; between?: [string, string]; from?: string; to?: string; accept?: string[] }
 
 export interface Ctx { deck: OpenedPptx; project: Project; sidecar: Sidecar }
 export interface Outcome { summary: string; slides: string[]; created?: string[] }
@@ -91,13 +92,25 @@ export function ratingFill(ctx: Ctx, el: string, index: number, rows: string[]):
   return ops
 }
 
+/** Journal note for warnings newly kept by "Use anyway" (the spec records them; the journal says who and when). */
+const keptNote = (before: VizSpec | undefined, after: VizSpec) => {
+  const added = (after.accepted_warnings ?? []).filter((c) => !(before?.accepted_warnings ?? []).includes(c))
+  return added.length ? ` (used anyway despite: ${added.join(', ')})` : ''
+}
+
 /** setChart that rebuilds the chart from the spec: type, direction and the FULL data (never old values). */
 export function realizeOp(ctx: Ctx, index: number, el: string, spec: VizSpec): Op {
   const r = realize(ctx.project, spec)
   return { op: 'setChart', target: { slide: index, el }, patch: { kind: r.kind, ...(r.barDir ? { barDir: r.barDir } : {}), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme } }
 }
 /** A spec from a proposal: frr-viz/1 ('viz') or the M1-M5 shape ('chart': {type, title, series}). */
-function proposalSpec(p: any): VizSpec | null {
+function proposalSpec(ctx: Ctx, p: any): VizSpec | null {
+  // a request by intent ({intent, datasets, title}): the recommender picks the visual (VIS V2)
+  if (p.viz?.intent && !p.viz.family) {
+    const r = recommend(ctx.project, { intent: p.viz.intent, datasets: p.viz.datasets, ...(p.viz.title ? { title: p.viz.title } : {}), ...(p.viz.at ? { at: p.viz.at } : {}), ...(p.viz.between ? { between: p.viz.between } : {}) })
+    if (!r.recommended?.spec) throw new Error(r.error ?? `no valid visual for this data (${r.candidates.map((c) => `${c.label}: ${c.refused}`).join('; ')})`)
+    return r.recommended.spec
+  }
   if (p.viz) return { schema: 'frr-viz/1', missing: 'gap', ...structuredClone(p.viz), id: newVizId() }
   if (p.chart) return fromChartSpec(p.chart)
   return null
@@ -106,7 +119,7 @@ function proposalSpec(p: any): VizSpec | null {
 // ------------------------------------------------------------------ slide composition (from proposals)
 interface Planned { op: Op; bind: (slide: string) => Binding; fill?: (el: string, index: number) => Op[] }
 
-function planSlide(ctx: Ctx, p: any): Planned[] {
+function planSlide(ctx: Ctx, p: any, accept: string[] = []): Planned[] {
   const d = ctx.project.design_dna, out: Planned[] = []
   const para = (t: string, pt: number, color: string, bold = false) => ({ runs: [{ text: t, fontSize: pt, bold, color, fontFamily: d.font }] })
   // Titles and bullets shrink to fit their frame (bodyPr autoFit) instead of spilling into the next element
@@ -117,7 +130,8 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   text('title', p.title, [40, 44, 1200, 44], 17, d.ink, true)
   text('subtitle', p.subtitle, [40, 92, 1200, 18], 9, d.muted)
   out.push({ op: { op: 'addElement', kind: 'rect', offset: off(40, 116, 1200, 2), fill: d.rule }, bind: (slide) => ({ kind: 'decor', slide }) })
-  const spec = proposalSpec(p)
+  const raw = proposalSpec(ctx, p)
+  const spec = raw && gate(ctx.project, raw, accept) // invalid: refused; a warning: needs "Use anyway" (accept)
   if (spec) {
     const refusal = chartKindRefusal(p.chart?.type)
     if (refusal) throw new Error(refusal)
@@ -127,9 +141,10 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   }
   if (p.table) {
     const t: TableSpec = { title: p.table.title, datasets: [...p.table.datasets], dates: [...p.table.dates] }
-    out.push({ op: { op: 'addTable', rows: t.datasets.length + 1, cols: t.dates.length + 1, offset: off(784, 160, 456, 34 * (t.datasets.length + 1)) }, bind: (slide) => ({ kind: 'table', slide, table: t }),
+    const [tx, tw] = spec ? [784, 456] : [40, 720] // beside a chart, or alone (a compact-table visual)
+    out.push({ op: { op: 'addTable', rows: t.datasets.length + 1, cols: t.dates.length + 1, offset: off(tx, 160, tw, 34 * (t.datasets.length + 1)) }, bind: (slide) => ({ kind: 'table', slide, table: t }),
       fill: (el, i) => [{ op: 'setTableStyle', target: { slide: i, el }, ...TABLE_STYLE }, ...tableFill(ctx, el, i, t)] })
-    text('label', t.title, [784, 136, 456, 18], 9, d.muted, true)
+    text('label', t.title, [tx, 136, tw, 18], 9, d.muted, true)
   }
   const bullets: string[] = p.bullets || []
   if (bullets.length) text('body', bullets.map((b: string) => '• ' + b).join('\n'), [784, p.table ? 320 : 160, 456, 200], 10.5, d.ink)
@@ -140,10 +155,10 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   return out
 }
 
-function composeSlide(ctx: Ctx, p: any): Outcome {
+function composeSlide(ctx: Ctx, p: any, accept?: string[]): Outcome {
   let si = ctx.deck.deck.slides.findIndex((s: any) => s.elements.length === 0)
   if (si < 0) { txn(ctx, [{ op: 'addBlankSlide', target: { slide: ctx.deck.deck.slides.length - 1 } }]); si = ctx.deck.deck.slides.length - 1 }
-  const plan = planSlide(ctx, p)
+  const plan = planSlide(ctx, p, accept)
   txn(ctx, plan.map((x) => ({ ...x.op, target: { slide: si } })))
   for (const d of p.derivations ?? []) (ctx.project.derivations ??= {})[d.id] = structuredClone(d)
   materializeSlide(ctx.deck, si) // new elements receive their creationId (durable id) on reparse
@@ -151,7 +166,8 @@ function composeSlide(ctx: Ctx, p: any): Outcome {
   const slide = sid(ctx, si), fills: Op[] = [], created: string[] = []
   added.forEach((el: any, i: number) => { const id = elementDurableId(el)!; created.push(id); ctx.sidecar.bindings[id] = plan[i]!.bind(slide); if (plan[i]!.fill) fills.push(...plan[i]!.fill!(el.id, si)) })
   txn(ctx, fills); materializeSlide(ctx.deck, si)
-  return { summary: `Add slide “${p.key ?? p.title}”`, slides: [slide], created }
+  const viz = plan.map((x) => x.bind(slide)).find((b) => b.kind === 'viz') as { spec: VizSpec } | undefined
+  return { summary: `Add slide “${p.key ?? p.title}”${viz ? keptNote(undefined, viz.spec) : ''}`, slides: [slide], created }
 }
 
 // ------------------------------------------------------------------ handlers
@@ -159,7 +175,7 @@ const GROUPABLE = new Set(['text', 'shape', 'picture'])
 
 export function run(ctx: Ctx, cmd: Command): Outcome {
   switch (cmd.kind) {
-    case 'slide.compose': return composeSlide(ctx, cmd.proposal)
+    case 'slide.compose': return composeSlide(ctx, cmd.proposal, cmd.accept)
     case 'element.transform': {
       const f = must(ctx, cmd.id), slide = sid(ctx, f.index)
       if (f.group) {
@@ -220,9 +236,9 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       Object.assign(ctx.project.evidence, cmd.evidence ?? {})
       if (b.spec.view.datasets.includes(cmd.dataset.id)) throw new Error(`${cmd.dataset.entity} is already on this chart`)
       if (b.spec.family === 'scatter') throw new Error('a scatter pairs two datasets; it does not take another series')
-      b.spec = { ...b.spec, view: { ...b.spec.view, datasets: [...b.spec.view.datasets, cmd.dataset.id] } }
-      check(ctx.project, b.spec)
-      return { summary: `Add ${cmd.dataset.entity} to “${b.spec.title}”`, slides: reproject(ctx, new Set([cmd.dataset.id]), cmd.id) }
+      const before = b.spec
+      b.spec = gate(ctx.project, { ...b.spec, view: { ...b.spec.view, datasets: [...b.spec.view.datasets, cmd.dataset.id] } }, cmd.accept)
+      return { summary: `Add ${cmd.dataset.entity} to “${b.spec.title}”${keptNote(before, b.spec)}`, slides: reproject(ctx, new Set([cmd.dataset.id]), cmd.id) }
     }
     case 'element.group': {
       const found = cmd.ids.map((id) => must(ctx, id))
@@ -310,22 +326,28 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
     case 'viz.update': {
       const f = must(ctx, cmd.id), b = ctx.sidecar.bindings[cmd.id]
       if (b?.kind !== 'viz') throw new Error('that element is not a bound chart')
-      const spec = { ...structuredClone(cmd.spec), id: b.spec.id }
-      txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)]) // realizeOp validates (VizError) before anything changes
+      // acknowledgements come from the existing spec or this command, never from the replacement spec itself
+      const spec = gate(ctx.project, { ...structuredClone(cmd.spec), id: b.spec.id, accepted_warnings: b.spec.accepted_warnings }, cmd.accept)
+      txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)])
+      const before = b.spec
       b.spec = spec
       materializeSlide(ctx.deck, f.index)
-      return { summary: `Update visual “${spec.title}”`, slides: [sid(ctx, f.index)] }
+      return { summary: `Update visual “${spec.title}”${keptNote(before, spec)}`, slides: [sid(ctx, f.index)] }
     }
     case 'viz.change': {
       // change the visual, keep the data: same datasets, units, title and provenance; only the view shape may change
       const f = must(ctx, cmd.id), b = ctx.sidecar.bindings[cmd.id]
       if (b?.kind !== 'viz') throw new Error('that element is not a bound chart')
-      const view = { ...b.spec.view, ...(cmd.transform ? { transform: cmd.transform } : {}), ...(cmd.at ? { at: cmd.at } : {}), ...(cmd.between ? { between: cmd.between } : {}) }
-      const spec: VizSpec = { ...b.spec, family: cmd.family, ...(cmd.subtype ? { subtype: cmd.subtype } : { subtype: undefined }), view }
+      const view = { ...b.spec.view, ...(cmd.transform ? { transform: cmd.transform } : {}), ...(cmd.at ? { at: cmd.at } : {}), ...(cmd.between ? { between: cmd.between } : {}),
+        ...(cmd.from ? { from: cmd.from } : {}), ...(cmd.to ? { to: cmd.to } : {}) }
+      const spec = gate(ctx.project, { ...b.spec, family: cmd.family, ...(cmd.subtype ? { subtype: cmd.subtype } : { subtype: undefined }), view }, cmd.accept)
+      // a single-period or change view is titled by its period ("…, 2025"); back over time, title it by the series and unit
+      if (b.spec.view.transform !== 'none' && view.transform === 'none') { const pr = check(ctx.project, spec); spec.title = `${pr.label.charAt(0).toUpperCase()}${pr.label.slice(1)}, ${pr.unit}` }
       txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)])
+      const before = b.spec
       b.spec = spec
       materializeSlide(ctx.deck, f.index)
-      return { summary: `Change “${spec.title}” to ${cmd.family}${cmd.subtype && cmd.subtype !== 'clustered' ? ` (${cmd.subtype})` : ''}${cmd.transform ? `, ${cmd.transform}` : ''}`, slides: [sid(ctx, f.index)] }
+      return { summary: `Change “${spec.title}” to ${cmd.family}${cmd.subtype && cmd.subtype !== 'clustered' ? ` (${cmd.subtype})` : ''}${cmd.transform ? `, ${cmd.transform}` : ''}${keptNote(before, spec)}`, slides: [sid(ctx, f.index)] }
     }
     case 'deck.reproject': {
       // Re-project every bound chart and table from the working layer (e.g. after a formatting change)

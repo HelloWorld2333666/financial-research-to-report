@@ -9,6 +9,92 @@
    "status": "manual_unverified"
   }
  },
+ "extra": {
+  "ds.fr.hold.dom": {
+   "id": "ds.fr.hold.dom",
+   "title": "France · debt held by domestic holders (test)",
+   "entity": "Domestic holders",
+   "geo": "FR",
+   "metric": "holders",
+   "unit": "% of debt",
+   "frequency": "annual",
+   "origin": "test",
+   "verification": "test",
+   "source_url": "",
+   "source_note": "synthetic test fixture",
+   "working": {},
+   "observations": [
+    {
+     "date": "2022",
+     "value": 46,
+     "status": "test"
+    },
+    {
+     "date": "2023",
+     "value": 45.5,
+     "status": "test"
+    },
+    {
+     "date": "2024",
+     "value": 45.2,
+     "status": "test"
+    },
+    {
+     "date": "2025",
+     "value": 44.8,
+     "status": "test"
+    }
+   ],
+   "measure": {
+    "kind": "share",
+    "signed": false,
+    "additive_parts_of": "fr.debt.total",
+    "scale": "interval"
+   }
+  },
+  "ds.fr.hold.for": {
+   "id": "ds.fr.hold.for",
+   "title": "France · debt held by non-resident holders (test)",
+   "entity": "Non-resident holders",
+   "geo": "FR",
+   "metric": "holders",
+   "unit": "% of debt",
+   "frequency": "annual",
+   "origin": "test",
+   "verification": "test",
+   "source_url": "",
+   "source_note": "synthetic test fixture",
+   "working": {},
+   "observations": [
+    {
+     "date": "2022",
+     "value": 54,
+     "status": "test"
+    },
+    {
+     "date": "2023",
+     "value": 54.5,
+     "status": "test"
+    },
+    {
+     "date": "2024",
+     "value": 54.8,
+     "status": "test"
+    },
+    {
+     "date": "2025",
+     "value": 55.2,
+     "status": "test"
+    }
+   ],
+   "measure": {
+    "kind": "share",
+    "signed": false,
+    "additive_parts_of": "fr.debt.total",
+    "scale": "interval"
+   }
+  }
+ },
  "cases": [
   {
    "name": "column",
@@ -56,15 +142,14 @@
    "spec": {
     "schema": "frr-viz/1",
     "id": "viz_test",
-    "title": "Interest",
+    "title": "Holders",
     "family": "column",
     "view": {
      "datasets": [
-      "ds.fr.interest",
-      "ds.de.interest"
+      "ds.fr.hold.dom",
+      "ds.fr.hold.for"
      ],
-     "transform": "none",
-     "from": "2018"
+     "transform": "none"
     },
     "missing": "gap",
     "subtype": "stacked"
@@ -72,8 +157,6 @@
    "expected": {
     "shape": "time",
     "categories": [
-     "2020",
-     "2021",
      "2022",
      "2023",
      "2024",
@@ -81,20 +164,16 @@
     ],
     "series": [
      [
-      1.3,
-      1.4,
-      1.9,
-      1.9,
-      2,
-      2.2
+      46,
+      45.5,
+      45.2,
+      44.8
      ],
      [
-      0.6,
-      0.6,
-      0.7,
-      0.9,
-      1,
-      1.1
+      54,
+      54.5,
+      54.8,
+      55.2
      ]
     ],
     "x": null
@@ -105,15 +184,14 @@
    "spec": {
     "schema": "frr-viz/1",
     "id": "viz_test",
-    "title": "Interest",
+    "title": "Holders",
     "family": "column",
     "view": {
      "datasets": [
-      "ds.fr.interest",
-      "ds.de.interest"
+      "ds.fr.hold.dom",
+      "ds.fr.hold.for"
      ],
-     "transform": "none",
-     "from": "2018"
+     "transform": "none"
     },
     "missing": "gap",
     "subtype": "percent"
@@ -121,8 +199,6 @@
    "expected": {
     "shape": "time",
     "categories": [
-     "2020",
-     "2021",
      "2022",
      "2023",
      "2024",
@@ -130,20 +206,16 @@
     ],
     "series": [
      [
-      1.3,
-      1.4,
-      1.9,
-      1.9,
-      2,
-      2.2
+      46,
+      45.5,
+      45.2,
+      44.8
      ],
      [
-      0.6,
-      0.6,
-      0.7,
-      0.9,
-      1,
-      1.1
+      54,
+      54.5,
+      54.8,
+      55.2
      ]
     ],
     "x": null
@@ -265,8 +337,7 @@
     "family": "area",
     "view": {
      "datasets": [
-      "ds.fr.debt",
-      "ds.de.debt"
+      "ds.fr.debt"
      ],
      "transform": "none"
     },
@@ -286,12 +357,6 @@
       null,
       112.6,
       115.7
-     ],
-     [
-      64.1,
-      61.8,
-      61.4,
-      62.8
      ]
     ],
     "x": null
@@ -302,12 +367,12 @@
    "spec": {
     "schema": "frr-viz/1",
     "id": "viz_test",
-    "title": "Debt 2025",
+    "title": "Holders 2025",
     "family": "pie",
     "view": {
      "datasets": [
-      "ds.fr.debt",
-      "ds.de.debt"
+      "ds.fr.hold.dom",
+      "ds.fr.hold.for"
      ],
      "transform": "latest"
     },
@@ -316,13 +381,13 @@
    "expected": {
     "shape": "cross",
     "categories": [
-     "France",
-     "Germany"
+     "Domestic holders",
+     "Non-resident holders"
     ],
     "series": [
      [
-      115.7,
-      62.8
+      44.8,
+      55.2
      ]
     ],
     "x": null
@@ -333,12 +398,12 @@
    "spec": {
     "schema": "frr-viz/1",
     "id": "viz_test",
-    "title": "Debt 2025",
+    "title": "Holders 2025",
     "family": "doughnut",
     "view": {
      "datasets": [
-      "ds.fr.debt",
-      "ds.de.debt"
+      "ds.fr.hold.dom",
+      "ds.fr.hold.for"
      ],
      "transform": "latest"
     },
@@ -347,13 +412,13 @@
    "expected": {
     "shape": "cross",
     "categories": [
-     "France",
-     "Germany"
+     "Domestic holders",
+     "Non-resident holders"
     ],
     "series": [
      [
-      115.7,
-      62.8
+      44.8,
+      55.2
      ]
     ],
     "x": null
@@ -364,12 +429,12 @@
    "spec": {
     "schema": "frr-viz/1",
     "id": "viz_test",
-    "title": "Yield vs debt",
+    "title": "Growth vs interest",
     "family": "scatter",
     "view": {
      "datasets": [
-      "ds.fr.debt",
-      "ds.fr.yield"
+      "ds.fr.interest",
+      "ds.fr.growth"
      ],
      "transform": "none"
     },
@@ -378,21 +443,30 @@
    "expected": {
     "shape": "pairs",
     "categories": [
-     "111.4",
-     "112.6",
-     "115.7"
+     "1.3",
+     "1.4",
+     "1.9",
+     "1.9",
+     "2",
+     "2.2"
     ],
     "series": [
      [
-      1.7,
-      2.97,
-      3.34979
+      -7.4,
+      6.9,
+      2.7,
+      1.6,
+      1.5,
+      0.8
      ]
     ],
     "x": [
-     111.4,
-     112.6,
-     115.7
+     1.3,
+     1.4,
+     1.9,
+     1.9,
+     2,
+     2.2
     ]
    }
   },

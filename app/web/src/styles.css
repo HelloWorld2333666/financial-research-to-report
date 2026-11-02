@@ -47,6 +47,8 @@ html, body, #root { height: 100%; }
 body { margin: 0; font: 13px/1.45 var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); }
 .muted { color: var(--muted); } .small { font-size: 11px; } .good { color: var(--good); } .bad { color: var(--bad); }
+.warn-box { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 6px 8px; margin: 6px 0; font-size: 11.5px; } .warn-box .muted { margin-top: 3px; }
+.warn-list { margin: 10px 0; padding-left: 18px; color: var(--warn); } .warn-list li { margin: 4px 0; }
 
 /* ------------------------------------------------------------------ controls */
 button { font: inherit; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); cursor: pointer; transition: background .12s, border-color .12s; }
@@ -69,8 +71,8 @@ select { padding: 4px 6px; }
 /* tooltips, menus, dialogs (Radix) */
 .tip { background: var(--ink); color: var(--chrome); font-size: 11.5px; padding: 4px 8px; border-radius: 5px; box-shadow: var(--shadow); z-index: 300; user-select: none; }
 .tip kbd { font-family: var(--font); opacity: .7; margin-left: 6px; }
-.menu { min-width: 200px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 4px; z-index: 200; }
-.menu-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; font-size: 12.5px; cursor: default; outline: none; color: var(--ink); }
+.menu { min-width: 200px; max-width: 420px; max-height: 70vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 4px; z-index: 200; }
+.menu-item { display: flex; align-items: flex-start; white-space: normal; line-height: 1.35; gap: 8px; padding: 6px 8px; border-radius: 5px; font-size: 12.5px; cursor: default; outline: none; color: var(--ink); }
 .menu-item[data-highlighted] { background: var(--accent-soft); color: var(--accent); }
 .menu-item[data-disabled] { opacity: .45; }
 .menu-label { padding: 6px 8px 2px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }

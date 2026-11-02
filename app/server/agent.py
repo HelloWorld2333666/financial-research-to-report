@@ -37,7 +37,7 @@ from pydantic_ai.ui import StateDeps
 
 import integrity
 from composer import compose
-from evidence import METRICS, NAMES
+from evidence import MEASURES, METRICS, NAMES
 from projects import ProjectStore
 
 EUROSTAT = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/"
@@ -133,7 +133,7 @@ def fetch_verified(get: Callable[[str], bytes], metric: str, geo: str, since: st
                                        "series_key": f"{dataset} {json.dumps(filters, sort_keys=True)}", "note": "Eurostat dissemination API (JSON-stat)"}}
         observations.append({"date": p, "value": v, "status": "verified", "evidence_id": eid})
     return {"dataset": {"id": did, "title": f"{name} · {label.lower()}", "entity": name, "geo": geo, "metric": metric, "unit": unit,
-                        "frequency": "annual", "origin": "eurostat", "verification": "verified", "source_url": url,
+                        "measure": dict(MEASURES[metric]), "frequency": "annual", "origin": "eurostat", "verification": "verified", "source_url": url,
                         "source_note": f"Eurostat {dataset} ({now.date().isoformat()}, live)", "observations": observations, "working": {}},
             "evidence": evidence, "rejected": len(obs) - len(accepted)}
 
@@ -255,7 +255,12 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 f"Countries with verified data in the project: {', '.join(geos) or 'none'} (ISO-2 codes).\n"
                 "Tools: compose_deck (draft a deck from verified data); add_comparison (add a country to the selected chart); "
                 "rewrite_text (reword the selected text; pass the user's instruction, the tool does the wording); "
-                "layout_suggestion (align or distribute the selected elements); start_research (record a research request, e.g. rating history).")
+                "layout_suggestion (align or distribute the selected elements); start_research (Eurostat data for one or more countries, or a rating request); "
+                "propose_visual (a chart of project data: name the analytical INTENT — trend over time, ranking at one period, change between two periods, "
+                "composition of a total, relationship between two measures — the metric and the countries; the app picks the chart type from the data); "
+                "change_visual (turn the selected chart into another type).\n"
+                "If a request does not make the intent clear (e.g. 'compare France with the PIIGS' could mean the trend, the current ranking or the change "
+                "since a year), ask ONE short question offering those options instead of guessing.")
 
     @agent.tool
     def compose_deck(ctx: RunContext[Deps], country: str = "FR", peer: str = "DE") -> dict:
@@ -345,11 +350,13 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "summary": f"Proposed: {action.replace('_', ' ')} for {len(ids)} elements. {NOTHING_YET}"}
 
     @agent.tool
-    async def start_research(ctx: RunContext[Deps], topic: str, country: str = "FR") -> dict:
+    async def start_research(ctx: RunContext[Deps], topic: str, country: str = "FR", countries: Optional[list[str]] = None) -> dict:
         """Start research. Rating history: records a request on the current slide, completed by uploading the agency's PDF.
-        Economic or fiscal data for a country (debt, deficit, interest, growth, yields): starts a background Eurostat task."""
-        geo = country.upper()[:2]
-        name = NAMES.get(geo, country)
+        Economic or fiscal data (debt, deficit, interest, growth, yields) for one country, or several via `countries`
+        (ISO-2 / Eurostat codes, e.g. ["IT","ES","PT","EL","BE"]): starts a background Eurostat task."""
+        geos = [c.upper()[:2] for c in (countries or [country])]
+        geo = geos[0]
+        name = NAMES.get(geo, country) if len(geos) == 1 else ", ".join(NAMES.get(g, g) for g in geos)
         if re.search(r"rating|agency|outlook|moody|fitch|s&p|dbrs|scope", topic, re.I) or center is None:
             request = {"schema": "frr-research-request/0.1", "topic": topic[:120], "entity": name,
                        "reason": "rating agencies publish press releases that cannot be fetched automatically; upload the agency's PDF to complete this"}
@@ -358,9 +365,48 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                                f"the agency's press release PDF (Evidence tab); the rating is verified on the page. {NOTHING_YET}"}
         if not ctx.deps.state.project:
             return {"kind": "error", "message": "No project is open."}
-        t = center.create(ctx.deps.state.project, "eurostat_pack", {"geos": [geo], "metrics": list(METRICS), "since": "2015"}, f"Eurostat data for {name}")
+        t = center.create(ctx.deps.state.project, "eurostat_pack", {"geos": geos, "metrics": list(METRICS), "since": "2015"}, f"Eurostat data for {name}")
         return {"kind": "task_started", "task_id": t["id"], "title": t["title"],
-                "summary": f"Started a background task: {len(METRICS)} Eurostat series for {name}, each confirmed by an independent re-fetch. "
+                "summary": f"Started a background task: {len(METRICS) * len(geos)} Eurostat series for {name}, each confirmed by an independent re-fetch. "
                            "It keeps running while you work; its result appears in Tasks as a proposal."}
+
+    @agent.tool
+    def propose_visual(ctx: RunContext[Deps], intent: Literal["trend", "ranking", "change", "composition", "relationship"], metric: str,
+                       countries: Optional[list[str]] = None, period: Optional[str] = None, start: Optional[str] = None, end: Optional[str] = None,
+                       second_metric: Optional[str] = None) -> dict:
+        """Propose a chart of project data by analytical intent. metric: debt, deficit, interest, growth or yield; countries: ISO-2 codes
+        (default: every country with that metric). period: the year for a ranking or composition; start/end: the years of a change.
+        relationship: a second_metric for the other axis (one country). The app chooses the chart type from the data under fixed rules."""
+        project = project_of(ctx)
+        m = metric.lower().strip()
+        geos = [c.upper()[:2] for c in countries] if countries else sorted({d["geo"] for d in project["datasets"].values() if d["metric"] == m})
+        if intent == "relationship":
+            ids = [f"ds.{geos[0].lower()}.{m}", f"ds.{geos[0].lower()}.{(second_metric or '').lower()}"] if geos and second_metric else []
+        else:
+            ids = [f"ds.{g.lower()}.{m}" for g in geos]
+        missing = [i for i in ids if i not in project["datasets"]]
+        present = [i for i in ids if i in project["datasets"]]
+        if not present or (intent == "relationship" and missing):
+            return {"kind": "error", "message": f"The project has no verified {m} data for {', '.join(NAMES.get(i.split('.')[1].upper(), i) for i in missing) or 'those countries'}. "
+                                                "Start research for them first (start_research with countries)."}
+        req = {"intent": intent, "datasets": present, **({"at": period} if period else {}), **({"between": [start, end]} if start and end else {})}
+        who = ", ".join(NAMES.get(i.split(".")[1].upper(), i) for i in present)
+        return {"kind": "visual_request", **req, "missing": missing, "slide": ctx.deps.state.slide,
+                "summary": f"Requested a {intent} visual of {m} for {who}" + (f" (no verified data for {', '.join(missing)})" if missing else "")
+                           + ". The app recommends a chart type from the data under fixed rules; preview and apply. Nothing has changed yet."}
+
+    @agent.tool
+    def change_visual(ctx: RunContext[Deps], family: Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", "combo"],
+                      subtype: Optional[Literal["clustered", "stacked", "percent"]] = None,
+                      view: Optional[Literal["over_time", "ranking", "change"]] = None) -> dict:
+        """Turn the chart selected on the canvas into another type (and optionally another view of the same data).
+        The app checks the request against the data and refuses visuals that would misrepresent it, with the reason."""
+        sel = next((s for s in ctx.deps.state.selection if s.kind == "chart"), None)
+        if sel is None:
+            return {"kind": "error", "message": "Select a chart on the canvas first."}
+        transform = {"over_time": "none", "ranking": "rank", "change": "diff", None: None}[view]
+        return {"kind": "visual_change_request", "element": sel.id, "family": family, **({"subtype": subtype} if subtype else {}), **({"transform": transform} if transform else {}),
+                "summary": f"Requested: show “{sel.label}” as {family}{f' ({subtype})' if subtype else ''}{f', {view.replace('_', ' ')}' if view else ''}. "
+                           "The app checks it against the data first. Nothing has changed yet."}
 
     return agent

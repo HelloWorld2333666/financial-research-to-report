@@ -28,6 +28,10 @@ class View(BaseModel):
     order: Optional[Literal["desc", "asc"]] = None
 
 
+# mirrors the warning codes of app/web/src/core/constraints.ts (test_vis_v2 checks they agree)
+WarningCode = Literal["negative_stack", "combo_one_unit", "many_slices", "few_periods", "many_lines", "overlapping_areas", "many_bars", "few_points"]
+
+
 class VizSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_: Literal["frr-viz/1"] = Field(alias="schema")
@@ -38,6 +42,8 @@ class VizSpec(BaseModel):
     view: View
     missing: Literal["gap"] = "gap"
     legend: Optional[Literal["b", "r", "none"]] = None
+    # warnings the user kept with "Use anyway" (VIS V2). Only warning codes: an invalid visual can't be acknowledged
+    accepted_warnings: Optional[list[WarningCode]] = None
 
 
 class VizError(ValueError):

@@ -50,9 +50,10 @@ class Writer:
         return slide
 
 
-def line_viz(title: str, datasets: list[str]) -> dict:
-    """A time-series line visual (frr-viz/1). VIS V2 chooses the family from intent and data."""
-    return {"schema": "frr-viz/1", "title": title, "family": "line", "view": {"datasets": datasets, "transform": "none"}, "missing": "gap"}
+def trend(title: str, datasets: list[str]) -> dict:
+    """A visual request by intent (VIS V2): the client's recommender picks the family from the data (for
+    example columns for a few discrete periods, a line for a long series) under the hard constraints."""
+    return {"intent": "trend", "title": title, "datasets": datasets}
 
 
 def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
@@ -84,7 +85,7 @@ def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
             bullets.append(f"{pname}: {w.ev('body', fmt(debt_p[last(debt_p)]) + '%', f'ds.{p}.debt', last(debt_p))} in {last(debt_p)}.")
         slides.append(w.take({"key": "debt", "kicker": f"{name.upper()} · DEBT", "title": claim,
                               "subtitle": "General government gross debt, % of GDP · Eurostat (gov_10dd_edpt1)",
-                              "viz": line_viz("Gross debt, % of GDP", [f"ds.{g}.debt"] + ([f"ds.{p}.debt"] if debt_p else [])),
+                              "viz": trend("Gross debt, % of GDP", [f"ds.{g}.debt"] + ([f"ds.{p}.debt"] if debt_p else [])),
                               "bullets": bullets}))
     if defi and intr:
         yd, yi = last(defi), last(intr)
@@ -95,7 +96,7 @@ def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
             + f" of GDP in {yd}; interest costs reached {w.ev('title', fmt(intr[yi]) + '%', f'ds.{g}.interest', yi)} in {yi}")
         slides.append(w.take({"key": "fiscal", "kicker": f"{name.upper()} · FISCAL", "title": title,
                               "subtitle": "Deficit and interest payable, % of GDP · Eurostat (gov_10dd_edpt1, gov_10a_main)",
-                              "viz": line_viz("Deficit (-) / surplus (+), % of GDP", [f"ds.{g}.deficit"] + ([f"ds.{p}.deficit"] if series(project, f"ds.{p}.deficit") else [])),
+                              "viz": trend("Deficit (-) / surplus (+), % of GDP", [f"ds.{g}.deficit"] + ([f"ds.{p}.deficit"] if series(project, f"ds.{p}.deficit") else [])),
                               "table": {"title": "Interest payable, % of GDP", "datasets": [f"ds.{g}.interest"] + ([f"ds.{p}.interest"] if series(project, f"ds.{p}.interest") else []), "dates": sorted(intr)[-3:]}}))
     if grow and yld:
         yg, yy = last(grow), last(yld)
@@ -114,7 +115,7 @@ def compose(project: dict, geo: str = "FR", peer: str = "DE") -> list[dict]:
                            f"({name} {w.ev('body', fmt(yld[yy], 2) + '%', f'ds.{g}.yield', yy)} − {pname} {w.ev('body', fmt(yld_p[yy], 2) + '%', f'ds.{p}.yield', yy)}).")
         slides.append(w.take({"key": "market", "kicker": f"{name.upper()} · GROWTH & MARKETS", "title": title,
                               "subtitle": "Real GDP growth, %; 10-year government bond yields, % · Eurostat (nama_10_gdp, irt_lt_mcby_a)",
-                              "viz": line_viz("Real GDP growth, %", [f"ds.{g}.growth"] + ([f"ds.{p}.growth"] if series(project, f"ds.{p}.growth") else [])),
+                              "viz": trend("Real GDP growth, %", [f"ds.{g}.growth"] + ([f"ds.{p}.growth"] if series(project, f"ds.{p}.growth") else [])),
                               "table": {"title": "10-year yield, %", "datasets": [f"ds.{g}.yield"] + ([f"ds.{p}.yield"] if yld_p else []), "dates": sorted(yld)[-3:]},
                               "bullets": bullets}))
     slides.append(w.take({"key": "ratings", "kicker": f"{name.upper()} · RATINGS", "title": "Rating actions: pending a primary source",

@@ -13,6 +13,9 @@ import { effectiveObs } from './core/evidence'
 import { runChecks } from './checks'
 import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
 import { ChatPanel } from './chat'
+import { changeOptions, type Intent } from './core/recommend'
+import type { Command } from './core/commands'
+import type { Finding } from './core/constraints'
 import { Icon, IconButton, Menu, TooltipProvider, isDark, useTheme } from './ui'
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -72,7 +75,15 @@ function Workspace({ store }: { store: Store }) {
   const thumbs = useMemo(() => slides.map((s) => render(store.deck, s.index, 150, store.metrics)), [store.revision, slides.length])
   const ig = useMemo(() => integrity(store.deck, store.project, store.sidecar), [store.revision])
   const say = (m: string) => { setNotice(m); setTimeout(() => setNotice((n) => (n === m ? null : n)), 4000) }
-  const exec: typeof store.exec = (cmd, meta) => { const r = store.exec(cmd, meta); if (!r.ok) say(r.error!); return r }
+  // a visual allowed with a warning returns its warnings instead of applying: the user reads them and may "Use anyway"
+  const [confirm, setConfirm] = useState<{ cmd: Command; meta?: Parameters<typeof store.exec>[1]; warnings: Finding[] } | null>(null)
+  const exec: typeof store.exec = (cmd, meta) => {
+    const r = store.exec(cmd, meta)
+    if (r.warnings) setConfirm({ cmd, meta, warnings: r.warnings })
+    else if (!r.ok) say(r.error!)
+    return r
+  }
+  const useAnyway = () => { if (!confirm) return; setConfirm(null); exec({ ...confirm.cmd, accept: confirm.warnings.map((w) => w.code) } as Command, confirm.meta) }
 
   // autosave 1.5 s after the last change
   useEffect(() => {
@@ -158,6 +169,31 @@ function Workspace({ store }: { store: Store }) {
   const enteredSource = entered ? sourceIdsFor(slide, [entered])[0] ?? null : null
   ;(window as any).__ws = { store, setCur }
 
+  // change visual (VIS V2): recommended, also valid, allowed with a warning (asks first), and invalid ones with
+  // the reason and, where one exists, a change of view that makes them valid
+  const selId = store.selection.length === 1 ? store.selection[0]! : null
+  const selBinding = selId ? store.sidecar.bindings[selId] : undefined
+  const selViz = selBinding?.kind === 'viz' ? selBinding : null
+  const INTENT_LABEL: Record<Intent, string> = { trend: 'Over time', ranking: 'Ranking', change: 'Change', composition: 'Composition', relationship: 'Relationship' }
+  const visualItems = useMemo(() => {
+    if (!selViz || !selId) return []
+    const opts = changeOptions(store.project, selViz.spec)
+    const pick = (o: { family: any; subtype?: any; transform: any; at?: string; from?: string }) => () =>
+      exec({ kind: 'viz.change', id: selId, family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), transform: o.transform, ...(o.at ? { at: o.at } : {}), ...(o.from ? { from: o.from } : {}) })
+    const mark = (o: (typeof opts)[number]) => (o.current ? '✓ ' : '')
+    const rec = opts.filter((o) => o.recommended && o.state === 'valid'), other = opts.filter((o) => !o.recommended && o.state === 'valid')
+    const warned = opts.filter((o) => o.state === 'warning'), no = opts.filter((o) => o.state === 'invalid')
+    return [
+      { heading: true, label: 'Recommended for this data' },
+      ...rec.map((o) => ({ label: `${mark(o)}${INTENT_LABEL[o.intent]}: ${o.label}`, onSelect: pick(o), testId: `rec-${o.family}-${o.transform}` })),
+      ...(other.length ? [{ separator: true, label: '' }, { heading: true, label: 'Also valid' }, ...other.map((o) => ({ label: `${mark(o)}${o.label}`, onSelect: pick(o), testId: `opt-${o.family}-${o.subtype ?? ''}-${o.transform}` }))] : []),
+      ...(warned.length ? [{ separator: true, label: '' }, { heading: true, label: 'Allowed with a warning' },
+        ...warned.map((o) => ({ label: `${mark(o)}⚠ ${o.label}${o.current ? ' (kept anyway)' : ''}`, onSelect: pick(o), testId: `warn-${o.family}-${o.subtype ?? ''}-${o.transform}` }))] : []),
+      ...(no.length ? [{ separator: true, label: '' }, { heading: true, label: 'Not valid for this data' }, ...no.flatMap((o) => [
+        { label: `${o.label}: ${o.refused}`, disabled: true, testId: `no-${o.family}-${o.subtype ?? ''}` },
+        ...o.fixes.map((x) => ({ label: `↳ ${x.label}`, onSelect: pick(x), testId: `fix-${o.family}-${o.subtype ?? ''}` }))])] : []),
+    ]
+  }, [store.revision, selId])
   const saveVersion = async () => { const v = await store.saveVersion(`Version ${new Date().toLocaleString()}`); say(`Saved version ${v.version}`); loadVersions() }
   const canDraft = slides.length === 1 && !store.deck.deck.slides[0]!.elements.length && Object.keys(store.project.datasets).length > 0
   const reprojectable = ig.mismatch.some((m) => !m.startsWith('text says'))
@@ -183,6 +219,8 @@ function Workspace({ store }: { store: Store }) {
             {(['left', 'centerH', 'right', 'top', 'centerV', 'bottom'] as const).map((m) => <button key={m} title={`Align ${m}`} className="icon-btn" onClick={() => exec({ kind: 'elements.align', ids: store.selection, mode: m })}>{{ left: '⇤', centerH: '↔', right: '⇥', top: '⤒', centerV: '↕', bottom: '⤓' }[m]}</button>)}
             {store.selection.length >= 3 && (['horizontal', 'vertical'] as const).map((a) => <button key={a} title={`Distribute ${a}`} className="icon-btn" onClick={() => exec({ kind: 'elements.distribute', ids: store.selection, axis: a })}>{a === 'horizontal' ? '⋯' : '⋮'}</button>)}
           </span></>}
+          {selViz && <><span className="vsep" /><Menu align="start" items={visualItems}
+            trigger={<button className="ghost" data-change-visual aria-label="Change visual"><span className="label">Visual: {selViz.spec.family}{selViz.spec.subtype && selViz.spec.subtype !== 'clustered' ? ` (${selViz.spec.subtype})` : ''} ▾</span></button>} /></>}
         </div>
         <span className="spacer" />
         <div className="top-actions">
@@ -242,6 +280,17 @@ function Workspace({ store }: { store: Store }) {
           </div>
         </aside>
       </main>
+      <Dialog.Root open={!!confirm} onOpenChange={(o) => { if (!o) setConfirm(null) }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="dialog-overlay" />
+          <Dialog.Content className="dialog" data-use-anyway aria-describedby={undefined}>
+            <Dialog.Title asChild><h3>Use this visual anyway?</h3></Dialog.Title>
+            <ul className="warn-list">{confirm?.warnings.map((w) => <li key={w.code} data-warning={w.code}>{w.reason}</li>)}</ul>
+            <p className="muted small">It is drawn from the same data: the values, their sources and the integrity checks don't change, and Undo reverts it. Your choice is recorded on the chart and in the journal, so later edits won't ask again unless something new comes up.</p>
+            <div className="p-actions"><button onClick={() => setConfirm(null)}>Cancel</button><button className="primary" data-use-anyway-confirm onClick={useAnyway}>Use anyway</button></div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
       <Dialog.Root open={exporting} onOpenChange={setExporting}>
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />

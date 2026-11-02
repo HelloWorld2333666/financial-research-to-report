@@ -14,6 +14,9 @@ import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { textNumbers } from './core/evidence'
 import { checkText } from './core/claims'
+import { changeOptions, recommend, type Candidate } from './core/recommend'
+import { assess } from './core/viz'
+import type { Finding } from './core/constraints'
 
 interface Host { store: Store; slide: () => string | undefined }
 const HostCtx = createContext<Host>(null as any)
@@ -48,13 +51,21 @@ export function Thumb({ slide, width = 300 }: { slide: any; width?: number }) {
 }
 
 /** A proposal: preview (dry run on the live deck, restored), apply (one undoable step), reject. */
-function Card({ pid, title, cmd, children, blocked }: { pid: string; title: string; cmd: Command | null; children?: React.ReactNode; blocked?: string | null }) {
+/** A proposal: Preview, Apply, Reject. A visual allowed with a warning shows the warning and applies only through
+ *  "Use anyway" (known up front via `warn`, or reported by the command); `blocked` (invalid) cannot be applied. */
+function Card({ pid, title, cmd, children, blocked, warn }: { pid: string; title: string; cmd: Command | null; children?: React.ReactNode; blocked?: string | null; warn?: Finding[] }) {
   const { store } = useContext(HostCtx)
   useRev(store)
   const state = store.proposals[pid] ?? 'open'
-  const [pv, setPv] = useState<any>(null), [err, setErr] = useState<string | null>(null)
-  const preview = () => cmd && setPv(store.preview(cmd, (o) => o.slides.map((sid) => render(store.deck, slideIndex(store.deck, sid), 300, store.metrics))))
-  const apply = () => { if (!cmd) return; const r = store.exec(cmd, { actor: 'ai', proposalId: pid }); setErr(r.ok ? null : r.error!); if (r.ok) setPv(null) }
+  const [pv, setPv] = useState<any>(null), [err, setErr] = useState<string | null>(null), [need, setNeed] = useState<Finding[] | null>(warn?.length ? warn : null)
+  const withAccept = (): Command | null => cmd && (need ? { ...cmd, accept: need.map((w) => w.code) } as Command : cmd)
+  const preview = () => { const c = withAccept(); if (c) setPv(store.preview(c, (o) => o.slides.map((sid) => render(store.deck, slideIndex(store.deck, sid), 300, store.metrics)))) }
+  const apply = () => {
+    const c = withAccept(); if (!c) return
+    const r = store.exec(c, { actor: 'ai', proposalId: pid })
+    if (r.warnings) { setNeed(r.warnings); setErr(null); return }
+    setErr(r.ok ? null : r.error!); if (r.ok) setPv(null)
+  }
   const open = state === 'open' || state === 'undone'
   return (
     <div className="proposal" data-proposal={pid} data-state={state}>
@@ -63,10 +74,12 @@ function Card({ pid, title, cmd, children, blocked }: { pid: string; title: stri
       {pv && (pv.ok ? pv.value.map((s: any, i: number) => <Thumb key={i} slide={s} />) : <div className="bad">Preview failed: {pv.error}</div>)}
       {err && <div className="bad">Could not apply: {err}</div>}
       {blocked && open && <div className="bad small">{blocked}</div>}
+      {need && open && !blocked && <div className="warn-box" data-warning>{need.map((w) => <div key={w.code}>⚠ {w.reason}</div>)}
+        <div className="muted">Allowed: same data, sources and integrity checks; Undo reverts it.</div></div>}
       {open ? (
         <div className="p-actions">
           <button onClick={preview} disabled={!cmd}>{pv ? 'Refresh preview' : 'Preview'}</button>
-          <button className="primary" onClick={apply} disabled={!cmd || !!blocked}>{state === 'undone' ? 'Apply again' : 'Apply'}</button>
+          <button className="primary" onClick={apply} disabled={!cmd || !!blocked} data-apply={need && !blocked ? 'anyway' : 'apply'}>{need && !blocked ? 'Use anyway' : state === 'undone' ? 'Apply again' : 'Apply'}</button>
           <button onClick={() => store.reject(pid)}>Reject</button>
         </div>
       ) : <div className="p-state">{state === 'applied' ? 'Applied (one step; Undo reverts it)' : 'Rejected'}</div>}
@@ -145,9 +158,70 @@ function ResearchTool(props: any) {
   return <Card pid={props.toolCallId} title={`Research request · ${r.request.topic}`} cmd={target ? { kind: 'placeholder.add', slide: target, label: r.label, request: r.request } : null}><Summary r={r} /></Card>
 }
 
+/** A chart by intent (VIS V2): the recommender picks from the data; alternatives and refusals keep their reasons. */
+function VisualTool(props: any) {
+  const { store } = useContext(HostCtx)
+  useRev(store)
+  const r = parse(props.result)
+  if (!r) return <Running what="Choosing a visual" />
+  if (r.kind !== 'visual_request') return <ErrorNote r={r} />
+  const rec = recommend(store.project, r)
+  const warned = rec.candidates.filter((c) => c.state === 'warning'), refused = rec.candidates.filter((c) => c.state === 'invalid')
+  if (!rec.recommended && !warned.length) return <div><Summary r={r} /><div className="bad small" data-tool-error>No valid visual for this data: {rec.error ?? refused.map((c) => `${c.label}: ${c.refused}`).join('; ')}</div></div>
+  const cmdFor = (c: Candidate): Command => {
+    const ds = store.project.datasets[r.datasets[0]]
+    const base = { key: `visual:${c.key}`, kicker: (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
+    return { kind: 'slide.compose', proposal: c.spec ? { ...base, viz: c.spec } : { ...base, table: c.table } }
+  }
+  const alts = rec.candidates.filter((c) => c.state === 'valid' && c !== rec.recommended).slice(0, 2)
+  const warnCard = (c: Candidate) => <Card key={c.key} pid={`${props.toolCallId}:${c.key}`} title={`${rec.recommended ? 'Allowed with a warning' : 'Possible, with a warning'}: ${c.label}`} cmd={cmdFor(c)} warn={c.warnings}><div className="muted small">{c.why}</div></Card>
+  return (
+    <div data-visual-request>
+      <Summary r={r} />
+      {rec.recommended ? <Card pid={`${props.toolCallId}:${rec.recommended.key}`} title={`Recommended: ${rec.recommended.label}`} cmd={cmdFor(rec.recommended)}>
+        <div className="p-summary" data-why>{rec.recommended.why}</div>
+      </Card> : <div className="muted small">No visual fits this data without a caveat; these are possible:</div>}
+      {alts.map((c) => <Card key={c.key} pid={`${props.toolCallId}:${c.key}`} title={`Alternative: ${c.label}`} cmd={cmdFor(c)}><div className="muted small">{c.why}</div></Card>)}
+      {!rec.recommended && warned.map(warnCard)}
+      {rec.recommended && warned.length > 0 && <details className="small" data-warned><summary className="muted">Allowed with a warning ({warned.length})</summary>{warned.map(warnCard)}</details>}
+      {refused.length > 0 && <details className="small"><summary className="muted">Not valid for this data ({refused.length})</summary>
+        {refused.map((c) => <div key={c.key} className="muted" data-refused={c.key}>{c.label}: {c.refused}</div>)}</details>}
+    </div>
+  )
+}
+
+/** Change the selected chart, checked against the data first. Invalid: the reason, plus valid alternatives (and a
+ *  change of view that fixes it, if any). Allowed with a warning: the warning and "Use anyway". */
+function ChangeVisualTool(props: any) {
+  const { store } = useContext(HostCtx)
+  useRev(store)
+  const r = parse(props.result)
+  if (!r) return <Running what="Checking the change" />
+  if (r.kind !== 'visual_change_request') return <ErrorNote r={r} />
+  const b: any = store.sidecar.bindings[r.element]
+  if (b?.kind !== 'viz') return <Card pid={props.toolCallId} title={`Change visual: ${r.family}`} cmd={null} blocked="The chart is no longer on the deck."><Summary r={r} /></Card>
+  const target = { ...b.spec, family: r.family, subtype: r.subtype, view: { ...b.spec.view, ...(r.transform ? { transform: r.transform } : {}) } }
+  const a = assess(store.project, target)
+  const change = (o: { family: any; subtype?: any; transform?: any; at?: string; from?: string }): Command =>
+    ({ kind: 'viz.change', id: r.element, family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), ...(o.transform ? { transform: o.transform } : {}), ...(o.at ? { at: o.at } : {}), ...(o.from ? { from: o.from } : {}) })
+  const opts = a.invalid ? changeOptions(store.project, b.spec) : []
+  const fix = opts.find((o) => o.family === r.family && (o.subtype ?? 'clustered') === (r.subtype ?? 'clustered') && o.fixes.length)?.fixes[0]
+  const instead = opts.filter((o) => o.state === 'valid' && !o.current).sort((x, y) => Number(y.recommended) - Number(x.recommended)).slice(0, 2)
+  return (
+    <div data-visual-change>
+      <Card pid={props.toolCallId} title={`Change visual: ${r.family}${r.subtype ? ` (${r.subtype})` : ''}`} blocked={a.invalid ? `Not possible: ${a.invalid.reason}` : null}
+        cmd={a.invalid ? null : change(r)} warn={a.invalid ? undefined : a.warnings}>
+        <Summary r={r} />
+      </Card>
+      {fix && <Card pid={`${props.toolCallId}:fix`} title={`Instead: ${fix.label}`} cmd={change(fix)} />}
+      {instead.map((o) => <Card key={o.label} pid={`${props.toolCallId}:${o.family}:${o.subtype ?? ''}:${o.transform}`} title={`Instead: ${o.label}`} cmd={change(o)} />)}
+    </div>
+  )
+}
+
 const Text = ({ text }: any) => <div className="msg-text">{text}</div>
 const Fallback = (p: any) => <div className="muted small">tool {p.toolName}</div>
-const tools = { by_name: { compose_deck: DeckTool, add_comparison: SeriesTool, rewrite_text: RewriteTool, layout_suggestion: LayoutTool, start_research: ResearchTool }, Fallback }
+const tools = { by_name: { compose_deck: DeckTool, add_comparison: SeriesTool, rewrite_text: RewriteTool, layout_suggestion: LayoutTool, start_research: ResearchTool, propose_visual: VisualTool, change_visual: ChangeVisualTool }, Fallback }
 
 const UserMessage = () => <MessagePrimitive.Root className="msg-user"><MessagePrimitive.Parts components={{ Text }} /></MessagePrimitive.Root>
 function AssistantMessage() {

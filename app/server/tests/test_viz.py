@@ -24,6 +24,7 @@ WEB_FIX = Path(__file__).resolve().parents[2] / "web" / "src" / "core" / "fixtur
 def test_projection_matches_the_client_for_every_family():
     parity = json.loads((FIX / "viz-parity.json").read_text())
     project = json.loads((WEB_FIX / "france-project.json").read_text())
+    project["datasets"].update(parity.get("extra", {}))  # synthetic additive datasets used by part-to-whole cases
     w = parity["working"]
     project["datasets"][w["dataset"]]["working"][w["date"]] = w["entry"]
     assert len(parity["cases"]) >= 11

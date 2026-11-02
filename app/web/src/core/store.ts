@@ -6,9 +6,15 @@ import { run, themeOps, txn, type ClipItem, type Command, type Outcome } from '.
 import { findEl, slideList } from './deck'
 import { migrateSidecar } from './sidecar'
 import { BUNDLE_SCHEMA, type Actor, type Bundle, type JournalEntry, type Project, type Sidecar } from './types'
+import { VizWarning } from './viz'
+import type { Finding } from './constraints'
 
 interface Snapshot { slides: any; entries: Map<string, unknown>; size: any; project: Project; sidecar: Sidecar; proposalId?: string }
-export interface ExecResult extends Partial<Outcome> { ok: boolean; error?: string }
+export interface ExecResult extends Partial<Outcome> {
+  ok: boolean; error?: string
+  /** a visual that is allowed but needs acknowledgement: repeat the command with `accept` (the codes) to keep it */
+  warnings?: Finding[]
+}
 
 const b64 = (bytes: Uint8Array) => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s) }
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
@@ -76,7 +82,7 @@ export class Store {
       return { ok: true, ...out }
     } catch (e: any) {
       this.restore(before)
-      return { ok: false, error: String(e?.message ?? e) }
+      return { ok: false, error: String(e?.message ?? e), ...(e instanceof VizWarning ? { warnings: e.warnings } : {}) }
     }
   }
 

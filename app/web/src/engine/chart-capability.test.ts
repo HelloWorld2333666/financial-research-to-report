@@ -82,8 +82,11 @@ describe('VIS-01 chart capability audit', () => {
     for (const r of matrix) {
       if (r.excluded) { expect(r.insert).toMatch(/^refused: 3-D charts distort comparisons/); continue }
       // verified in our app for every type the engine writes
-      expect([r.type, r.insert, r.gapParsed, r.renders, r.saveReopen, r.undoRedo, r.dataEdit, r.typeChangeToBar, r.typeChangeFromBar, r.boundCompose])
-        .toEqual([r.type, 'ok', true, true, true, true, true, true, true, 'ok'])
+      expect([r.type, r.insert, r.gapParsed, r.renders, r.saveReopen, r.undoRedo, r.dataEdit, r.typeChangeToBar, r.typeChangeFromBar])
+        .toEqual([r.type, 'ok', true, true, true, true, true, true, true])
+      // evidence-bound compose of FR + DE debt: overlapping areas of series that do not add up need "Use anyway" (VIS V2 warning)
+      if (r.type === 'area') expect(r.boundCompose).toMatch(/Needs confirmation: overlapping areas can read as a total/)
+      else expect([r.type, r.boundCompose]).toEqual([r.type, 'ok'])
       // VIS-01 finding F2, fixed by vendor patch 0005: a rebuild without a series patch (type change,
       // style-only edit) used to map gaps to zeros
       expect([r.type, r.typeChangeKeepsGap, r.styleEditKeepsGap]).toEqual([r.type, true, true])

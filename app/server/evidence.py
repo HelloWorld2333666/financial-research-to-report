@@ -22,7 +22,20 @@ METRICS = {
     "growth": ("nama_10_gdp", {"na_item": "B1GQ", "unit": "CLV_PCH_PRE"}, "Real GDP growth", "%"),
     "yield": ("irt_lt_mcby_a", {}, "10-year government bond yield", "%"),
 }
-NAMES = {"FR": "France", "DE": "Germany", "IT": "Italy", "ES": "Spain", "NL": "Netherlands", "BE": "Belgium", "AT": "Austria", "PT": "Portugal"}
+# metric key -> what kind of measure it is (VIS V2). Visual rules read this instead of guessing: a ratio of
+# GDP for several countries is not a set of parts of one total, so it can never be a pie or a stack.
+# additive_parts_of names the total a dataset is a part of (None = not additive across datasets).
+MEASURES = {
+    "debt": {"kind": "ratio", "of": "GDP", "signed": False, "additive_parts_of": None, "scale": "interval"},
+    "deficit": {"kind": "balance_ratio", "of": "GDP", "signed": True, "additive_parts_of": None, "scale": "interval"},
+    "interest": {"kind": "ratio", "of": "GDP", "signed": False, "additive_parts_of": None, "scale": "interval"},
+    "growth": {"kind": "rate", "of": None, "signed": True, "additive_parts_of": None, "scale": "interval"},
+    "yield": {"kind": "rate", "of": None, "signed": False, "additive_parts_of": None, "scale": "interval"},
+}
+NAMES = {"FR": "France", "DE": "Germany", "IT": "Italy", "ES": "Spain", "NL": "Netherlands", "BE": "Belgium", "AT": "Austria", "PT": "Portugal",
+         "EL": "Greece", "IE": "Ireland", "FI": "Finland", "LU": "Luxembourg", "SK": "Slovakia", "SI": "Slovenia", "LT": "Lithuania",
+         "LV": "Latvia", "EE": "Estonia", "CY": "Cyprus", "MT": "Malta", "HR": "Croatia", "PL": "Poland", "SE": "Sweden", "DK": "Denmark",
+         "CZ": "Czechia", "HU": "Hungary", "RO": "Romania", "BG": "Bulgaria"}
 DESIGN_DNA = {"font": "Inter", "ink": "#0f2742", "accent": "#c8102e", "muted": "#5b6b7f", "rule": "#0f2742",
               "series": ["#1f4e9c", "#c8102e", "#2e8b57", "#b8860b"]}
 
@@ -50,7 +63,7 @@ def project_from_record(record: dict, project_id: str, title: str) -> dict:
         did = f"ds.{geo.lower()}.{key}"
         ds = datasets.setdefault(did, {
             "id": did, "title": f"{NAMES.get(geo, geo)} · {METRICS[key][2].lower()}", "entity": NAMES.get(geo, geo), "geo": geo,
-            "metric": key, "unit": METRICS[key][3], "frequency": "annual", "origin": "eurostat", "verification": "verified",
+            "metric": key, "unit": METRICS[key][3], "measure": dict(MEASURES[key]), "frequency": "annual", "origin": "eurostat", "verification": "verified",
             "source_url": src["url"], "source_note": f"Eurostat {dataset} ({src['accessed_date']})", "observations": [], "working": {}})
         if not any(o["date"] == period for o in ds["observations"]):
             ds["observations"].append({"date": period, "value": e["value"], "status": "verified", "evidence_id": e["id"]})

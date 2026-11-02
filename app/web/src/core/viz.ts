@@ -10,6 +10,7 @@
 // value (diff, pct_change). Missing values are gaps, never zeros.
 import { chartColors, decimalsOf, effectiveObs } from './evidence'
 import type { Dataset, Project } from './types'
+import { findings, type Finding } from './constraints'
 
 export const VIZ_SCHEMA = 'frr-viz/1'
 export type Family = 'column' | 'bar' | 'line' | 'area' | 'pie' | 'doughnut' | 'scatter' | 'combo'
@@ -39,6 +40,8 @@ export interface VizSpec {
   view: View
   missing: 'gap'
   legend?: 'b' | 'r' | 'none'
+  /** warning codes the user chose to keep ("Use anyway", VIS V2); never covers an invalid visual */
+  accepted_warnings?: string[]
 }
 
 /** Where one projected value comes from. */
@@ -55,6 +58,8 @@ export interface Projected {
   /** for 'pairs' (scatter): x values per point, and the x dataset */
   x?: { dataset: string; values: number[]; cells: Cell[] }
   label: string
+  /** cross-sections: the period shown ([at]) or compared ([start, end]) */
+  periods?: string[]
 }
 
 export class VizError extends Error {}
@@ -120,7 +125,7 @@ export function project(p: Project, view: View, opts: { mixedUnits?: boolean; sc
       const dir = view.order === 'asc' ? 1 : -1
       rows = [...rows].sort((a, b) => (a.value == null ? 1 : b.value == null ? -1 : dir * (a.value - b.value)))
     }
-    return { shape: 'cross', unit, label: `${metricLabel}, ${period}`, categories: rows.map((r) => r.entity), series: [{ name: `${metricLabel} ${period}`, values: rows.map((r) => r.value), cells: rows.map((r) => r.cell) }] }
+    return { shape: 'cross', unit, label: `${metricLabel}, ${period}`, periods: [period], categories: rows.map((r) => r.entity), series: [{ name: `${metricLabel} ${period}`, values: rows.map((r) => r.value), cells: rows.map((r) => r.cell) }] }
   }
 
   // diff / pct_change between two periods, per entity (derived values: formula + inputs)
@@ -135,7 +140,7 @@ export function project(p: Project, view: View, opts: { mixedUnits?: boolean; sc
     return { value: value == null ? null : Number(value.toFixed(6)), cell: (value == null ? null : { derived: { formula: pct ? '(end / start - 1) * 100' : 'end - start', inputs: { start: input(va, a), end: input(vb, b) } } }) as Cell }
   })
   return {
-    shape: 'cross', unit: pct ? '%' : /%/.test(unit) ? 'pp' : unit, label: `${pct ? 'Change, %' : 'Change'}: ${metricLabel}, ${a}–${b}`,
+    shape: 'cross', unit: pct ? '%' : /%/.test(unit) ? 'pp' : unit, label: `${pct ? 'Change, %' : 'Change'}: ${metricLabel}, ${a}–${b}`, periods: [a, b],
     categories: entities, series: [{ name: `${a}–${b}`, values: rows.map((r) => r.value), cells: rows.map((r) => r.cell) }],
   }
 }
@@ -158,13 +163,41 @@ export function refusal(spec: VizSpec, pr: Projected): string | null {
 
 const projectFor = (p: Project, spec: VizSpec) => project(p, spec.view, { mixedUnits: spec.family === 'combo', scatter: spec.family === 'scatter' })
 
-/** Validates the spec against the data and returns its projection; throws VizError with the reason. */
+export interface Assessment { pr: Projected | null; invalid: Finding | null; warnings: Finding[] }
+/** Every finding for the spec: the first invalid one (shape rules, then meaning rules) and all warnings. */
+export function assess(p: Project, spec: VizSpec): Assessment {
+  if (spec.schema !== VIZ_SCHEMA || !FAMILIES.includes(spec.family)) return { pr: null, invalid: { code: 'spec', level: 'invalid', reason: `not a ${VIZ_SCHEMA} spec or unknown family` }, warnings: [] }
+  let pr: Projected
+  try { pr = projectFor(p, spec) } catch (e: any) { if (!(e instanceof VizError)) throw e; return { pr: null, invalid: { code: 'view', level: 'invalid', reason: e.message }, warnings: [] } }
+  const shape = refusal(spec, pr)
+  const fs = findings(p, spec, pr)
+  return { pr, invalid: shape ? { code: 'shape', level: 'invalid', reason: shape } : fs.find((x) => x.level === 'invalid') ?? null, warnings: fs.filter((x) => x.level === 'warning') }
+}
+
+/** Validates the spec against the data and returns its projection; throws VizError for an invalid visual.
+ *  Warnings don't block here: re-realizing after a data edit must never be stopped by a design choice. */
 export function check(p: Project, spec: VizSpec): Projected {
-  if (spec.schema !== VIZ_SCHEMA || !FAMILIES.includes(spec.family)) throw new VizError(`not a ${VIZ_SCHEMA} spec or unknown family`)
-  const pr = projectFor(p, spec)
-  const r = refusal(spec, pr)
-  if (r) throw new VizError(r)
-  return pr
+  const a = assess(p, spec)
+  if (a.invalid) throw new VizError(a.invalid.reason)
+  return a.pr!
+}
+
+/** A visual that needs the user's acknowledgement first; carries the warnings so the UI can offer "Use anyway". */
+export class VizWarning extends VizError {
+  constructor(readonly warnings: Finding[]) { super(`Needs confirmation: ${warnings.map((w) => w.reason).join('; ')}`) }
+}
+
+/** For a new or changed visual: invalid -> VizError; a warning not yet acknowledged -> VizWarning. Returns the
+ *  spec with `accepted_warnings` reduced to the warnings that still apply (a later change asks again). */
+export function gate(p: Project, spec: VizSpec, accept: string[] = []): VizSpec {
+  const a = assess(p, spec)
+  if (a.invalid) throw new VizError(a.invalid.reason)
+  const ok = new Set([...(spec.accepted_warnings ?? []), ...accept])
+  const pending = a.warnings.filter((w) => !ok.has(w.code))
+  if (pending.length) throw new VizWarning(pending)
+  const { accepted_warnings: _, ...rest } = spec
+  const kept = a.warnings.map((w) => w.code)
+  return kept.length ? { ...rest, accepted_warnings: kept } : rest
 }
 
 export interface Realization { kind: string; barDir?: 'bar' | 'col'; title: string; categories: string[]; series: { name: string; values: (number | null)[] }[]; colorScheme: string[] }
