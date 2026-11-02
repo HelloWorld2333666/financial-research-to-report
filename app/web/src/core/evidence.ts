@@ -139,3 +139,10 @@ export function textNumbers(text: string, refs: NumberRef[] = [], p: Project): T
     return { text: f.text, status: data != null && roundsTo(data, f.value, f.decimals) ? 'ok' : 'stale', ref, data }
   })
 }
+
+// ------------------------------------------------------------------ rating actions (mirrors app/server/research_runs.py rating_cells)
+export const RATING_COLUMNS = ['Agency', 'Date', 'Action', 'Rating', 'Outlook']
+export function ratingCells(ev: any): string[] {
+  const r = ev?.rating ?? {}
+  return [r.agency || '—', r.date || '—', r.action || '—', r.rating || '—', r.outlook || '—']
+}

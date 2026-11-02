@@ -25,6 +25,8 @@ export type Binding =
   | { kind: 'chart'; slide: string; chart: ChartSpec }
   | { kind: 'table'; slide: string; table: TableSpec }
   | { kind: 'placeholder'; slide: string; label: string; request: any }
+  /** a table of rating actions; each row is one verified evidence item (page + excerpt from an agency document) */
+  | { kind: 'ratings'; slide: string; rows: string[] }
   | { kind: 'decor'; slide: string }
 /** A number as written in slide text and the one evidence item or derivation it came from (schema 0.2 NumberRef). */
 export interface NumberRef { text: string; evidence?: string; derivation?: string }

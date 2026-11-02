@@ -36,7 +36,7 @@ export function describeSelection(store: Store) {
   })
 }
 
-function Thumb({ slide, width = 300 }: { slide: any; width?: number }) {
+export function Thumb({ slide, width = 300 }: { slide: any; width?: number }) {
   return (
     <div className="pv-thumb" style={{ width, height: (width * 9) / 16 }}>
       <div style={{ transform: `scale(${width / slide.widthPx})`, transformOrigin: '0 0' }}>
@@ -134,7 +134,11 @@ function LayoutTool(props: any) {
 function ResearchTool(props: any) {
   const { slide } = useContext(HostCtx)
   const r = parse(props.result)
-  if (!r) return <Running what="Recording the request" />
+  if (!r) return <Running what="Starting research" />
+  if (r.kind === 'task_started') return (
+    <div className="proposal" data-task-started={r.task_id}><div className="p-title">Background task · {r.title}</div><Summary r={r} />
+      <div className="p-actions"><button onClick={() => dispatchEvent(new CustomEvent('frr:tab', { detail: 'tasks' }))}>Open Tasks</button></div></div>
+  )
   if (r.kind !== 'research_proposal') return <ErrorNote r={r} />
   const target = r.slide ?? slide()
   return <Card pid={props.toolCallId} title={`Research request · ${r.request.topic}`} cmd={target ? { kind: 'placeholder.add', slide: target, label: r.label, request: r.request } : null}><Summary r={r} /></Card>

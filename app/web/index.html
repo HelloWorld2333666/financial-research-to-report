@@ -70,6 +70,12 @@
     .pv-thumb { overflow: hidden; pointer-events: none; border: 1px solid var(--line); background: #fff; }
     .rw { display: flex; flex-direction: column; gap: 2px; } .rw-before { text-decoration: line-through; color: var(--muted); } .rw-after { font-weight: 600; }
     .tool-running { color: var(--muted); font-size: 12px; font-style: italic; }
+    .ev-excerpt { margin: 2px 0; padding: 4px 8px; border-left: 3px solid #98a2b3; background: #f9fafb; font-size: 11px; font-style: italic; }
+    .upload { display: flex; flex-direction: column; gap: 4px; border: 1px dashed #b8c2cf; border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; }
+    .tasks { display: flex; flex-direction: column; gap: 8px; font-size: 12px; } .task { border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .task-head { display: flex; justify-content: space-between; gap: 8px; } .task-log { margin: 0; padding-left: 16px; font-size: 11px; } .task-log li { overflow-wrap: anywhere; }
+    .bar { height: 4px; background: #eef2f7; border-radius: 2px; overflow: hidden; } .bar > div { height: 100%; background: var(--accent); transition: width .3s; }
+    [class^=badge-] { font-size: 10px; text-transform: uppercase; } .badge-done { color: #067647; } .badge-failed, .badge-interrupted { color: #b42318; } .badge-running, .badge-queued { color: var(--accent); }
   </style>
 </head>
 <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>

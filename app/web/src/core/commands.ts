@@ -3,7 +3,7 @@
 // wraps it in one undo snapshot and one journal entry. Numbers always come from the project.
 import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } from '@genoffice/pptx-engine'
 import { runTxn, type Op } from '@genoffice/pptx-ops'
-import { cellText, chartColors, chartData, setWorking, verifyWorking } from './evidence'
+import { cellText, chartColors, chartData, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
 import { findEl, slideIndex, walk } from './deck'
 import type { Binding, ChartSpec, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
 
@@ -39,6 +39,8 @@ export type Command =
   | { kind: 'ops.raw'; ops: Op[]; summary?: string }
   | { kind: 'deck.reproject' }
   | { kind: 'batch'; commands: Command[]; summary?: string }
+  | { kind: 'data.addDatasets'; datasets: Dataset[]; evidence: Record<string, any> }
+  | { kind: 'placeholder.fill'; id: string; evidence: any[]; title?: string; subtitle?: string; source_note: string }
 
 export interface Ctx { deck: OpenedPptx; project: Project; sidecar: Sidecar }
 export interface Outcome { summary: string; slides: string[]; created?: string[] }
@@ -77,6 +79,14 @@ export function reproject(ctx: Ctx, dsIds: Set<string>, only?: string): string[]
   }
   touched.forEach((i) => materializeSlide(ctx.deck, i))
   return [...touched].map((i) => sid(ctx, i))
+}
+
+/** Header and one row per rating-action evidence item. */
+export function ratingFill(ctx: Ctx, el: string, index: number, rows: string[]): Op[] {
+  const tg = { slide: index, el }, ops: Op[] = []
+  RATING_COLUMNS.forEach((h, c) => ops.push({ op: 'setTableCell', target: tg, row: 0, col: c, paragraphs: [{ runs: [{ text: h, bold: true, fontSize: 9 }] }] }))
+  rows.forEach((id, r) => ratingCells(ctx.project.evidence[id]).forEach((t, c) => ops.push({ op: 'setTableCell', target: tg, row: r + 1, col: c, paragraphs: [{ runs: [{ text: t, fontSize: 9, bold: c === 3 }] }] })))
+  return ops
 }
 
 // ------------------------------------------------------------------ slide composition (from proposals)
@@ -231,11 +241,45 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
     case 'placeholder.add': {
       const si = slideIndex(ctx.deck, cmd.slide), d = ctx.project.design_dna
       const para = (t: string, pt: number, color: string, bold = false) => ({ runs: [{ text: t, fontSize: pt, bold, color, fontFamily: d.font }] })
-      txn(ctx, [{ op: 'addElement', target: { slide: si }, kind: 'roundRect', offset: off(40, 470, 720, 150), fill: '#FFF6D6', stroke: { color: '#D9B44A', widthEmu: 9525 }, paragraphs: [para(cmd.label, 12, d.ink, true), para('Options: ' + (cmd.request.options ?? []).join('; '), 9, d.muted)] }])
+      const note = cmd.request.options?.length ? 'Options: ' + cmd.request.options.join('; ') : cmd.request.reason ?? ''
+      txn(ctx, [{ op: 'addElement', target: { slide: si }, kind: 'roundRect', offset: off(40, 470, 720, 150), fill: '#FFF6D6', stroke: { color: '#D9B44A', widthEmu: 9525 }, paragraphs: [para(cmd.label, 12, d.ink, true), para(note, 9, d.muted)] }])
       materializeSlide(ctx.deck, si)
       const id = elementDurableId((ctx.deck.deck.slides[si] as any).elements.at(-1))!
       ctx.sidecar.bindings[id] = { kind: 'placeholder', slide: cmd.slide, label: cmd.label, request: cmd.request }
       return { summary: 'Add research request', slides: [cmd.slide], created: [id] }
+    }
+    case 'data.addDatasets': {
+      const added = cmd.datasets.filter((d) => !ctx.project.datasets[d.id])
+      if (!added.length) throw new Error('every dataset is already in the project')
+      for (const d of added) ctx.project.datasets[d.id] = structuredClone(d)
+      for (const d of added) for (const o of d.observations) if (o.evidence_id && cmd.evidence[o.evidence_id]) ctx.project.evidence[o.evidence_id] = structuredClone(cmd.evidence[o.evidence_id])
+      return { summary: `Add ${added.length} verified dataset${added.length === 1 ? '' : 's'} (${added.map((d) => d.entity + ' ' + d.metric).join(', ')})`, slides: [] }
+    }
+    case 'placeholder.fill': {
+      // a research request completed: the placeholder becomes a ratings table whose rows ARE verified evidence
+      const f = must(ctx, cmd.id), b = ctx.sidecar.bindings[cmd.id]
+      if (b?.kind !== 'placeholder') throw new Error('that element is not a research placeholder')
+      if (!cmd.evidence.length) throw new Error('no verified evidence to place')
+      const si = f.index, slide = b.slide, o = f.el.transform.offset, d = ctx.project.design_dna
+      for (const e of cmd.evidence) ctx.project.evidence[e.id] = structuredClone(e)
+      const rows = cmd.evidence.map((e) => e.id)
+      txn(ctx, [{ op: 'deleteElement', target: { slide: si, el: f.el.id } }])
+      delete ctx.sidecar.bindings[cmd.id]
+      txn(ctx, [{ op: 'addTable', target: { slide: si }, rows: rows.length + 1, cols: RATING_COLUMNS.length, offset: off(o.x / EMU, o.y / EMU, Math.max(o.cx / EMU, 720), 32 * (rows.length + 1)) }])
+      materializeSlide(ctx.deck, si)
+      const tbl = (ctx.deck.deck.slides[si] as any).elements.at(-1), tid = elementDurableId(tbl)!
+      ctx.sidecar.bindings[tid] = { kind: 'ratings', slide, rows }
+      const role = (r: string) => Object.entries(ctx.sidecar.bindings).find(([, x]) => x.kind === 'text' && (x as any).role === r && x.slide === slide)?.[0]
+      const setText = (id: string | undefined, text?: string) => { if (!id || !text) return []; const e = must(ctx, id); return [{ op: 'setText', target: { slide: e.index, el: e.el.id }, paragraphs: [{ runs: [{ text }] }] } as Op] }
+      txn(ctx, [{ op: 'setTableStyle', target: { slide: si, el: tbl.id }, ...TABLE_STYLE }, ...ratingFill(ctx, tbl.id, si, rows),
+        ...setText(role('title'), cmd.title), ...setText(role('subtitle'), cmd.subtitle), ...setText(role('source'), cmd.source_note)])
+      if (!role('source')) {
+        txn(ctx, [{ op: 'addElement', target: { slide: si }, kind: 'textbox', offset: off(40, 668, 1200, 24), paragraphs: [{ runs: [{ text: cmd.source_note, fontSize: 7, color: d.muted, fontFamily: d.font }] }] }])
+        materializeSlide(ctx.deck, si)
+        ctx.sidecar.bindings[elementDurableId((ctx.deck.deck.slides[si] as any).elements.at(-1))!] = { kind: 'text', slide, role: 'source' }
+      }
+      materializeSlide(ctx.deck, si)
+      return { summary: `Replace the placeholder with ${rows.length} verified rating action${rows.length === 1 ? '' : 's'}`, slides: [slide], created: [tid] }
     }
     case 'deck.reproject': {
       // Re-project every bound chart and table from the working layer (e.g. after a formatting change)

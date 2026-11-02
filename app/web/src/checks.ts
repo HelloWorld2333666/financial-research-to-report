@@ -6,6 +6,7 @@ import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { findEl, textOf, walk } from './core/deck'
 import { effectiveObs, evidenceValue, textNumbers } from './core/evidence'
+import ratingFixture from './core/fixtures/rating-evidence.json'
 import { loadFonts } from './core/fonts'
 
 export async function runChecks() {
@@ -194,6 +195,16 @@ export async function runChecks() {
     check('proposals_and_threads_survive_reopen', back.proposals['check:kicker'] === 'applied' && back.proposals['check:other'] === 'rejected'
       && back.threadMessages(`${s.project.id}:s_2`)[0]?.content[0].text === 'Make the kicker clearer' && back.journal.at(-1)?.actor === 'ai',
       JSON.stringify(back.proposals).slice(0, 160))
+  })
+  // ---------------------------------------------------------------- M5: a research placeholder completed by verified rating evidence
+  await safe('ratings_placeholder_replaced_and_server_agrees', async () => {
+    const phs = Object.entries(s.sidecar.bindings).filter(([, b]) => b.kind === 'placeholder').map(([k]) => k), ph = phs[0]
+    const r = ph ? s.exec({ kind: 'placeholder.fill', id: ph, evidence: ratingFixture as any[], title: 'Rating actions: Example Ratings affirmed France at AA-, outlook negative (March 2025)', source_note: 'Source: test fixture (fictional agency).' }, { actor: 'research', proposalId: 'task:check' }) : { ok: false, error: 'no placeholder' }
+    await s.save()
+    const srv = (await api('GET', '/integrity')).j, pol = (await api('GET', '/export')).j
+    const ackPh = pol.acknowledge.find((a: any) => a.key === 'placeholders')?.items.length ?? 0
+    check('ratings_placeholder_replaced_and_server_agrees', r.ok && ig().ok && srv.ok && srv.placeholders.length === phs.length - 1 && ackPh === phs.length - 1 && !srv.placeholders.some((x: any) => x.element === ph),
+      `${r.error ?? ''} client ${ig().ok} server ${srv.ok} placeholders ${phs.length} → ${srv.placeholders?.length}`)
   })
   const fin = ig()
   check('final_integrity', fin.ok, `${fin.resolved}/${fin.bindings}, ${fin.points} points, ${fin.cells} cells, ${fin.unverified} unverified edits`)

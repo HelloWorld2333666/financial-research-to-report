@@ -24,7 +24,7 @@ export class Store {
   undoStack: Snapshot[] = []
   redoStack: Snapshot[] = []
   revision = 0 // bumps on every change; the UI re-renders from it
-  savedRevision = 0
+  savedRevision = 0 // the docRevision last written to the server
   clipboard: ClipItem[] = []
   private listeners = new Set<() => void>()
 
@@ -46,8 +46,10 @@ export class Store {
   }
 
   subscribe = (fn: () => void) => { this.listeners.add(fn); return () => { this.listeners.delete(fn) } }
-  private changed() { this.revision++; this.listeners.forEach((f) => f()) }
-  get dirty() { return this.revision !== this.savedRevision }
+  /** `revision` re-renders on any change; `docRevision` counts changes that need saving (selection is not one). */
+  docRevision = 0
+  private changed(doc = true) { if (doc) this.docRevision++; this.revision++; this.listeners.forEach((f) => f()) }
+  get dirty() { return this.docRevision !== this.savedRevision }
 
   private snap(): Snapshot {
     return { slides: structuredClone(this.deck.deck.slides), entries: new Map(this.deck.archive.entries), size: { ...this.deck.deck.size }, project: structuredClone(this.project), sidecar: structuredClone(this.sidecar) }
@@ -101,7 +103,7 @@ export class Store {
     ;(this.threads.messages ??= {})[threadId] = json; this.changed()
   }
 
-  select(ids: string[]) { this.selection = ids; this.changed() }
+  select(ids: string[]) { this.selection = ids; this.changed(false) }
   copy(ids: string[]) {
     this.clipboard = ids.map((id) => { const f = findEl(this.deck, id)!; return { item: copyElementData(this.deck, this.deck.deck.slides[f.index]!, f.group ?? f.el), binding: this.sidecar.bindings[id] } })
     return this.clipboard.length
@@ -112,11 +114,11 @@ export class Store {
   /** Integrity of the deck as the SERVER read it from disk after the last save (app/server/integrity.py). */
   serverIntegrity: any = null
   async save(): Promise<{ ok: boolean; error?: string }> {
-    const rev = this.revision
+    const rev = this.docRevision // changes made while this save is in flight stay dirty and are saved next time
     const r = await fetch(`/api/projects/${this.project.id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(await this.toBundle()) })
     if (!r.ok) return { ok: false, error: (await r.json()).error }
     this.serverIntegrity = (await r.json()).integrity ?? null
-    this.savedRevision = rev; this.changed(); this.savedRevision = this.revision
+    this.savedRevision = rev; this.changed(false)
     return { ok: true }
   }
   async saveVersion(label: string) {

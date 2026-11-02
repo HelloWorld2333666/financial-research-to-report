@@ -6,7 +6,8 @@ Schema 0.2 adds, all optional so 0.1 records still load:
 - ``Evidence.retrieval``: how a value was fetched (API query URL, time, content hash);
 - ``Derivation``: a number computed from evidence (e.g. a yield spread), with formula and inputs;
 - ``Claim.numbers``: each number written in a claim and the evidence or derivation it came from;
-- ``WorkingEdit``: a manual change to a value, kept next to (never over) the source evidence.
+- ``WorkingEdit``: a manual change to a value, kept next to (never over) the source evidence;
+- ``Evidence.rating``: a rating action quoted from an agency document (page + verbatim excerpt).
 
 Every object has a stable string id so later stages (slide planning, revision)
 can reference it without repeating research. Cross-reference integrity is not
@@ -22,6 +23,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 SCHEMA_VERSION = "0.2"
+_Date = date  # RatingAction has a field named `date`, which would shadow the type in its own annotations
 
 
 class _Model(BaseModel):
@@ -153,6 +155,16 @@ class Retrieval(_Model):
     note: Optional[str] = None
 
 
+class RatingAction(_Model):
+    """A credit rating action as stated in an agency document; the excerpt on `page` must contain `rating`."""
+
+    agency: str
+    action: str  # affirmed | downgraded | upgraded | confirmed | assigned | ...
+    rating: str  # as printed, e.g. "AA-", "Aa3", "AA (high)"
+    outlook: Optional[str] = None  # stable | negative | positive | developing, or a trend
+    date: Optional[_Date] = None
+
+
 class Evidence(_Model):
     id: str
     source_id: str
@@ -173,6 +185,7 @@ class Evidence(_Model):
     period: Optional[str] = None
     issuer_definition: Optional[str] = None  # when the issuer's definition differs from ours
     retrieval: Optional[Retrieval] = None
+    rating: Optional[RatingAction] = None
 
 
 class Derivation(_Model):

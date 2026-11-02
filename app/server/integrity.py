@@ -256,6 +256,16 @@ def check(deck: bytes | None, project: dict, sidecar: dict) -> dict:
                     w = cell_text(project, d, x)
                     if g != w:
                         res["mismatch"].append({"element": durable, "detail": f"{d} {x}: data \"{w}\", table \"{g}\""})
+        if b["kind"] == "ratings":
+            from research_runs import rating_cells
+            rows = el.get("rows") or []
+            for r, eid in enumerate(b["rows"]):
+                ev = project.get("evidence", {}).get(eid)
+                for c, want in enumerate(rating_cells(ev or {})):
+                    res["cells"] += 1
+                    got = rows[r + 1][c] if r + 1 < len(rows) and c < len(rows[r + 1]) else None
+                    if ev is None or got != want:
+                        res["mismatch"].append({"element": durable, "detail": f"rating {eid} column {c + 1}: evidence \"{want}\", table \"{got}\""})
         if b["kind"] == "text" and b.get("role") not in ("source",):
             for n in text_numbers(el.get("text", ""), b.get("numbers") or [], project, index):
                 res["figures"] += 1

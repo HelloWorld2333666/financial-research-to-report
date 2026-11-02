@@ -1,11 +1,13 @@
 // M3 panels: the evidence inspector (where every number on the selected element comes from), the
 // data workspace (source and working values side by side; edit, verify, restore) and the export
 // dialog (the server decides; final needs every open item acknowledged).
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useSyncExternalStore } from 'react'
 import type { Store } from './core/store'
-import { findEl, textOf } from './core/deck'
-import { cellText, derivationValue, effectiveObs, evidenceIndex, evidenceValue, textNumbers } from './core/evidence'
+import type { Command } from './core/commands'
+import { findEl, render, slideIndex, textOf } from './core/deck'
+import { cellText, derivationValue, effectiveObs, evidenceIndex, evidenceValue, RATING_COLUMNS, ratingCells, textNumbers } from './core/evidence'
 import type { Project } from './core/types'
+import { Thumb } from './chat'
 
 const when = (iso?: string) => (iso ? iso.replace('T', ' ').slice(0, 16) + ' UTC' : '—')
 
@@ -19,8 +21,10 @@ export function EvidenceCard({ p, id }: { p: Project; id: string }) {
       <div><b>{e.value}</b> {e.unit} · {e.period} · <span className="muted">{id}</span></div>
       {r.edited && <div className="bad">Working value {r.value ?? 'gap'} ({r.status === 'verified' ? 'manual, verified' : 'manual, unverified'}); source value kept</div>}
       <div>{e.source_title}</div>
-      {q?.query_url ? <div className="ev-q">Query <a href={q.query_url} target="_blank" rel="noreferrer" data-query-url>{q.query_url}</a></div> : <div className="muted">No query URL recorded</div>}
-      <div className="muted">Retrieved {when(q?.retrieved_at)} · {q?.method ?? 'unknown method'} · hash {q?.content_sha256 ? q.content_sha256.slice(0, 12) : 'not captured'}</div>
+      {e.excerpt && <blockquote className="ev-excerpt" data-excerpt>“{e.excerpt}” <span className="muted">(p. {e.page})</span></blockquote>}
+      {q?.method === 'pdf_upload' ? <div className="muted">Uploaded PDF · SHA-256 {q.content_sha256?.slice(0, 16)}… · {q.note}</div>
+        : q?.query_url ? <div className="ev-q">Query <a href={q.query_url} target="_blank" rel="noreferrer" data-query-url>{q.query_url}</a></div> : <div className="muted">No query URL recorded</div>}
+      <div className="muted">{q?.method === 'pdf_upload' ? 'Uploaded' : 'Retrieved'} {when(q?.retrieved_at)} · {q?.method ?? 'unknown method'} · hash {q?.content_sha256 ? q.content_sha256.slice(0, 12) : 'not captured'}</div>
       <div className="muted">{e.verification === 'verified' ? `Verified by ${e.verified_by} on ${e.verified_on}` : 'Not verified'}</div>
     </div>
   )
@@ -77,7 +81,13 @@ export function EvidencePanel({ store }: { store: Store }) {
   }
   if (b.kind === 'chart') return <div className="evidence">{b.chart.series.map((d) => series(d))}</div>
   if (b.kind === 'table') return <div className="evidence">{b.table.datasets.map((d) => series(d, b.table.dates))}</div>
-  if (b.kind === 'placeholder') return <p className="bad">Placeholder: {b.label}. No data yet; a final export needs this acknowledged.</p>
+  if (b.kind === 'placeholder') return <PlaceholderPanel store={store} id={id} b={b} />
+  if (b.kind === 'ratings') return (
+    <div className="evidence">{b.rows.map((eid) => (
+      <Row key={eid} label={ratingCells(p.evidence[eid])[0]} value={ratingCells(p.evidence[eid]).slice(2, 5).join(' · ')} status={p.evidence[eid] ? 'ok' : 'unsourced'}>
+        <EvidenceCard p={p} id={eid} />
+      </Row>))}</div>
+  )
   if (b.kind !== 'text') return <p className="muted">No numbers.</p>
   const nums = textNumbers(textOf(f.el), b.numbers, p)
   if (!nums.length) return <p className="muted">No figures in this text.</p>
@@ -184,6 +194,111 @@ export function ExportDialog({ store, close, reproject }: { store: Store; close:
         </>}
         <div className="row end"><button onClick={close}>Close</button><button className="primary" disabled={!ready || busy} onClick={go}>{busy ? 'Exporting…' : mode === 'final' ? 'Export final' : 'Export draft'}</button></div>
       </div>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------ M5: research requests, uploads and the task centre
+async function startPdfTask(store: Store, file: File, params: Record<string, any>) {
+  if (store.dirty) await store.save()
+  const up = await fetch(`/api/projects/${store.project.id}/uploads?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'content-type': 'application/pdf' }, body: file })
+  const meta = await up.json()
+  if (!up.ok) throw new Error(meta.error)
+  const t = await fetch(`/api/projects/${store.project.id}/tasks`, { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ kind: 'rating_pdf', title: `Rating actions from ${meta.filename}`, params: { upload: meta.id, ...params } }) })
+  if (!t.ok) throw new Error((await t.json()).error)
+  dispatchEvent(new CustomEvent('frr:tab', { detail: 'tasks' }))
+}
+
+function PlaceholderPanel({ store, id, b }: { store: Store; id: string; b: any }) {
+  const [err, setErr] = useState<string | null>(null), [busy, setBusy] = useState(false)
+  return (
+    <div className="evidence" data-placeholder={id}>
+      <p className="bad">Placeholder: {b.label}. No data yet; a final export needs this acknowledged.</p>
+      <div className="muted">{b.request?.reason}</div>
+      <label className="upload">
+        <span>{busy ? 'Uploading…' : 'Upload the agency press release (PDF)'}</span>
+        <input type="file" accept="application/pdf,.pdf" aria-label="Upload agency PDF" disabled={busy} onChange={async (e) => {
+          const file = e.target.files?.[0]; if (!file) return
+          setBusy(true); setErr(null)
+          try { await startPdfTask(store, file, { entity: b.request?.entity ?? 'France', element: id, slide: b.slide }) } catch (x: any) { setErr(String(x.message ?? x)) } finally { setBusy(false); e.target.value = '' }
+        }} />
+      </label>
+      <div className="muted small">pypdf reads the text; the local model quotes; each rating is kept only if its excerpt is found on its page.</div>
+      {err && <p className="bad" data-error>{err}</p>}
+    </div>
+  )
+}
+
+const pct = (x: number) => `${Math.round(x * 100)}%`
+
+function TaskResult({ store, t }: { store: Store; t: any }) {
+  const r = t.result, pid = `task:${t.id}`
+  const state = store.proposals[pid] ?? 'open', open = state === 'open' || state === 'undone'
+  const [pv, setPv] = useState<any>(null), [err, setErr] = useState<string | null>(null)
+  let cmd: Command | null = null, blocked: string | null = null
+  if (r.kind === 'datasets_proposal') {
+    const fresh = r.datasets.filter((d: any) => !store.project.datasets[d.id])
+    cmd = fresh.length ? { kind: 'data.addDatasets', datasets: r.datasets, evidence: r.evidence } : null
+    if (!fresh.length) blocked = 'Every series is already in the project.'
+  }
+  if (r.kind === 'rating_proposal') {
+    const target = r.element && findEl(store.deck, r.element) && store.sidecar.bindings[r.element]?.kind === 'placeholder' ? r.element : null
+    cmd = target ? { kind: 'placeholder.fill', id: target, evidence: r.evidence, title: r.title, subtitle: 'Rating actions quoted from the agency press release (uploaded PDF); each verified on its page', source_note: r.source_note } : null
+    if (!target) blocked = 'The placeholder this request belongs to is no longer on the deck.'
+  }
+  const preview = () => cmd && setPv(store.preview(cmd, (o) => o.slides.map((sid) => render(store.deck, slideIndex(store.deck, sid), 300, store.metrics))))
+  const apply = () => { if (!cmd) return; const x = store.exec(cmd, { actor: 'research', proposalId: pid }); setErr(x.ok ? null : x.error!); if (x.ok) setPv(null) }
+  return (
+    <div className="proposal" data-proposal={pid} data-state={state}>
+      <div className="p-summary" data-summary>{r.summary}</div>
+      {r.kind === 'rating_proposal' && <table className="grid small"><thead><tr>{RATING_COLUMNS.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+        <tbody>{r.evidence.map((e: any) => <tr key={e.id}>{ratingCells(e).map((c, i) => <td key={i}>{c}</td>)}</tr>)}</tbody></table>}
+      {r.kind === 'rating_proposal' && r.evidence.map((e: any) => <blockquote key={e.id} className="ev-excerpt">“{e.excerpt}” <span className="muted">(p. {e.page})</span></blockquote>)}
+      {r.kind === 'datasets_proposal' && <div className="muted small">{r.datasets.map((d: any) => `${d.entity} ${d.metric} (${d.observations.length})`).join(' · ')}{r.failed?.length ? ` · failed: ${r.failed.join('; ')}` : ''}</div>}
+      {r.kind === 'no_evidence' && <div className="small">{r.rejected.slice(0, 6).map((c: any, i: number) => <div key={i} className="muted">p. {c.page}: {c.reason} — “{String(c.excerpt).slice(0, 90)}…”</div>)}</div>}
+      {pv && (pv.ok ? pv.value.map((s: any, i: number) => <Thumb key={i} slide={s} />) : <div className="bad">Preview failed: {pv.error}</div>)}
+      {err && <div className="bad">Could not apply: {err}</div>}
+      {cmd || blocked ? (open ? <>
+        {blocked && <div className="bad small">{blocked}</div>}
+        <div className="p-actions"><button onClick={preview} disabled={!cmd}>Preview</button><button className="primary" onClick={apply} disabled={!cmd}>{state === 'undone' ? 'Apply again' : 'Apply'}</button><button onClick={() => store.reject(pid)}>Reject</button></div>
+      </> : <div className="p-state">{state === 'applied' ? 'Applied (one step; Undo reverts it)' : 'Rejected'}</div>) : null}
+    </div>
+  )
+}
+
+/** Background tasks for this project: they run on the server, so editing or reloading never stops them. */
+export function TasksPanel({ store }: { store: Store }) {
+  useSyncExternalStore(store.subscribe, () => store.revision)
+  const [tasks, setTasks] = useState<any[]>([]), [err, setErr] = useState<string | null>(null)
+  const load = () => fetch(`/api/projects/${store.project.id}/tasks`).then((r) => r.json()).then(setTasks).catch(() => {})
+  const live = tasks.some((t) => t.status === 'queued' || t.status === 'running')
+  useEffect(() => { load(); const h = setInterval(load, live ? 1000 : 5000); return () => clearInterval(h) }, [live])
+  const act = async (t: any, what: 'cancel' | 'retry') => { await fetch(`/api/projects/${store.project.id}/tasks/${t.id}/${what}`, { method: 'POST' }); load() }
+  return (
+    <div className="tasks">
+      <label className="upload"><span>Upload an agency PDF for rating actions</span>
+        <input type="file" accept="application/pdf,.pdf" aria-label="Upload PDF" onChange={async (e) => {
+          const file = e.target.files?.[0]; if (!file) return
+          const ph = Object.entries(store.sidecar.bindings).find(([, b]) => b.kind === 'placeholder') as [string, any] | undefined
+          try { setErr(null); await startPdfTask(store, file, { entity: ph?.[1].request?.entity ?? 'France', element: ph?.[0] ?? null, slide: ph?.[1].slide ?? null }); load() } catch (x: any) { setErr(String(x.message ?? x)) }
+          e.target.value = ''
+        }} /></label>
+      {err && <p className="bad">{err}</p>}
+      {!tasks.length && <p className="muted small">No tasks yet. Ask in chat for research (e.g. “get Spain's fiscal data”), or upload an agency PDF.</p>}
+      {[...tasks].reverse().map((t) => (
+        <div key={t.id} className="task" data-task={t.id} data-status={t.status}>
+          <div className="task-head"><b>{t.title}</b><span className={'badge-' + t.status}>{t.status}</span></div>
+          <div className="bar"><div style={{ width: pct(t.progress) }} /></div>
+          <ol className="task-log">{t.log.slice(-4).map((l: any, i: number) => <li key={i}><span className="muted">{l.at.slice(11, 19)}</span> {l.msg}</li>)}</ol>
+          {t.error && <div className="bad small">{t.error}</div>}
+          <div className="p-actions">
+            {(t.status === 'running' || t.status === 'queued') && <button onClick={() => act(t, 'cancel')}>Cancel</button>}
+            {['failed', 'cancelled', 'interrupted'].includes(t.status) && <button onClick={() => act(t, 'retry')}>Retry</button>}
+          </div>
+          {t.status === 'done' && t.result && <TaskResult store={store} t={t} />}
+        </div>
+      ))}
     </div>
   )
 }

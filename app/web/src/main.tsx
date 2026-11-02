@@ -10,7 +10,7 @@ import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
 import { runChecks } from './checks'
-import { DataPanel, EvidencePanel, ExportDialog } from './panels'
+import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
 import { ChatPanel } from './chat'
 
 const FIT = 800
@@ -40,7 +40,8 @@ function Workspace({ store }: { store: Store }) {
   const [cur, setCur] = useState(0)
   const [editing, setEditing] = useState<any>(null)
   const [entered, setEntered] = useState<string | null>(null)
-  const [tab, setTab] = useState<'chat' | 'evidence' | 'data' | 'journal' | 'integrity' | 'claims' | 'versions'>('chat')
+  const [tab, setTab] = useState<'chat' | 'evidence' | 'data' | 'tasks' | 'journal' | 'integrity' | 'claims' | 'versions'>('chat')
+  useEffect(() => { const go = (e: any) => setTab(e.detail); addEventListener('frr:tab', go); return () => removeEventListener('frr:tab', go) }, [])
   const [exporting, setExporting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [saveState, setSaveState] = useState('Saved')
@@ -61,6 +62,11 @@ function Workspace({ store }: { store: Store }) {
     const t = setTimeout(async () => { setSaveState('Saving…'); const r = await store.save(); setSaveState(r.ok ? 'Saved' : `Save failed: ${r.error}`) }, 1500)
     return () => clearTimeout(t)
   }, [store.revision])
+  // leaving within the autosave delay would drop the last change: warn, and save right away
+  useEffect(() => {
+    const leave = (e: BeforeUnloadEvent) => { if (!store.dirty) return; store.save(); e.preventDefault(); e.returnValue = '' }
+    addEventListener('beforeunload', leave); return () => removeEventListener('beforeunload', leave)
+  }, [store])
   const loadVersions = () => fetch(`/api/projects/${store.project.id}/versions`).then((r) => r.json()).then(setVersions)
   useEffect(() => { if (tab === 'versions') loadVersions() }, [tab])
 
@@ -173,11 +179,12 @@ function Workspace({ store }: { store: Store }) {
           <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>{ig.mismatch.some((m) => !m.startsWith('text says')) && <> <button onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button></>}{ig.mismatch.some((m) => m.startsWith('text says')) && <> <button className="link" onClick={() => setTab('integrity')}>text disagrees with data</button></>} · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.sourced}/{ig.figures} figures in text sourced · {ig.unverified} unverified edits · selected {store.selection.length}</div>
         </section>
         <aside className="panel">
-          <nav className="tabs">{(['chat', 'evidence', 'data', 'journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{t}</button>)}</nav>
+          <nav className="tabs">{(['chat', 'evidence', 'data', 'tasks', 'journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{t}</button>)}</nav>
           {/* always mounted: a request in flight survives switching tabs */}
           <ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} />
           {tab === 'evidence' && <EvidencePanel store={store} />}
           {tab === 'data' && <DataPanel store={store} exec={exec} />}
+          {tab === 'tasks' && <TasksPanel store={store} />}
           {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {j.at.slice(11, 19)}</span></li>)}</ol>}
           {tab === 'integrity' && <div>{ig.ok ? <p className="good">Every bound value matches the working layer.</p> : ig.mismatch.slice(0, 20).map((m) => <p key={m} className="bad">{m}</p>)}</div>}
           {tab === 'claims' && <div>{claims.length ? claims.map((c, i) => <div key={i} className={'claim ' + c.status}><div>{c.text}</div><div className="muted">{c.status}: {c.detail}</div></div>) : <p className="muted">No numeric claims on this slide.</p>}</div>}

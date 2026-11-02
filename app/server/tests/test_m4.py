@@ -163,7 +163,7 @@ def test_layout_and_research_proposals(setup):
     r = tool_result(A.create_agent(store, scripted("layout_suggestion", {"action": "distribute_vertical"})).run_sync("x", deps=StateDeps(st)))
     assert r["kind"] == "error" and "at least 3" in r["message"]
     r = tool_result(A.create_agent(store, scripted("start_research", {"topic": "rating history"})).run_sync("x", deps=StateDeps(st)))
-    assert r["kind"] == "research_proposal" and r["slide"] == "s_2" and "No research has run" in r["summary"]
+    assert r["kind"] == "research_proposal" and r["slide"] == "s_2" and "upload the agency" in r["summary"]
 
 
 def test_ag_ui_endpoint_streams_the_proposal(setup, tmp_path):

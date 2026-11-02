@@ -2,7 +2,7 @@
 // written in bound text still agrees with the evidence or derivation it cites, and every binding
 // resolves to an element. Run after every change; the server repeats it on the saved deck.
 import type { OpenedPptx } from '@genoffice/pptx-engine'
-import { cellText, chartData, textNumbers, unverifiedEdits } from './evidence'
+import { cellText, chartData, ratingCells, textNumbers, unverifiedEdits } from './evidence'
 import { findEl, textOf } from './deck'
 import type { Project, Sidecar } from './types'
 
@@ -27,6 +27,12 @@ export function integrity(deck: OpenedPptx, project: Project, sidecar: Sidecar):
       out.cells++
       const got = textOf(f.el.rows?.[r + 1]?.[c + 1]?.text), want = cellText(project, d, x)
       if (got !== want) out.mismatch.push(`${d} ${x}: data "${want}", table "${got}"`)
+    }))
+    if (b.kind === 'ratings') b.rows.forEach((id, r) => ratingCells(project.evidence[id]).forEach((want, c) => {
+      out.cells++
+      const got = textOf(f.el.rows?.[r + 1]?.[c]?.text)
+      if (!project.evidence[id]) out.mismatch.push(`rating row ${id}: evidence missing`)
+      else if (got !== want) out.mismatch.push(`rating ${id} column ${c + 1}: evidence "${want}", table "${got}"`)
     }))
     if (b.kind === 'text' && b.role !== 'source') for (const n of textNumbers(textOf(f.el), b.numbers, project)) {
       out.figures++

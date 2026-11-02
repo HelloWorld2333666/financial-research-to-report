@@ -158,6 +158,16 @@ def validate_record(record: ResearchRecord) -> list[Issue]:
         if r and r.method == RetrievalMethod.api and not r.query_url:
             err("retrieval_without_query", e.id, "API retrieval must record the query URL")
 
+    for e in record.evidence:
+        if e.rating is None:
+            continue
+        if e.kind == EvidenceKind.metric_value:
+            err("rating_on_metric", e.id, "a rating action is a fact or quote, not a metric value")
+        if not (e.page and e.excerpt):
+            err("rating_without_excerpt", e.id, "a rating action needs the page and verbatim excerpt it was read from")
+        elif not re.search(rf"(?<![A-Za-z]){re.escape(e.rating.rating)}(?![A-Za-z+\-])", e.excerpt):
+            err("rating_not_in_excerpt", e.id, f"rating '{e.rating.rating}' does not appear in the excerpt")
+
     derivations = {d.id: d for d in record.derivations}
     values: dict[str, float | None] = {}  # derivation id -> recomputed value (None when it cannot be)
     cyclic: set[str] = set()

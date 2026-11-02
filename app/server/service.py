@@ -5,8 +5,7 @@
 Serves the JSON API under /api and the built web client (app/web/dist) at /.
 M1: projects (bundle save/load, versions) and the deterministic composer. M3: working-data
 validation on save, integrity of the saved deck, and the export policy. M4: the AG-UI agent at
-/api/agent (tools return proposals; see agent.py). Tasks arrive in M5
-(docs/workspace-prototype/PHASE3-PLAN.md).
+/api/agent (tools return proposals; see agent.py). M5: uploads and the task centre (tasks.py).
 """
 
 from __future__ import annotations
@@ -34,6 +33,8 @@ from starlette.staticfiles import StaticFiles  # noqa: E402
 
 import agent as workspace_agent  # noqa: E402
 import export  # noqa: E402
+import tasks as task_center  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
 import integrity  # noqa: E402
 from composer import compose  # noqa: E402
 from frr.schema import SCHEMA_VERSION  # noqa: E402
@@ -47,7 +48,8 @@ PROJECTS = Path(os.environ.get("FRR_PROJECTS", HERE / "projects"))
 def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=None, fetch=None) -> Starlette:
     """``model`` and ``fetch`` replace the configured model and Eurostat access (tests)."""
     store = ProjectStore(projects_root)
-    agent = workspace_agent.create_agent(store, model, **({"get": fetch} if fetch else {}))
+    center = task_center.TaskCenter(store, model, **({"get": fetch} if fetch else {}))
+    agent = workspace_agent.create_agent(store, model, **({"get": fetch} if fetch else {}), center=center)
 
     def guarded(fn):
         async def handler(request: Request):
@@ -113,6 +115,23 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=
     async def get_version(request: Request):
         return JSONResponse(store.load_version(request.path_params["pid"], request.path_params["n"]))
 
+    async def post_upload(request: Request):
+        body = await request.body()
+        return JSONResponse(store.save_upload(request.path_params["pid"], request.query_params.get("name", "upload.pdf"), body), status_code=201)
+
+    async def list_tasks(request: Request):
+        return JSONResponse(center.list(request.path_params["pid"]))
+
+    async def post_task(request: Request):
+        body = await request.json()
+        return JSONResponse(center.create(request.path_params["pid"], body.get("kind", ""), body.get("params") or {}, body.get("title")), status_code=201)
+
+    async def cancel_task(request: Request):
+        return JSONResponse(center.cancel(request.path_params["pid"], request.path_params["tid"]))
+
+    async def retry_task(request: Request):
+        return JSONResponse(center.retry(request.path_params["pid"], request.path_params["tid"]), status_code=201)
+
     async def run_agent(request: Request):
         return await AGUIAdapter.dispatch_request(request, agent=agent, deps=StateDeps(workspace_agent.WorkspaceState()))
 
@@ -144,12 +163,24 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=
         Route("/api/projects/{pid}/export", guarded(post_export), methods=["POST"]),
         Route("/api/projects/{pid}/exports/{name}", guarded(get_export), methods=["GET"]),
         Route("/api/compose", guarded(post_compose), methods=["POST"]),
+        Route("/api/projects/{pid}/uploads", guarded(post_upload), methods=["POST"]),
+        Route("/api/projects/{pid}/tasks", guarded(list_tasks), methods=["GET"]),
+        Route("/api/projects/{pid}/tasks", guarded(post_task), methods=["POST"]),
+        Route("/api/projects/{pid}/tasks/{tid}/cancel", guarded(cancel_task), methods=["POST"]),
+        Route("/api/projects/{pid}/tasks/{tid}/retry", guarded(retry_task), methods=["POST"]),
         Route("/api/agent", run_agent, methods=["POST"]),
         Route("/api/agent/config", agent_config, methods=["GET"]),
     ]
     if web_dist.joinpath("index.html").exists():
         routes.append(Mount("/", StaticFiles(directory=web_dist, html=True), name="web"))
-    return Starlette(routes=routes)
+    @asynccontextmanager
+    async def lifespan(_app):
+        center.recover()  # tasks that were running when the server last stopped
+        yield
+
+    app = Starlette(routes=routes, lifespan=lifespan)
+    app.state.tasks = center
+    return app
 
 
 app = create_app()

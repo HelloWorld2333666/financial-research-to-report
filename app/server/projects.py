@@ -10,6 +10,7 @@ validated structurally before anything is written; a failed save leaves the prev
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import re
 import shutil
@@ -152,6 +153,28 @@ class ProjectStore:
         if not f.exists():
             raise BundleError("not found")
         return f
+
+    def save_upload(self, pid: str, filename: str, data: bytes) -> dict:
+        """Keep an uploaded source document (by content hash) next to the project; never inside the bundle."""
+        if not (self._dir(pid) / "current").exists():
+            raise BundleError("unknown project")
+        if not data.startswith(b"%PDF-") or len(data) > 20 * 1024 * 1024:
+            raise BundleError("upload a PDF under 20 MB")
+        sha = hashlib.sha256(data).hexdigest()
+        d = self._dir(pid) / "uploads"
+        d.mkdir(exist_ok=True)
+        (d / f"{sha[:16]}.pdf").write_bytes(data)
+        meta = {"id": sha[:16], "filename": re.sub(r"[^\w.\- ]", "_", filename)[:120] or "upload.pdf", "bytes": len(data), "sha256": sha, "uploaded": _now()}
+        (d / f"{sha[:16]}.json").write_text(json.dumps(meta, ensure_ascii=False))
+        return meta
+
+    def upload(self, pid: str, uid: str) -> tuple[bytes, dict]:
+        if not re.fullmatch(r"[0-9a-f]{16}", uid or ""):
+            raise BundleError("not found")
+        d = self._dir(pid) / "uploads"
+        if not (d / f"{uid}.pdf").exists():
+            raise BundleError("not found")
+        return (d / f"{uid}.pdf").read_bytes(), json.loads((d / f"{uid}.json").read_text())
 
     def exports(self, pid: str) -> list[dict]:
         log = self._dir(pid) / "exports" / "log.jsonl"

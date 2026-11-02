@@ -224,7 +224,7 @@ def build_rewrite(new_text: str, figures: list[Figure], original: str, periods: 
 LAYOUT = Literal["align_left", "align_right", "align_top", "align_bottom", "align_center", "align_middle", "distribute_horizontal", "distribute_vertical"]
 
 
-def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = http_get) -> Agent:
+def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = http_get, center=None) -> Agent:
     agent = Agent(model or model_from_env(), deps_type=Deps, retries=2, name="frr-workspace")
 
     def project_of(ctx: RunContext[Deps]) -> dict:
@@ -345,13 +345,22 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "summary": f"Proposed: {action.replace('_', ' ')} for {len(ids)} elements. {NOTHING_YET}"}
 
     @agent.tool
-    def start_research(ctx: RunContext[Deps], topic: str, country: str = "FR") -> dict:
-        """Record a research request (for example 'rating history') as a placeholder on the current slide."""
-        name = NAMES.get(country.upper()[:2], country)
-        request = {"schema": "frr-research-request/0.1", "topic": topic[:120], "entity": name,
-                   "reason": "requested in chat; background research tasks arrive in M5"}
-        return {"kind": "research_proposal", "slide": ctx.deps.state.slide, "label": f"{topic[:60]} ({name}) — pending research", "request": request,
-                "summary": f"Proposed a placeholder recording a research request for “{topic[:60]}” ({name}). No research has run: "
-                           f"background research tasks arrive in M5. {NOTHING_YET}"}
+    async def start_research(ctx: RunContext[Deps], topic: str, country: str = "FR") -> dict:
+        """Start research. Rating history: records a request on the current slide, completed by uploading the agency's PDF.
+        Economic or fiscal data for a country (debt, deficit, interest, growth, yields): starts a background Eurostat task."""
+        geo = country.upper()[:2]
+        name = NAMES.get(geo, country)
+        if re.search(r"rating|agency|outlook|moody|fitch|s&p|dbrs|scope", topic, re.I) or center is None:
+            request = {"schema": "frr-research-request/0.1", "topic": topic[:120], "entity": name,
+                       "reason": "rating agencies publish press releases that cannot be fetched automatically; upload the agency's PDF to complete this"}
+            return {"kind": "research_proposal", "slide": ctx.deps.state.slide, "label": f"{topic[:60]} ({name}) — pending research", "request": request,
+                    "summary": f"Proposed a placeholder recording a research request for “{topic[:60]}” ({name}). To complete it, select the placeholder and upload "
+                               f"the agency's press release PDF (Evidence tab); the rating is verified on the page. {NOTHING_YET}"}
+        if not ctx.deps.state.project:
+            return {"kind": "error", "message": "No project is open."}
+        t = center.create(ctx.deps.state.project, "eurostat_pack", {"geos": [geo], "metrics": list(METRICS), "since": "2015"}, f"Eurostat data for {name}")
+        return {"kind": "task_started", "task_id": t["id"], "title": t["title"],
+                "summary": f"Started a background task: {len(METRICS)} Eurostat series for {name}, each confirmed by an independent re-fetch. "
+                           "It keeps running while you work; its result appears in Tasks as a proposal."}
 
     return agent

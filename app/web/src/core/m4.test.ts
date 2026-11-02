@@ -51,6 +51,24 @@ describe('M4 AI loop', () => {
     expect(integrity(s.deck, s.project, s.sidecar).ok).toBe(true)
   })
 
+  it('does not treat selection as an unsaved change, and keeps edits made during a save dirty', async () => {
+    const s = await deck()
+    let release: (() => void) | null = null
+    const g = globalThis as any, real = g.fetch
+    g.fetch = async () => { await new Promise<void>((r) => (release = r)); return { ok: true, json: async () => ({}) } }
+    const inFlight = async () => { while (!release) await new Promise((r) => setTimeout(r, 1)); const r = release; release = null; return r }
+    try {
+      const saving = s.save()
+      const done = await inFlight() // the bundle is built and the request is out
+      s.exec({ kind: 'text.set', id: title(s), text: 'Edited during the save' })
+      done(); await saving
+      expect(s.dirty).toBe(true) // the in-flight save did not contain the edit
+      const again = s.save(); (await inFlight())(); await again
+      expect(s.dirty).toBe(false)
+      s.select([title(s)]); expect(s.dirty).toBe(false)
+    } finally { g.fetch = real }
+  })
+
   it('runs a layout batch as one undo step', async () => {
     const s = await deck()
     const ids = Object.entries(s.sidecar.bindings).filter(([, b]) => b.slide === 's_2' && b.kind === 'text').map(([k]) => k).slice(0, 3)
