@@ -223,3 +223,18 @@ def test_agent_starts_a_background_eurostat_task(app_project):
         assert out["kind"] == "task_started"
         t = wait(c, pid, out["task_id"])
     assert t["status"] == "done" and len(t["result"]["datasets"]) == 5
+
+
+def test_an_action_on_a_later_page_takes_its_own_page_date_or_none():
+    """VIS V3 found M5 stamping every action with page 1's date; a timeline would have drawn the wrong dates."""
+    head = "TEST FIXTURE - fictional agency, not a real rating action"
+    pages = [[head, "", "Example Ratings affirms France at AA; Outlook Negative", "28 April 2023", "", "Example Ratings GmbH has affirmed the Republic of France's long-term issuer rating at AA."],
+             [head, "", "Example Ratings downgrades France to AA-; Outlook Stable", "31 May 2024", "", "Example Ratings GmbH has downgraded the Republic of France's long-term issuer rating to AA-."],
+             [head, "", "RATING HISTORY", "14 March 2025  Example Ratings affirms France at AA-; Outlook Negative", "31 May 2024  Downgrade"]]
+    data = pdfgen.pdf(pages)
+    pg = rr.pdf_pages(data)
+    ev, _ = rr.rating_evidence(data, "history.pdf", "France", rr.pattern_candidates(pg), pg)
+    got = {(e["rating"]["rating"], e["rating"]["action"], e["page"]): e["rating"]["date"] for e in ev}
+    assert got[("AA", "affirmed", 1)] == "2023-04-28"
+    assert got[("AA-", "downgraded", 2)] == "2024-05-31"
+    assert all(d is None for (r, a, page), d in got.items() if page == 3)  # a history table: several dates, none assigned

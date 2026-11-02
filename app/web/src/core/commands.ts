@@ -1,12 +1,13 @@
 // Commands: every change to the document — by the user, the AI or research — is one of these.
 // A handler turns a command into validated pptx-ops transactions plus Evidence Core edits; the Store
 // wraps it in one undo snapshot and one journal entry. Numbers always come from the project.
-import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } from '@genoffice/pptx-engine'
+import { appendRawElements, materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } from '@genoffice/pptx-engine'
 import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
-import { check, fromChartSpec, gate, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
+import { check, fromChartSpec, gate, isComposite, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
+import { groupName, groupXml, layout, readGroup } from './composite'
 import { recommend } from './recommend'
-import { findEl, slideIndex, walk } from './deck'
+import { findEl, slideIndex, walk, type Found } from './deck'
 import { chartKindRefusal } from './vocabulary'
 import type { Binding, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
 
@@ -72,12 +73,12 @@ export function tableFill(ctx: Ctx, el: string, index: number, t: TableSpec): Op
 }
 
 /** Re-project every bound chart and table that reads one of the datasets. */
-export function reproject(ctx: Ctx, dsIds: Set<string>, only?: string): string[] {
+export function reproject(ctx: Ctx, dsIds: Set<string>, only?: string, everything = false): string[] {
   const touched = new Set<number>()
   for (const [durable, b] of Object.entries(ctx.sidecar.bindings)) {
     if (only && durable !== only) continue
     const f = findEl(ctx.deck, durable); if (!f) continue
-    if (b.kind === 'viz' && vizDatasets(b.spec).some((d) => dsIds.has(d))) { txn(ctx, [realizeOp(ctx, f.index, f.el.id, b.spec)]); touched.add(f.index) }
+    if (b.kind === 'viz' && (everything || vizDatasets(b.spec).some((d) => dsIds.has(d)))) { realizeAt(ctx, f, b.spec); touched.add(f.index) }
     if (b.kind === 'table' && b.table.datasets.some((d) => dsIds.has(d))) { txn(ctx, tableFill(ctx, f.el.id, f.index, b.table)); touched.add(f.index) }
   }
   touched.forEach((i) => materializeSlide(ctx.deck, i))
@@ -103,6 +104,47 @@ export function realizeOp(ctx: Ctx, index: number, el: string, spec: VizSpec): O
   const r = realize(ctx.project, spec)
   return { op: 'setChart', target: { slide: index, el }, patch: { kind: r.kind, ...(r.barDir ? { barDir: r.barDir } : {}), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme } }
 }
+const CREATION_ID_RE = /(<a16:creationId[^>]*\bid=")\{?([0-9A-Fa-f-]{36})\}?(")/
+/** The element's own creationId GUID (the first cNvPr is the element's; a group embeds its children's after it). */
+const guidOf = (el: any): string | null => CREATION_ID_RE.exec(el.anchor?.originalXml ?? '')?.[2]?.toUpperCase() ?? null
+/** The next free <p:cNvPr id> on the slide (ids are unique per slide part, children of groups included). */
+function nextShapeId(slide: any): number {
+  let max = 1
+  for (const e of slide.elements) for (const m of String(e.anchor?.originalXml ?? '').matchAll(/<p:cNvPr\b[^>]*\bid="(\d+)"/g)) max = Math.max(max, Number(m[1]))
+  return max + 1
+}
+/** Put the element appended last at position `idx` (z-order) and give it `guid` (durable identity). */
+function settle(ctx: Ctx, index: number, idx: number, guid: string | null) {
+  const slide = ctx.deck.deck.slides[index]! as any, el = slide.elements.pop()
+  if (guid) el.anchor.originalXml = String(el.anchor.originalXml).replace(CREATION_ID_RE, `$1{${guid}}$3`)
+  slide.elements.splice(Math.min(idx, slide.elements.length), 0, el)
+  slide.structureDirty = true
+  materializeSlide(ctx.deck, index)
+}
+
+/**
+ * Realize a bound visual where it stands (VIS V3). A native chart updates in place (setChart); otherwise the
+ * element is replaced by the new realization (composite group <-> chart, or a rebuilt group), keeping its
+ * creationId, so the durable id (binding key, selection, chat references) and its z-order and placement stay.
+ */
+export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec) {
+  const native = !isComposite(spec.family)
+  if (native && f.el.type === 'chart') { txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)]); return }
+  const slide = ctx.deck.deck.slides[f.index]! as any, idx = slide.elements.indexOf(f.el), guid = guidOf(f.el), o = f.el.transform.offset
+  if (idx < 0) throw new Error('a visual inside a group cannot be rebuilt; ungroup it first')
+  let xml: string | null = null
+  if (!native) {
+    const pr = check(ctx.project, spec)
+    // a rebuilt group keeps its design space (the user may have resized it); a chart turned composite lays out at its own size
+    const size = (f.el.type === 'group' && readGroup(f.el).size) || { w: Math.round(o.cx / EMU), h: Math.round(o.cy / EMU) }
+    xml = groupXml(layout(ctx.project, spec, pr, size), { guid: guid ?? crypto.randomUUID().toUpperCase(), id: nextShapeId(slide), name: groupName(spec.id), place: o, size, font: ctx.project.design_dna.font })
+  }
+  txn(ctx, [{ op: 'deleteElement', target: { slide: f.index, el: f.el.id } }])
+  if (xml) { if (!appendRawElements(ctx.deck, f.index, [xml])) throw new Error('the visual could not be drawn') }
+  else { const r = realize(ctx.project, spec); txn(ctx, [{ op: 'addChart', target: { slide: f.index }, kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: o, title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme }]) }
+  settle(ctx, f.index, idx, guid)
+}
+
 /** A spec from a proposal: frr-viz/1 ('viz') or the M1-M5 shape ('chart': {type, title, series}). */
 function proposalSpec(ctx: Ctx, p: any): VizSpec | null {
   // a request by intent ({intent, datasets, title}): the recommender picks the visual (VIS V2)
@@ -135,9 +177,15 @@ function planSlide(ctx: Ctx, p: any, accept: string[] = []): Planned[] {
   if (spec) {
     const refusal = chartKindRefusal(p.chart?.type)
     if (refusal) throw new Error(refusal)
-    const r = realize(ctx.project, spec) // validates the spec against the data (VizError with the reason)
-    out.push({ op: { op: 'addChart', kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: off(40, 136, p.table || p.bullets ? 720 : 1200, 400), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme },
-      bind: (slide) => ({ kind: 'viz', slide, spec }) })
+    const box = off(40, 136, p.table || p.bullets ? 720 : 1200, 400)
+    if (isComposite(spec.family)) {
+      check(ctx.project, spec)
+      out.push({ op: { op: 'addElement', kind: 'rect', offset: box }, bind: (slide) => ({ kind: 'viz', slide, spec }) }) // replaced by the composite once bound
+    } else {
+      const r = realize(ctx.project, spec) // validates the spec against the data (VizError with the reason)
+      out.push({ op: { op: 'addChart', kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: box, title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme },
+        bind: (slide) => ({ kind: 'viz', slide, spec }) })
+    }
   }
   if (p.table) {
     const t: TableSpec = { title: p.table.title, datasets: [...p.table.datasets], dates: [...p.table.dates] }
@@ -166,6 +214,7 @@ function composeSlide(ctx: Ctx, p: any, accept?: string[]): Outcome {
   const slide = sid(ctx, si), fills: Op[] = [], created: string[] = []
   added.forEach((el: any, i: number) => { const id = elementDurableId(el)!; created.push(id); ctx.sidecar.bindings[id] = plan[i]!.bind(slide); if (plan[i]!.fill) fills.push(...plan[i]!.fill!(el.id, si)) })
   txn(ctx, fills); materializeSlide(ctx.deck, si)
+  for (const id of created) { const b = ctx.sidecar.bindings[id]; if (b?.kind === 'viz' && isComposite(b.spec.family)) realizeAt(ctx, must(ctx, id), b.spec) }
   const viz = plan.map((x) => x.bind(slide)).find((b) => b.kind === 'viz') as { spec: VizSpec } | undefined
   return { summary: `Add slide “${p.key ?? p.title}”${viz ? keptNote(undefined, viz.spec) : ''}`, slides: [slide], created }
 }
@@ -253,6 +302,7 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
     case 'element.ungroup': {
       const f = must(ctx, cmd.id)
       if (f.el.type !== 'group') throw new Error('not a group')
+      if (ctx.sidecar.bindings[cmd.id]?.kind === 'viz') throw new Error('This visual is bound to data: ungrouping would leave loose shapes that no longer update or check against the data. Change the visual or edit its data instead.')
       txn(ctx, [{ op: 'ungroupElement', target: { slide: f.index, el: f.el.id } }])
       materializeSlide(ctx.deck, f.index)
       return { summary: 'Ungroup', slides: [sid(ctx, f.index)] }
@@ -328,7 +378,7 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       if (b?.kind !== 'viz') throw new Error('that element is not a bound chart')
       // acknowledgements come from the existing spec or this command, never from the replacement spec itself
       const spec = gate(ctx.project, { ...structuredClone(cmd.spec), id: b.spec.id, accepted_warnings: b.spec.accepted_warnings }, cmd.accept)
-      txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)])
+      realizeAt(ctx, f, spec)
       const before = b.spec
       b.spec = spec
       materializeSlide(ctx.deck, f.index)
@@ -343,7 +393,7 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       const spec = gate(ctx.project, { ...b.spec, family: cmd.family, ...(cmd.subtype ? { subtype: cmd.subtype } : { subtype: undefined }), view }, cmd.accept)
       // a single-period or change view is titled by its period ("…, 2025"); back over time, title it by the series and unit
       if (b.spec.view.transform !== 'none' && view.transform === 'none') { const pr = check(ctx.project, spec); spec.title = `${pr.label.charAt(0).toUpperCase()}${pr.label.slice(1)}, ${pr.unit}` }
-      txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)])
+      realizeAt(ctx, f, spec)
       const before = b.spec
       b.spec = spec
       materializeSlide(ctx.deck, f.index)
@@ -352,7 +402,7 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
     case 'deck.reproject': {
       // Re-project every bound chart and table from the working layer (e.g. after a formatting change)
       const all = new Set(Object.keys(ctx.project.datasets))
-      return { summary: 'Re-project all bound values from data', slides: reproject(ctx, all) }
+      return { summary: 'Re-project all bound values from data', slides: reproject(ctx, all, undefined, true) }
     }
     case 'ops.raw': {
       for (const op of cmd.ops as any[]) {

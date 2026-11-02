@@ -217,6 +217,8 @@ def read_deck(deck: bytes) -> dict[str, dict]:
                         info["kind"] = "chart"
                         info["chart"] = _chart(z, rels[chart.get(f"{{{NS['r']}}}id")])
                 elif kind == "grpSp":
+                    # composite visuals (VIS V3) name their data marks "frr-mark s c v" / "frr-rating <evidence> <notch>"
+                    info["names"] = [c.get("name", "") for c in el.findall("p:sp/p:nvSpPr/p:cNvPr", NS)]
                     visit(el)
                 if did:
                     out.setdefault(did, info)
@@ -227,6 +229,37 @@ def read_deck(deck: bytes) -> dict[str, dict]:
 
 
 # ------------------------------------------------------------------ checks
+def _composite(res: dict, durable: str, el: dict, want: dict, spec: dict) -> None:
+    """A composite's data marks (their names carry the values) must equal the projection from current data.
+    Positions and label texts are checked by the client against a fresh layout."""
+    title = spec.get("title") or spec["family"]
+    if el.get("kind") != "grpSp":
+        res["mismatch"].append({"element": durable, "detail": f"visual “{title}”: expected a {spec['family']} (shapes), found {el.get('kind')}"})
+        return
+    got: dict[str, str] = {}
+    for n in el.get("names", []):
+        parts = n.split(" ")
+        if parts[0] == "frr-mark" and len(parts) == 4:
+            got[f"{parts[1]} {parts[2]}"] = parts[3]
+        elif parts[0] == "frr-rating" and len(parts) == 3:
+            got[parts[1]] = parts[2]
+    if want["shape"] == "ratings":
+        expect = {eid: str(n) for _, _, n, eid in want["points"]}
+    else:
+        expect = {f"{si} {i}": _js_num(v) for si, s in enumerate(want["series"]) for i, v in enumerate(s["values"]) if v is not None}
+    for k, v in expect.items():
+        res["points"] += 1
+        if got.get(k) != v:
+            res["mismatch"].append({"element": durable, "detail": f"{title} {k}: data {v}, visual {got.get(k, 'missing')}"})
+    for k in got.keys() - expect.keys():
+        res["mismatch"].append({"element": durable, "detail": f"{title} {k}: on the visual but not in the data"})
+
+
+def _js_num(v: float) -> str:
+    """A number as JavaScript's String(v) writes it (the client names marks with String(value))."""
+    return str(int(v)) if float(v).is_integer() else repr(float(v))
+
+
 def check(deck: bytes | None, project: dict, sidecar: dict) -> dict:
     """Integrity of the saved deck. ``ok`` is False when any bound value disagrees with the data."""
     res = {"ok": False, "bindings": 0, "resolved": 0, "points": 0, "cells": 0, "figures": 0, "sourced": 0,
@@ -248,6 +281,9 @@ def check(deck: bytes | None, project: dict, sidecar: dict) -> dict:
                 want = viz.realized(project, b["spec"])
             except viz.VizError as exc:
                 res["mismatch"].append({"element": durable, "detail": f"visual “{b['spec'].get('title')}”: {exc}"})
+                continue
+            if b["spec"]["family"] in viz.COMPOSITE:
+                _composite(res, durable, el, want, b["spec"])
                 continue
             got = (el.get("chart") or {}).get("series", [])
             for si, s in enumerate(want["series"]):

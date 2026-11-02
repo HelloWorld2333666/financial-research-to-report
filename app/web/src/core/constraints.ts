@@ -71,11 +71,24 @@ export function findings(p: Project, spec: VizSpec, pr: Projected): Finding[] {
   if (f === 'combo' && pf.units.length === 1) warn('combo_one_unit', 'columns + line puts the last series on its own axis; with one shared unit, two scales can make the series look closer or further apart than they are')
   if (pf.ordinal && f !== 'bar' && f !== 'column') no('ordinal', 'an ordinal scale (e.g. ratings) is not a numeric quantity')
   if (pie && pf.categories > 6) warn('many_slices', `${pf.categories} slices are hard to compare; a ranked bar shows the same parts in order`)
-  if ((f === 'line' || f === 'area') && pf.periods < 3) warn('few_periods', `${pf.periods === 1 ? 'one period shows' : 'two periods show'} no trend; columns or a change view compare them more directly`)
+  if ((f === 'line' || f === 'area' || f === 'step') && pf.periods < 3) warn('few_periods', `${pf.periods === 1 ? 'one period shows' : 'two periods show'} no trend; columns or a change view compare them more directly`)
   if (f === 'line' && pf.series > 7) warn('many_lines', `${pf.series} lines are hard to tell apart; consider fewer series or a table`)
   if (f === 'area' && pf.series > 1 && !pf.additive) warn('overlapping_areas', 'overlapping areas can read as a total; lines show series that do not add up more plainly')
   if ((f === 'column' || f === 'bar') && pf.categories * pf.series > 60) warn('many_bars', `${pf.categories * pf.series} bars are hard to read at slide size`)
   if (f === 'scatter' && pr.categories.length < 6) warn('few_points', `${pr.categories.length} paired observations are too few to suggest a relationship`)
+  // composites (VIS V3)
+  if (f === 'waterfall' && pf.missing) no('bridge_gap', 'a bridge with a missing period would not add up from the first level to the last')
+  else if (f === 'waterfall') {
+    const v = pr.series[0]!.values, k = pr.kinds ?? [], level = Math.max(...v.filter((x, i) => k[i] === 'total' && x != null).map((x) => Math.abs(x!)))
+    const step = Math.max(...v.filter((x, i) => k[i] === 'delta' && x != null).map((x) => Math.abs(x!)))
+    if (level > 0 && step / level < 0.03) warn('small_steps', 'the changes are small next to the level, so the steps are barely visible; a change view (bars from zero) shows them more clearly')
+  }
+  if (f === 'step' && !pf.ordinal && !['policy_rate', 'held_level'].includes(pf.measure))
+    warn('step_continuous', 'a step says each value holds until the next period; these are period figures that change continuously, so a line or columns describe them better')
+  if ((f === 'dot' || f === 'lollipop') && pf.categories > 25) warn('many_rows', `${pf.categories} rows are hard to read at slide size`)
+  if (f === 'dumbbell' && pf.categories > 15) warn('many_rows', `${pf.categories} rows are hard to read at slide size`)
+  if (f === 'slope' && pf.categories > 10) warn('many_lines', `${pf.categories} crossing lines are hard to tell apart; a dumbbell keeps one row per entity`)
+  if (f === 'multiples' && pf.series > 12) warn('many_panels', `${pf.series} panels are too small to read at slide size`)
   return out
 }
 

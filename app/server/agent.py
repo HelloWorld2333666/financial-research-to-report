@@ -257,8 +257,9 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "rewrite_text (reword the selected text; pass the user's instruction, the tool does the wording); "
                 "layout_suggestion (align or distribute the selected elements); start_research (Eurostat data for one or more countries, or a rating request); "
                 "propose_visual (a chart of project data: name the analytical INTENT — trend over time, ranking at one period, change between two periods, "
-                "composition of a total, relationship between two measures — the metric and the countries; the app picks the chart type from the data); "
-                "change_visual (turn the selected chart into another type).\n"
+                "composition of a total, relationship between two measures, spotlight (one headline number), ratings (the rating history from rating actions) — "
+                "the metric and the countries; the app picks the chart type from the data); "
+                "change_visual (turn the selected chart into another type, e.g. a dumbbell, slope, lollipop, waterfall bridge, small multiples or step line).\n"
                 "If a request does not make the intent clear (e.g. 'compare France with the PIIGS' could mean the trend, the current ranking or the change "
                 "since a year), ask ONE short question offering those options instead of guessing.")
 
@@ -371,13 +372,24 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                            "It keeps running while you work; its result appears in Tasks as a proposal."}
 
     @agent.tool
-    def propose_visual(ctx: RunContext[Deps], intent: Literal["trend", "ranking", "change", "composition", "relationship"], metric: str,
+    def propose_visual(ctx: RunContext[Deps], intent: Literal["trend", "ranking", "change", "composition", "relationship", "spotlight", "ratings"], metric: str = "",
                        countries: Optional[list[str]] = None, period: Optional[str] = None, start: Optional[str] = None, end: Optional[str] = None,
                        second_metric: Optional[str] = None) -> dict:
         """Propose a chart of project data by analytical intent. metric: debt, deficit, interest, growth or yield; countries: ISO-2 codes
         (default: every country with that metric). period: the year for a ranking or composition; start/end: the years of a change.
         relationship: a second_metric for the other axis (one country). The app chooses the chart type from the data under fixed rules."""
         project = project_of(ctx)
+        if intent == "ratings":
+            # rating actions recorded as evidence (M5): the app draws them on the ordinal scale; undated ones are listed, not placed
+            subjects = {NAMES.get(c.upper()[:2], c) for c in countries} if countries else None
+            ev = [k for k, v in project.get("evidence", {}).items() if v.get("rating") and (subjects is None or v.get("subject") in subjects)]
+            if not ev:
+                return {"kind": "error", "message": "The project has no rating actions yet. Start research on the rating history and upload the agency's press release."}
+            undated = sum(1 for k in ev if not project["evidence"][k]["rating"].get("date"))
+            return {"kind": "visual_request", "intent": "ratings", "datasets": [], "evidence": ev, "missing": [], "slide": ctx.deps.state.slide,
+                    "summary": f"Requested a rating timeline from {len(ev)} rating action{'s' if len(ev) != 1 else ''}"
+                               + (f" ({undated} without a verified date cannot be placed on it)" if undated else "")
+                               + ". The app checks it against the evidence; preview and apply. Nothing has changed yet."}
         m = metric.lower().strip()
         geos = [c.upper()[:2] for c in countries] if countries else sorted({d["geo"] for d in project["datasets"].values() if d["metric"] == m})
         if intent == "relationship":
@@ -396,15 +408,19 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                            + ". The app recommends a chart type from the data under fixed rules; preview and apply. Nothing has changed yet."}
 
     @agent.tool
-    def change_visual(ctx: RunContext[Deps], family: Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", "combo"],
+    def change_visual(ctx: RunContext[Deps], family: Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", "combo",
+                                                     "dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi"],
                       subtype: Optional[Literal["clustered", "stacked", "percent"]] = None,
-                      view: Optional[Literal["over_time", "ranking", "change"]] = None) -> dict:
+                      view: Optional[Literal["over_time", "ranking", "change", "two_periods", "bridge"]] = None) -> dict:
         """Turn the chart selected on the canvas into another type (and optionally another view of the same data).
         The app checks the request against the data and refuses visuals that would misrepresent it, with the reason."""
         sel = next((s for s in ctx.deps.state.selection if s.kind == "chart"), None)
         if sel is None:
             return {"kind": "error", "message": "Select a chart on the canvas first."}
-        transform = {"over_time": "none", "ranking": "rank", "change": "diff", None: None}[view]
+        # dumbbell, slope and KPI compare two periods; a waterfall bridges one series: the view follows the family unless given
+        default = {"dumbbell": "two_periods", "slope": "two_periods", "kpi": "two_periods", "waterfall": "bridge", "step": "over_time", "multiples": "over_time"}.get(family)
+        view = view or default
+        transform = {"over_time": "none", "ranking": "rank", "change": "diff", "two_periods": "pair", "bridge": "bridge", None: None}[view]
         return {"kind": "visual_change_request", "element": sel.id, "family": family, **({"subtype": subtype} if subtype else {}), **({"transform": transform} if transform else {}),
                 "summary": f"Requested: show “{sel.label}” as {family}{f' ({subtype})' if subtype else ''}{f', {view.replace('_', ' ')}' if view else ''}. "
                            "The app checks it against the data first. Nothing has changed yet."}

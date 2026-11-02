@@ -119,7 +119,7 @@ select { padding: 4px 6px; }
 .stage { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; overflow: hidden; background: var(--bg);
   background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 20px 20px; }
 .sheet { position: relative; background: #fff; color: #101828; color-scheme: light; box-shadow: var(--slide-shadow); border-radius: 2px; } /* the document keeps its own colours in dark chrome */
-.statusline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 11.5px; color: var(--muted); padding: 4px 10px; border-radius: 999px; background: var(--chrome); border: 1px solid var(--line); box-shadow: var(--shadow); max-width: calc(100% - 24px); }
+.statusline { position: relative; z-index: 2; /* above the stage canvas, which covers the whole stage */ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 11.5px; color: var(--muted); padding: 4px 10px; border-radius: 999px; background: var(--chrome); border: 1px solid var(--line); box-shadow: var(--shadow); max-width: calc(100% - 24px); }
 .ig-pill { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
 .ig-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .notice { position: absolute; top: 14px; z-index: 20; background: var(--ink); color: var(--chrome); padding: 7px 14px; border-radius: 999px; font-size: 12px; box-shadow: var(--shadow-lg); }

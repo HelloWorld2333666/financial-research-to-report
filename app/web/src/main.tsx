@@ -174,12 +174,12 @@ function Workspace({ store }: { store: Store }) {
   const selId = store.selection.length === 1 ? store.selection[0]! : null
   const selBinding = selId ? store.sidecar.bindings[selId] : undefined
   const selViz = selBinding?.kind === 'viz' ? selBinding : null
-  const INTENT_LABEL: Record<Intent, string> = { trend: 'Over time', ranking: 'Ranking', change: 'Change', composition: 'Composition', relationship: 'Relationship' }
+  const INTENT_LABEL: Record<Intent, string> = { trend: 'Over time', ranking: 'Ranking', change: 'Change', composition: 'Composition', relationship: 'Relationship', spotlight: 'Spotlight', ratings: 'Ratings' }
   const visualItems = useMemo(() => {
     if (!selViz || !selId) return []
     const opts = changeOptions(store.project, selViz.spec)
-    const pick = (o: { family: any; subtype?: any; transform: any; at?: string; from?: string }) => () =>
-      exec({ kind: 'viz.change', id: selId, family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), transform: o.transform, ...(o.at ? { at: o.at } : {}), ...(o.from ? { from: o.from } : {}) })
+    const pick = (o: { family: any; subtype?: any; transform: any; at?: string; from?: string; between?: [string, string] }) => () =>
+      exec({ kind: 'viz.change', id: selId, family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), transform: o.transform, ...(o.at ? { at: o.at } : {}), ...(o.from ? { from: o.from } : {}), ...(o.between ? { between: o.between } : {}) })
     const mark = (o: (typeof opts)[number]) => (o.current ? '✓ ' : '')
     const rec = opts.filter((o) => o.recommended && o.state === 'valid'), other = opts.filter((o) => !o.recommended && o.state === 'valid')
     const warned = opts.filter((o) => o.state === 'warning'), no = opts.filter((o) => o.state === 'invalid')
@@ -257,6 +257,7 @@ function Workspace({ store }: { store: Store }) {
             {reprojectable && <button className="link" onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button>}
             {ig.mismatch.some((m) => m.startsWith('text says')) && <button className="link" onClick={() => openTab('integrity')}>text disagrees with data</button>}
             <span>{ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.sourced}/{ig.figures} figures in text sourced · {ig.unverified} unverified edits · selected {store.selection.length}</span>
+            {ig.outdated.length > 0 && <span className="muted" data-outdated> · {ig.outdated.length} visual{ig.outdated.length === 1 ? '' : 's'} drawn by an earlier layout (values checked) <button className="ghost" onClick={() => exec({ kind: 'deck.reproject' })}>Redraw</button></span>}
           </div>
         </section>
         <div className="scrim" onClick={() => setPanelOpen(false)} />

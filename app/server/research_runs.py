@@ -74,6 +74,27 @@ def find_date(text: str) -> Optional[date]:
     return None
 
 
+def page_dates(text: str) -> set[date]:
+    """Every date printed on a page (all formats)."""
+    out = set()
+    for rx in DATE_RES:
+        for m in rx.finditer(text):
+            d = find_date(m.group(0))
+            if d:
+                out.add(d)
+    return out
+
+
+def action_date(page_no: int, pages: list[str], release: Optional[date]) -> Optional[date]:
+    """The date of an action found on a page: the release date for page 1 (the press release itself); on a later
+    page only a single date printed on that page. A page with several dates (a rating-history table) or none gives
+    no date: a wrong date would be a fabricated fact, a missing one is shown as missing."""
+    if page_no == 1:
+        return release
+    ds = page_dates(_flat(pages[page_no - 1]))
+    return next(iter(ds)) if len(ds) == 1 else None
+
+
 def agency_of(pages: list[str]) -> Optional[str]:
     whole = _flat("\n".join(pages))
     counts = {a: whole.count(a) for a in AGENCIES}
@@ -163,12 +184,13 @@ def rating_evidence(data: bytes, filename: str, entity: str, candidates: list[di
             continue
         seen.add(key)
         eid = f"ev.pdf.{sha[:8]}.{len(evidence) + 1}"
+        on = action_date(ok["page"], pages, when)
         evidence.append({"id": eid, "source_id": f"src.pdf.{sha[:10]}", "kind": "fact", "subject": entity,
-                         "statement": f"{ok['agency']} {ok['action']} {entity} at {ok['rating']}" + (f", outlook {ok['outlook']}" if ok["outlook"] else "") + (f" ({when.isoformat()})" if when else ""),
+                         "statement": f"{ok['agency']} {ok['action']} {entity} at {ok['rating']}" + (f", outlook {ok['outlook']}" if ok["outlook"] else "") + (f" ({on.isoformat()})" if on else ""),
                          "page": ok["page"], "excerpt": ok["excerpt"], "locator": f"{filename}, p. {ok['page']}",
                          "verification": "verified", "verified_by": f"frr-sourcecheck (excerpt on page; found by {ok['found_by']})",
                          "verified_on": datetime.now(timezone.utc).date().isoformat(),
-                         "rating": {"agency": ok["agency"], "action": ok["action"], "rating": ok["rating"], "outlook": ok["outlook"], "date": when.isoformat() if when else None},
+                         "rating": {"agency": ok["agency"], "action": ok["action"], "rating": ok["rating"], "outlook": ok["outlook"], "date": on.isoformat() if on else None},
                          "source_title": f"{ok['agency']} press release ({filename})", "source_url": None,
                          "retrieval": {"method": "pdf_upload", "query_url": None, "retrieved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                                        "content_sha256": sha, "series_key": None, "note": f"uploaded by the user: {filename}; origin user_provided"}})

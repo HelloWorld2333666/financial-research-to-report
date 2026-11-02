@@ -95,3 +95,22 @@ def test_server_stores_acknowledged_warnings_but_never_an_invalid_code(tmp_path)
         b["sidecar"]["bindings"][vid]["spec"]["accepted_warnings"] = bad
         with pytest.raises(BundleError, match="visual specs refused"):
             store.save(pid, b)
+
+
+def test_visual_tools_cover_composites_and_rating_timelines(setup):
+    store, pid, b, _ = setup
+    st = A.WorkspaceState(project=pid)
+    r = tool_result(A.create_agent(store, scripted("propose_visual", {"intent": "ratings"})).run_sync("x", deps=StateDeps(st)))
+    assert r["kind"] == "error" and "no rating actions" in r["message"]  # the France fixture has none
+    p = store.load(pid)
+    p["project"]["evidence"]["ev.r.1"] = {"id": "ev.r.1", "kind": "fact", "subject": "France", "statement": "test", "rating": {"agency": "A (test)", "action": "affirmed", "rating": "AA", "outlook": None, "date": "2024-05-31"}}
+    p["project"]["evidence"]["ev.r.2"] = {"id": "ev.r.2", "kind": "fact", "subject": "France", "statement": "test", "rating": {"agency": "A (test)", "action": "affirmed", "rating": "AA", "outlook": None, "date": None}}
+    store.save(pid, p)
+    r = tool_result(A.create_agent(store, scripted("propose_visual", {"intent": "ratings", "countries": ["FR"]})).run_sync("x", deps=StateDeps(st)))
+    assert r["kind"] == "visual_request" and r["intent"] == "ratings" and sorted(r["evidence"]) == ["ev.r.1", "ev.r.2"] and r["datasets"] == []
+    assert "1 without a verified date cannot be placed" in r["summary"]
+    vid, vb = binding(b, "viz")
+    sel = A.WorkspaceState(project=pid, selection=[A.Selected(id=vid, kind="chart", label=vb["spec"]["title"], datasets=vb["spec"]["view"]["datasets"])])
+    for family, transform in (("dumbbell", "pair"), ("waterfall", "bridge"), ("multiples", "none"), ("lollipop", None)):
+        r = tool_result(A.create_agent(store, scripted("change_visual", {"family": family})).run_sync("x", deps=StateDeps(sel)))
+        assert r["kind"] == "visual_change_request" and r["family"] == family and r.get("transform") == transform, family

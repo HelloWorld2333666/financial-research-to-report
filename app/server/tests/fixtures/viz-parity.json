@@ -95,6 +95,60 @@
    }
   }
  },
+ "extraEvidence": {
+  "ev.r.t1": {
+   "id": "ev.r.t1",
+   "kind": "fact",
+   "subject": "France",
+   "statement": "Agency A (test) affirmed AA",
+   "rating": {
+    "agency": "Agency A (test)",
+    "action": "affirmed",
+    "rating": "AA",
+    "outlook": "negative",
+    "date": "2023-04-28"
+   }
+  },
+  "ev.r.t2": {
+   "id": "ev.r.t2",
+   "kind": "fact",
+   "subject": "France",
+   "statement": "Agency B (test) confirmed AA (high)",
+   "rating": {
+    "agency": "Agency B (test)",
+    "action": "confirmed",
+    "rating": "AA (high)",
+    "outlook": "stable",
+    "date": "2023-10-20"
+   }
+  },
+  "ev.r.t3": {
+   "id": "ev.r.t3",
+   "kind": "fact",
+   "subject": "France",
+   "statement": "Agency A (test) downgraded to Aa3",
+   "rating": {
+    "agency": "Agency A (test)",
+    "action": "downgraded",
+    "rating": "Aa3",
+    "outlook": "stable",
+    "date": "2024-05-31"
+   }
+  },
+  "ev.r.t4": {
+   "id": "ev.r.t4",
+   "kind": "fact",
+   "subject": "France",
+   "statement": "Agency B (test) confirmed, undated",
+   "rating": {
+    "agency": "Agency B (test)",
+    "action": "confirmed",
+    "rating": "AA (high)",
+    "outlook": null,
+    "date": null
+   }
+  }
+ },
  "cases": [
   {
    "name": "column",
@@ -506,6 +560,240 @@
       2.99,
       2.97,
       3.34979
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "dumbbell",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt",
+    "family": "dumbbell",
+    "view": {
+     "datasets": [
+      "ds.fr.debt",
+      "ds.de.debt"
+     ],
+     "transform": "pair",
+     "between": [
+      "2022",
+      "2025"
+     ]
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "France",
+     "Germany"
+    ],
+    "series": [
+     [
+      111.4,
+      64.1
+     ],
+     [
+      115.7,
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "kpi",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Debt",
+    "family": "kpi",
+    "view": {
+     "datasets": [
+      "ds.de.debt"
+     ],
+     "transform": "pair"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "Germany"
+    ],
+    "series": [
+     [
+      64.1
+     ],
+     [
+      62.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "waterfall",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Deficit",
+    "family": "waterfall",
+    "view": {
+     "datasets": [
+      "ds.fr.deficit"
+     ],
+     "transform": "bridge",
+     "between": [
+      "2020",
+      "2025"
+     ]
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "2020",
+     "2021 change",
+     "2022 change",
+     "2023 change",
+     "2024 change",
+     "2025 change",
+     "2025"
+    ],
+    "series": [
+     [
+      -8.9,
+      2.3,
+      1.9,
+      -0.7,
+      -0.4,
+      0.7,
+      -5.1
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "lollipop",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Deficit",
+    "family": "lollipop",
+    "view": {
+     "datasets": [
+      "ds.fr.deficit",
+      "ds.de.deficit"
+     ],
+     "transform": "rank",
+     "at": "2024"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "cross",
+    "categories": [
+     "Germany",
+     "France"
+    ],
+    "series": [
+     [
+      -2.7,
+      -5.8
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "multiples",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Growth",
+    "family": "multiples",
+    "view": {
+     "datasets": [
+      "ds.fr.growth",
+      "ds.de.growth"
+     ],
+     "transform": "none"
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "time",
+    "categories": [
+     "2020",
+     "2021",
+     "2022",
+     "2023",
+     "2024",
+     "2025"
+    ],
+    "series": [
+     [
+      -7.4,
+      6.9,
+      2.7,
+      1.6,
+      1.5,
+      0.8
+     ],
+     [
+      -4,
+      4,
+      1.9,
+      -1,
+      0,
+      0.2
+     ]
+    ],
+    "x": null
+   }
+  },
+  {
+   "name": "rating_timeline",
+   "spec": {
+    "schema": "frr-viz/1",
+    "id": "viz_test",
+    "title": "Ratings",
+    "family": "rating_timeline",
+    "view": {
+     "datasets": [],
+     "transform": "ratings",
+     "evidence": [
+      "ev.r.t1",
+      "ev.r.t2",
+      "ev.r.t3",
+      "ev.r.t4"
+     ]
+    },
+    "missing": "gap"
+   },
+   "expected": {
+    "shape": "ratings",
+    "categories": [
+     "2023-04-28",
+     "2023-10-20",
+     "2024-05-31"
+    ],
+    "series": [
+     [
+      2,
+      null,
+      3
+     ],
+     [
+      null,
+      1,
+      null
      ]
     ],
     "x": null

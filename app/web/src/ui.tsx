@@ -42,7 +42,9 @@ export const IconButton = React.forwardRef<HTMLButtonElement, { icon: string; la
 export interface MenuItem { label: string; icon?: string; onSelect?: () => void; disabled?: boolean; separator?: boolean; heading?: boolean; testId?: string }
 export function Menu({ trigger, items, align = 'end' }: { trigger: React.ReactElement; items: MenuItem[]; align?: 'start' | 'end' }) {
   return (
-    <Dropdown.Root>
+    // non-modal: a modal menu sets pointer-events:none on <body>, and a dialog opened from one of its items ("Use anyway")
+    // restored that value on close, leaving the whole app unclickable
+    <Dropdown.Root modal={false}>
       <Dropdown.Trigger asChild>{trigger}</Dropdown.Trigger>
       <Dropdown.Portal>
         <Dropdown.Content className="menu" align={align} sideOffset={6}>

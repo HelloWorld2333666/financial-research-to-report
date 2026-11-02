@@ -170,7 +170,9 @@ function VisualTool(props: any) {
   if (!rec.recommended && !warned.length) return <div><Summary r={r} /><div className="bad small" data-tool-error>No valid visual for this data: {rec.error ?? refused.map((c) => `${c.label}: ${c.refused}`).join('; ')}</div></div>
   const cmdFor = (c: Candidate): Command => {
     const ds = store.project.datasets[r.datasets[0]]
-    const base = { key: `visual:${c.key}`, kicker: (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
+    const base = r.intent === 'ratings'
+      ? { key: `visual:${c.key}`, kicker: 'RATINGS', title: c.spec?.title, subtitle: 'Agency actions from uploaded press releases' }
+      : { key: `visual:${c.key}`, kicker: (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
     return { kind: 'slide.compose', proposal: c.spec ? { ...base, viz: c.spec } : { ...base, table: c.table } }
   }
   const alts = rec.candidates.filter((c) => c.state === 'valid' && c !== rec.recommended).slice(0, 2)
@@ -202,8 +204,8 @@ function ChangeVisualTool(props: any) {
   if (b?.kind !== 'viz') return <Card pid={props.toolCallId} title={`Change visual: ${r.family}`} cmd={null} blocked="The chart is no longer on the deck."><Summary r={r} /></Card>
   const target = { ...b.spec, family: r.family, subtype: r.subtype, view: { ...b.spec.view, ...(r.transform ? { transform: r.transform } : {}) } }
   const a = assess(store.project, target)
-  const change = (o: { family: any; subtype?: any; transform?: any; at?: string; from?: string }): Command =>
-    ({ kind: 'viz.change', id: r.element, family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), ...(o.transform ? { transform: o.transform } : {}), ...(o.at ? { at: o.at } : {}), ...(o.from ? { from: o.from } : {}) })
+  const change = (o: { family: any; subtype?: any; transform?: any; at?: string; from?: string; between?: [string, string] }): Command =>
+    ({ kind: 'viz.change', id: r.element, family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), ...(o.transform ? { transform: o.transform } : {}), ...(o.at ? { at: o.at } : {}), ...(o.from ? { from: o.from } : {}), ...(o.between ? { between: o.between } : {}) })
   const opts = a.invalid ? changeOptions(store.project, b.spec) : []
   const fix = opts.find((o) => o.family === r.family && (o.subtype ?? 'clustered') === (r.subtype ?? 'clustered') && o.fixes.length)?.fixes[0]
   const instead = opts.filter((o) => o.state === 'valid' && !o.current).sort((x, y) => Number(y.recommended) - Number(x.recommended)).slice(0, 2)

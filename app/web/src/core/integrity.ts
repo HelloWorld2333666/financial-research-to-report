@@ -3,20 +3,24 @@
 // resolves to an element. Run after every change; the server repeats it on the saved deck.
 import type { OpenedPptx } from '@genoffice/pptx-engine'
 import { cellText, ratingCells, textNumbers, unverifiedEdits } from './evidence'
-import { realize } from './viz'
+import { check, isComposite, realize, type VizSpec } from './viz'
+import { LAYOUT_VERSION, layout, readGroup } from './composite'
 import { findEl, textOf } from './deck'
 import type { Project, Sidecar } from './types'
 
-export interface Integrity { ok: boolean; bindings: number; resolved: number; points: number; cells: number; figures: number; sourced: number; unsourced: number; unverified: number; mismatch: string[] }
+export interface Integrity { ok: boolean; bindings: number; resolved: number; points: number; cells: number; figures: number; sourced: number; unsourced: number; unverified: number; mismatch: string[]
+  /** composites drawn by an earlier layout: their values are checked; positions and labels wait for Re-project */
+  outdated: string[] }
 
 export function integrity(deck: OpenedPptx, project: Project, sidecar: Sidecar): Integrity {
-  const out: Integrity = { ok: false, bindings: 0, resolved: 0, points: 0, cells: 0, figures: 0, sourced: 0, unsourced: 0, unverified: unverifiedEdits(project), mismatch: [] }
+  const out: Integrity = { ok: false, bindings: 0, resolved: 0, points: 0, cells: 0, figures: 0, sourced: 0, unsourced: 0, unverified: unverifiedEdits(project), mismatch: [], outdated: [] }
   for (const [durable, b] of Object.entries(sidecar.bindings)) {
     out.bindings++
     const f = findEl(deck, durable)
     if (!f) { out.mismatch.push(`binding ${durable} does not resolve`); continue }
     out.resolved++
-    if (b.kind === 'viz') {
+    if (b.kind === 'viz' && isComposite(b.spec.family)) compositeCheck(out, f.el, project, b.spec)
+    else if (b.kind === 'viz') {
       // the chart on the slide must equal the spec's realization from current data (VIS V1)
       let want
       try { want = realize(project, b.spec) } catch (e: any) { out.mismatch.push(`visual “${b.spec.title}”: ${e.message}`); continue }
@@ -51,4 +55,36 @@ export function integrity(deck: OpenedPptx, project: Project, sidecar: Sidecar):
   }
   out.ok = out.resolved === out.bindings && out.mismatch.length === 0
   return out
+}
+
+/** A composite on the slide must equal a fresh layout of its spec from current data (VIS V3): every data mark's
+ *  value, every mark and value label where the layout puts it, and every label's text. */
+function compositeCheck(out: Integrity, el: any, project: Project, spec: VizSpec) {
+  const t = spec.title || spec.family
+  if (el.type !== 'group') { out.mismatch.push(`visual “${t}”: expected a ${spec.family} (shapes), found a ${el.type}`); return }
+  let want
+  const got = readGroup(el)
+  try { want = layout(project, spec, check(project, spec), got.size ?? { w: 1200, h: 400 }) } catch (e: any) { out.mismatch.push(`visual “${t}”: ${e.message}`); return }
+  // drawn by an earlier layout: the data values (mark names) must still match; positions and label texts follow the
+  // current layout code, so they are compared only once Re-project has redrawn the visual
+  const current = got.version === LAYOUT_VERSION
+  if (!current) out.outdated.push(t)
+  const byName = new Map(got.children.map((c) => [c.name, c]))
+  const dataKey = (n: string) => /^frr-(mark \d+ \d+|rating \S+)/.exec(n)?.[0]
+  const gotData = new Map(got.children.filter((c) => dataKey(c.name)).map((c) => [dataKey(c.name)!, c.name.split(' ').at(-1)]))
+  for (const m of want) {
+    const key = dataKey(m.name)
+    if (key) {
+      out.points++
+      const v = m.name.split(' ').at(-1), have = gotData.get(key)
+      if (have !== v) { out.mismatch.push(`${t} ${key.replace(/^frr-/, '')}: data ${v}, visual ${have ?? 'missing'}`); continue }
+    }
+    if (!current || (!key && !/^frr-(label|title|cat|gap)/.test(m.name))) continue // gridlines, legends and notes are decoration
+    const c = byName.get(m.name)
+    if (!c) { if (!key) out.mismatch.push(`${t}: “${m.name.replace(/^frr-/, '')}” missing`); continue }
+    if (Math.abs(c.box.x - m.box.x) > 1 || Math.abs(c.box.y - m.box.y) > 1 || Math.abs(c.box.w - m.box.w) > 1 || Math.abs(c.box.h - m.box.h) > 1)
+      out.mismatch.push(`${t}: ${m.name.replace(/^frr-/, '')} is not where the data puts it`)
+    if (m.kind === 'text' && c.text !== m.text) out.mismatch.push(`${t}: label says “${c.text}”, data “${m.text}”`)
+  }
+  for (const k of gotData.keys()) if (!want.some((m) => dataKey(m.name) === k)) out.mismatch.push(`${t} ${k.replace(/^frr-/, '')}: on the visual but not in the data`)
 }

@@ -25,6 +25,7 @@ def test_projection_matches_the_client_for_every_family():
     parity = json.loads((FIX / "viz-parity.json").read_text())
     project = json.loads((WEB_FIX / "france-project.json").read_text())
     project["datasets"].update(parity.get("extra", {}))  # synthetic additive datasets used by part-to-whole cases
+    project["evidence"].update(parity.get("extraEvidence", {}))  # synthetic rating actions (rating timeline)
     w = parity["working"]
     project["datasets"][w["dataset"]]["working"][w["date"]] = w["entry"]
     assert len(parity["cases"]) >= 11
@@ -92,3 +93,36 @@ def test_save_refuses_an_invalid_spec(tmp_path):
     b["sidecar"]["bindings"][vid]["spec"]["family"] = "bar3D"
     with pytest.raises(BundleError, match="visual specs refused"):
         store.save(pid, b)
+
+
+def test_composite_views_match_the_client_and_the_rating_scale():
+    parity = json.loads((FIX / "viz-parity.json").read_text())
+    project = json.loads((WEB_FIX / "france-project.json").read_text())
+    project["datasets"].update(parity.get("extra", {}))
+    project["evidence"].update(parity.get("extraEvidence", {}))
+    w = parity["working"]
+    project["datasets"][w["dataset"]]["working"][w["date"]] = w["entry"]
+    names = {c["name"] for c in parity["cases"]}
+    assert {"dumbbell", "kpi", "waterfall", "lollipop", "multiples", "rating_timeline"} <= names
+    for case in parity["cases"]:
+        assert viz.validate_spec(case["spec"]) == [], case["name"]
+    assert [viz.notch(s) for s in ["AAA", "Aaa", "AA+", "Aa1", "AA (high)", "AA-", "Aa3", "AA (low)", "BBB-", "Baa3", "BBB (low)", "D"]] == [0, 0, 1, 1, 1, 3, 3, 3, 9, 9, 9, 21]
+    assert [viz.notch(s) for s in ["AAA (high)", "A++", "aa", "", "Prime-1"]] == [None] * 5
+    assert viz.validate_spec(spec(family="dumbbell", view={"datasets": [], "transform": "ratings"}))  # ratings need evidence
+
+
+def test_server_checks_composite_marks_in_the_saved_deck():
+    b = json.loads((FIX / "composite-bundle.json").read_text())
+    deck = base64.b64decode(b["deck"])
+    r = integrity.check(deck, b["project"], b["sidecar"])
+    assert r["ok"], r["mismatch"]
+    kinds = {v["spec"]["family"] for v in b["sidecar"]["bindings"].values() if v["kind"] == "viz"}
+    assert kinds == {"dumbbell", "waterfall", "kpi", "rating_timeline"}
+    edited = copy.deepcopy(b)
+    edited["project"]["datasets"]["ds.fr.debt"]["working"]["2025"] = {"value": 116.0, "by": "you", "at": "t", "status": "manual_unverified"}
+    r = integrity.check(deck, edited["project"], edited["sidecar"])
+    assert not r["ok"] and any("data 116, visual 115.7" in m["detail"] for m in r["mismatch"])
+    downgraded = copy.deepcopy(b)
+    downgraded["project"]["evidence"]["ev.r.4"]["rating"]["rating"] = "AA-"
+    r = integrity.check(deck, downgraded["project"], downgraded["sidecar"])
+    assert not r["ok"] and any("ev.r.4: data 3, visual 2" in m["detail"] for m in r["mismatch"])

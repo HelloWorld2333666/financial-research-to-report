@@ -173,6 +173,27 @@ it.runIf((globalThis as any).process?.env?.WRITE_FIXTURES)('writes the Python pa
     const pr = check(p, sp)
     return { name, spec: sp, expected: { shape: pr.shape, categories: pr.categories, series: pr.series.map((x) => x.values), x: pr.x?.values ?? null } }
   })
+  // composite views (VIS V3): two periods per entity, a bridge, and rating actions on the ordinal scale
+  const extraEvidence = {
+    'ev.r.t1': { id: 'ev.r.t1', kind: 'fact', subject: 'France', statement: 'Agency A (test) affirmed AA', rating: { agency: 'Agency A (test)', action: 'affirmed', rating: 'AA', outlook: 'negative', date: '2023-04-28' } },
+    'ev.r.t2': { id: 'ev.r.t2', kind: 'fact', subject: 'France', statement: 'Agency B (test) confirmed AA (high)', rating: { agency: 'Agency B (test)', action: 'confirmed', rating: 'AA (high)', outlook: 'stable', date: '2023-10-20' } },
+    'ev.r.t3': { id: 'ev.r.t3', kind: 'fact', subject: 'France', statement: 'Agency A (test) downgraded to Aa3', rating: { agency: 'Agency A (test)', action: 'downgraded', rating: 'Aa3', outlook: 'stable', date: '2024-05-31' } },
+    'ev.r.t4': { id: 'ev.r.t4', kind: 'fact', subject: 'France', statement: 'Agency B (test) confirmed, undated', rating: { agency: 'Agency B (test)', action: 'confirmed', rating: 'AA (high)', outlook: null, date: null } },
+  }
+  Object.assign(p.evidence, extraEvidence)
+  const composite: [string, Omit<VizSpec, 'schema' | 'id' | 'missing'>][] = [
+    ['dumbbell', { title: 'Debt', family: 'dumbbell', view: { datasets: ['ds.fr.debt', 'ds.de.debt'], transform: 'pair', between: ['2022', '2025'] } }],
+    ['kpi', { title: 'Debt', family: 'kpi', view: { datasets: ['ds.de.debt'], transform: 'pair' } }],
+    ['waterfall', { title: 'Deficit', family: 'waterfall', view: { datasets: ['ds.fr.deficit'], transform: 'bridge', between: ['2020', '2025'] } }],
+    ['lollipop', { title: 'Deficit', family: 'lollipop', view: { datasets: ['ds.fr.deficit', 'ds.de.deficit'], transform: 'rank', at: '2024' } }],
+    ['multiples', { title: 'Growth', family: 'multiples', view: { datasets: ['ds.fr.growth', 'ds.de.growth'], transform: 'none' } }],
+    ['rating_timeline', { title: 'Ratings', family: 'rating_timeline', view: { datasets: [], transform: 'ratings', evidence: Object.keys(extraEvidence) } }],
+  ]
+  for (const [name, v] of composite) {
+    const sp = spec(v.family, v.view, { title: v.title })
+    const pr = check(p, sp)
+    cases.push({ name, spec: sp, expected: { shape: pr.shape, categories: pr.categories, series: pr.series.map((x) => x.values), x: null } })
+  }
   const extra = Object.fromEntries(HOLDERS.map((id) => [id, p.datasets[id]])) // synthetic test datasets the server fixture lacks
-  writeFileSync(new URL('../../../server/tests/fixtures/viz-parity.json', import.meta.url), JSON.stringify({ working, extra, cases }, null, 1))
+  writeFileSync(new URL('../../../server/tests/fixtures/viz-parity.json', import.meta.url), JSON.stringify({ working, extra, extraEvidence, cases }, null, 1))
 })

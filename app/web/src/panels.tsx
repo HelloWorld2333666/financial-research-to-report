@@ -87,13 +87,16 @@ function VizEvidence({ p, spec }: { p: Project; spec: any }) {
       {pr.series.map((s, si) => (
         <div key={si} className="ev-series"><h4>{s.dataset ? p.datasets[s.dataset]?.title : s.name}</h4>
           {s.values.map((v, i) => v == null && !s.cells[i] ? null : (
-            <Row key={i} label={pr.categories[i]!} value={v == null ? 'gap' : String(v)} status={status(s.cells[i]!)}><CellProvenance p={p} cell={s.cells[i]!} /></Row>
+            <Row key={i} label={pr.categories[i]!} value={v == null ? 'gap' : pr.ratings ? ratingText(pr, s.cells[i]!) : String(v)} status={status(s.cells[i]!)}><CellProvenance p={p} cell={s.cells[i]!} /></Row>
           ))}
         </div>
       ))}
+      {!!pr.undated?.length && <p className="muted small" data-undated>{pr.undated.length} rating action{pr.undated.length === 1 ? '' : 's'} without a verified date (not placed on the timeline): {pr.undated.map((id) => (p.evidence[id] as any)?.statement ?? id).join('; ')}</p>}
     </div>
   )
 }
+/** A rating point shows its symbol and outlook, never the notch index it is drawn at. */
+const ratingText = (pr: Projected, cell: Cell) => { const x = pr.ratings!.find((r) => cell && 'evidence' in cell && r.evidence === cell.evidence); return x ? `${x.rating}${x.outlook ? ` (${x.outlook})` : ''}` : '?' }
 
 /** Every number on the selected element and what it resolves to. */
 export function EvidencePanel({ store }: { store: Store }) {
