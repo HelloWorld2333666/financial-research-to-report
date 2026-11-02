@@ -8,13 +8,25 @@ import { findEl, slideIndex, walk } from './deck'
 import type { Binding, ChartSpec, Dataset, Project, Sidecar, TableSpec } from './types'
 
 export const EMU = 9525 // EMU per slide px; slides are 1280 x 720 px
+/** Built-in table style driven by the theme's accent1 (Design DNA navy) instead of PowerPoint's default orange. */
+export const TABLE_STYLE = { styleId: 'Light Style 2 - Accent 1', firstRow: true, bandRow: true }
+
+/** Theme ops for a new deck from Design DNA: colours and the shipped heading/body font. */
+export function themeOps(d: Project['design_dna']): Op[] {
+  return [{ op: 'applyTheme', name: 'Research-to-Report', majorFont: d.font, minorFont: d.font, colors: {
+    dk1: d.ink, lt1: '#FFFFFF', dk2: d.ink, lt2: '#F3F5F8', accent1: d.series[0], accent2: d.series[1], accent3: d.series[2], accent4: d.series[3],
+    accent5: d.muted, accent6: d.rule, hlink: d.series[0], folHlink: d.muted } }]
+}
 
 export type Box = { x: number; y: number; w: number; h: number }
 export interface ClipItem { item: any; binding?: Binding }
 export type Command =
   | { kind: 'slide.compose'; proposal: any }
   | { kind: 'element.transform'; id: string; box: Box; rotDeg?: number }
-  | { kind: 'text.set'; id: string; text: string }
+  | { kind: 'elements.transform'; items: { id: string; box: Box; rotDeg?: number }[] }
+  | { kind: 'elements.align'; ids: string[]; mode: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom' }
+  | { kind: 'elements.distribute'; ids: string[]; axis: 'horizontal' | 'vertical' }
+  | { kind: 'text.set'; id: string; text?: string; paragraphs?: any[] }
   | { kind: 'data.set'; dataset: string; date: string; value: number | null }
   | { kind: 'chart.addSeries'; id: string; dataset: Dataset; evidence?: Record<string, any> }
   | { kind: 'element.group'; ids: string[] }
@@ -23,6 +35,7 @@ export type Command =
   | { kind: 'clipboard.paste'; slide: string; items: ClipItem[]; offset?: number }
   | { kind: 'placeholder.add'; slide: string; label: string; request: any }
   | { kind: 'ops.raw'; ops: Op[]; summary?: string }
+  | { kind: 'deck.reproject' }
 
 export interface Ctx { deck: OpenedPptx; project: Project; sidecar: Sidecar }
 export interface Outcome { summary: string; slides: string[]; created?: string[] }
@@ -69,8 +82,9 @@ interface Planned { op: Op; bind: (slide: string) => Binding; fill?: (el: string
 function planSlide(ctx: Ctx, p: any): Planned[] {
   const d = ctx.project.design_dna, out: Planned[] = []
   const para = (t: string, pt: number, color: string, bold = false) => ({ runs: [{ text: t, fontSize: pt, bold, color, fontFamily: d.font }] })
+  // Titles and bullets shrink to fit their frame (bodyPr autoFit) instead of spilling into the next element
   const text = (role: string, t: string, box: [number, number, number, number], pt: number, color: string, bold = false) =>
-    out.push({ op: { op: 'addElement', kind: 'textbox', offset: off(...box), paragraphs: t.split('\n').map((l) => para(l, pt, color, bold)), bodyPr: { wrap: 'square', insetsEmu: { l: 0, t: 0, r: 0, b: 0 } } }, bind: (slide) => ({ kind: 'text', slide, role }) })
+    out.push({ op: { op: 'addElement', kind: 'textbox', offset: off(...box), paragraphs: t.split('\n').map((l) => para(l, pt, color, bold)), bodyPr: { wrap: 'square', insetsEmu: { l: 0, t: 0, r: 0, b: 0 }, ...(role === 'title' || role === 'body' ? { autoFit: 'shrink' } : {}) } }, bind: (slide) => ({ kind: 'text', slide, role }) })
   text('kicker', p.kicker, [40, 26, 900, 16], 8.5, d.accent, true)
   text('title', p.title, [40, 44, 1200, 44], 17, d.ink, true)
   text('subtitle', p.subtitle, [40, 92, 1200, 18], 9, d.muted)
@@ -81,7 +95,8 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   }
   if (p.table) {
     const t: TableSpec = { title: p.table.title, datasets: [...p.table.datasets], dates: [...p.table.dates] }
-    out.push({ op: { op: 'addTable', rows: t.datasets.length + 1, cols: t.dates.length + 1, offset: off(784, 160, 456, 34 * (t.datasets.length + 1)) }, bind: (slide) => ({ kind: 'table', slide, table: t }), fill: (el, i) => tableFill(ctx, el, i, t) })
+    out.push({ op: { op: 'addTable', rows: t.datasets.length + 1, cols: t.dates.length + 1, offset: off(784, 160, 456, 34 * (t.datasets.length + 1)) }, bind: (slide) => ({ kind: 'table', slide, table: t }),
+      fill: (el, i) => [{ op: 'setTableStyle', target: { slide: i, el }, ...TABLE_STYLE }, ...tableFill(ctx, el, i, t)] })
     text('label', t.title, [784, 136, 456, 18], 9, d.muted, true)
   }
   const bullets = [...(p.bullets || []), ...(p.derived ? [`10-year spread over Germany: ${p.derived.spread_bp} bp (derived: ${p.derived.inputs.join(' − ')})`] : [])]
@@ -121,9 +136,27 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       } else txn(ctx, [{ op: 'setTransform', target: { slide: f.index, el: f.el.id }, rotDeg: cmd.rotDeg ?? 0, resizeTableGrid: true, box: off(cmd.box.x, cmd.box.y, cmd.box.w, cmd.box.h) }])
       return { summary: 'Move/resize', slides: [slide] }
     }
+    case 'elements.transform': {
+      if (!cmd.items.length) throw new Error('nothing to move')
+      const slides = new Set<string>()
+      for (const it of cmd.items) slides.add(run(ctx, { kind: 'element.transform', ...it }).slides[0]!)
+      return { summary: cmd.items.length > 1 ? `Move/resize ${cmd.items.length} elements` : 'Move/resize', slides: [...slides] }
+    }
+    case 'elements.align':
+    case 'elements.distribute': {
+      const found = cmd.ids.map((id) => must(ctx, id))
+      if (found.some((f) => f.group) || new Set(found.map((f) => f.index)).size > 1) throw new Error('Select top-level elements on one slide')
+      const min = cmd.kind === 'elements.align' ? 2 : 3
+      if (found.length < min) throw new Error(`Select at least ${min} elements`)
+      const index = found[0]!.index, els = found.map((f) => f.el.id)
+      txn(ctx, [cmd.kind === 'elements.align' ? { op: 'alignElements', target: { slide: index }, els, mode: cmd.mode } : { op: 'distributeElements', target: { slide: index }, els, axis: cmd.axis }])
+      return { summary: cmd.kind === 'elements.align' ? `Align ${cmd.mode}` : `Distribute ${cmd.axis}`, slides: [sid(ctx, index)] }
+    }
     case 'text.set': {
       const f = must(ctx, cmd.id)
-      txn(ctx, [{ op: 'setText', target: { slide: f.index, el: f.el.id }, ...(f.group ? { group: f.group.id } : {}), paragraphs: cmd.text.split('\n').map((t) => ({ runs: [{ text: t }] })) }])
+      // the rich-text editor sends EditParagraph[] (runs with bold/italic/size/colour); plain text keeps existing styles
+      const paragraphs = cmd.paragraphs ?? (cmd.text ?? '').split('\n').map((t) => ({ runs: [{ text: t }] }))
+      txn(ctx, [{ op: 'setText', target: { slide: f.index, el: f.el.id }, ...(f.group ? { group: f.group.id } : {}), paragraphs }])
       return { summary: 'Edit text', slides: [sid(ctx, f.index)] }
     }
     case 'data.set': {
@@ -181,6 +214,11 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       const id = elementDurableId((ctx.deck.deck.slides[si] as any).elements.at(-1))!
       ctx.sidecar.bindings[id] = { kind: 'placeholder', slide: cmd.slide, label: cmd.label, request: cmd.request }
       return { summary: 'Add research request', slides: [cmd.slide], created: [id] }
+    }
+    case 'deck.reproject': {
+      // Re-project every bound chart and table from the working layer (e.g. after a formatting change)
+      const all = new Set(Object.keys(ctx.project.datasets))
+      return { summary: 'Re-project all bound values from data', slides: reproject(ctx, all) }
     }
     case 'ops.raw': {
       txn(ctx, cmd.ops)

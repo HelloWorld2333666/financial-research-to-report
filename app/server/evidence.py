@@ -23,7 +23,7 @@ METRICS = {
     "yield": ("irt_lt_mcby_a", {}, "10-year government bond yield", "%"),
 }
 NAMES = {"FR": "France", "DE": "Germany", "IT": "Italy", "ES": "Spain", "NL": "Netherlands", "BE": "Belgium", "AT": "Austria", "PT": "Portugal"}
-DESIGN_DNA = {"font": "Liberation Sans", "ink": "#0f2742", "accent": "#c8102e", "muted": "#5b6b7f", "rule": "#0f2742",
+DESIGN_DNA = {"font": "Inter", "ink": "#0f2742", "accent": "#c8102e", "muted": "#5b6b7f", "rule": "#0f2742",
               "series": ["#1f4e9c", "#c8102e", "#2e8b57", "#b8860b"]}
 
 

@@ -2,7 +2,7 @@
 // threads), selection by durable id, snapshot undo/redo, and bundle save/load through the service.
 import { createBlankPptx, openPptx, savePptx, copyElementData, type OpenedPptx } from '@genoffice/pptx-engine'
 import { HeuristicMetrics, type FontMetricsProvider } from '@genoffice/pptx-render'
-import { run, type ClipItem, type Command, type Outcome } from './commands'
+import { run, themeOps, txn, type ClipItem, type Command, type Outcome } from './commands'
 import { findEl, slideList } from './deck'
 import { migrateSidecar } from './sidecar'
 import { BUNDLE_SCHEMA, type Actor, type Bundle, type JournalEntry, type Project, type Sidecar } from './types'
@@ -35,6 +35,8 @@ export class Store {
     s.journal = b.journal ?? []
     s.threads = b.threads ?? {}
     s.deck = await openPptx(b.deck ? unb64(b.deck) : await createBlankPptx())
+    // a new deck takes its theme (colours, heading/body font) from the project's Design DNA
+    if (!b.deck && b.project.design_dna?.series) txn({ deck: s.deck, project: s.project, sidecar: s.sidecar }, themeOps(b.project.design_dna))
     return s
   }
 

@@ -271,4 +271,6 @@ and development tooling and are not shipped in the application.
 | python | typing-inspection | 0.4.4 | MIT |
 | python | typing_extensions | 4.16.0 | PSF-2.0 |
 | python | uvicorn | 0.54.0 | BSD-3-Clause |
+| font | Inter | 4.1 | OFL-1.1 |
+| font | Liberation Sans | 2.x | OFL-1.1 |
 | vendored | genoffice (292 files) | 36a509e8fc16 | Apache-2.0 |

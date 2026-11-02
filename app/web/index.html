@@ -33,6 +33,13 @@
     .panel { display: flex; flex-direction: column; overflow-y: auto; } .tabs { display: flex; gap: 4px; margin-bottom: 10px; } .tabs button { flex: 1; text-transform: capitalize; } .tabs button.on { background: #e8eef8; border-color: #c7d4ea; }
     .journal { padding-left: 18px; font-size: 12px; } .journal li { margin: 4px 0; } .journal li[data-actor="ai"] b { color: #6941c6; } .journal li[data-actor="research"] b { color: #b54708; }
     .claim { border-left: 3px solid #98a2b3; padding-left: 8px; margin-bottom: 8px; font-size: 12px; } .claim.supported { border-color: #12b76a; } .claim.mismatch { border-color: #f04438; }
+    .format { display: inline-flex; gap: 2px; margin-left: 8px; } .format button { width: 28px; padding: 3px 0; } .fmt-bold { font-weight: 700; } .fmt-italic { font-style: italic; } .fmt-underline { text-decoration: underline; }
+    .align { display: inline-flex; gap: 2px; margin-left: 8px; } .align button { padding: 3px 7px; font-size: 13px; line-height: 1; }
+    /* Bullet layout for GenOffice's TextEditOverlay — from genoffice apps/slides/src/renderer/styles.css (Apache-2.0) */
+    .slide-text-editor { outline: none; }
+    .slide-text-editor > div[data-bullet-text]::before { content: attr(data-bullet-text); display: inline-block; margin-left: calc(-1 * var(--bullet-hang)); width: var(--bullet-w); line-height: 0; font-family: var(--bullet-font, inherit); font-size: var(--bullet-size, inherit); font-weight: var(--bullet-weight, normal); color: var(--bullet-color, inherit); }
+    .slide-text-editor > div[data-bullet-img] { position: relative; }
+    .slide-text-editor > div[data-bullet-img]::after { content: ''; position: absolute; left: var(--bullet-x); top: var(--bullet-y); width: var(--bullet-img-w); height: var(--bullet-h); background: var(--bullet-img) center / contain no-repeat; user-select: none; pointer-events: none; }
   </style>
 </head>
 <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>

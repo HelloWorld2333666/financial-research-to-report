@@ -61,4 +61,4 @@ def test_web_client_boots_blank_deck(tmp_path):
 def test_end_to_end_checks_in_the_browser(tmp_path):
     result = run_page(tmp_path, "checks=1", "checks", 60000)
     failed = {k: v for k, v in result.items() if not v["ok"]}
-    assert len(result) >= 20 and not failed, failed
+    assert len(result) >= 22 and not failed, failed

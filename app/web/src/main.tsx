@@ -2,6 +2,8 @@ import './platform/polyfill'
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SlideCanvas } from '@genoffice-slides/renderer/SlideCanvas'
+import { TextEditOverlay } from '@genoffice-slides/renderer/TextEditOverlay'
+import { loadFonts } from './core/fonts'
 import { Store } from './core/store'
 import { durableOfSource, findEl, render, sourceIdsFor, textOf } from './core/deck'
 import { integrity } from './core/integrity'
@@ -71,13 +73,15 @@ function Workspace({ store }: { store: Store }) {
     if (preview) return // the canvas previews the drag locally; commit once at the end
     const d = durable(sourceId); if (d) exec({ kind: 'element.transform', id: d, box: { x: b.x * K, y: b.y * K, w: b.w * K, h: b.h * K }, rotDeg: b.rotationDeg })
   }
-  const onTransformMulti = (items: any[]) => items.forEach((it) => onTransform(it.sourceId, it.box)) // M2: one combined command
-  const onEditText = (sourceId: string) => {
+  // a multi-selection gesture is ONE step (M1 committed one step per element)
+  const onTransformMulti = (items: any[]) => exec({ kind: 'elements.transform', items: items.map((it) => ({ id: durable(it.sourceId)!, box: { x: it.box.x * K, y: it.box.y * K, w: it.box.w * K, h: it.box.h * K }, rotDeg: it.box.rotationDeg })).filter((it) => it.id) })
+  const onEditText = (sourceId: string, caret?: any) => {
     const d = durable(sourceId); const b = d ? store.sidecar.bindings[d] : undefined
     if (b && b.kind !== 'text') return say(`${b.kind === 'chart' ? 'Chart' : 'This'} content comes from data; edit the data instead`)
-    const n = nodeOf(sourceId); const f = d && findEl(store.deck, d)
-    if (n && f) setEditing({ id: d, value: textOf(f.el), initial: textOf(f.el), box: n.box })
+    if (d && nodeOf(sourceId)) setEditing({ id: d, caret })
   }
+  // GenOffice's rich-text editor commits EditParagraph[] (runs keep bold/italic/size/colour); Escape cancels
+  const commitText = (paragraphs: any[]) => { const ed = editing; setEditing(null); if (ed?.id) exec({ kind: 'text.set', id: ed.id, paragraphs }) }
   const onEditTableCell = (sourceId: string, row: number, col: number) => {
     const d = durable(sourceId); const b: any = d ? store.sidecar.bindings[d] : undefined
     if (!b || b.kind !== 'table' || row < 1 || col < 1) return
@@ -88,11 +92,11 @@ function Workspace({ store }: { store: Store }) {
   }
   const commitEdit = () => {
     const ed = editing; setEditing(null); if (!ed || ed.value === ed.initial) return
-    if (ed.cell) {
+    if (ed?.cell) {
       const v = ed.value.trim() === '' ? null : Number(ed.value)
       if (v !== null && !Number.isFinite(v)) return say('Not a number')
       exec({ kind: 'data.set', dataset: ed.cell.ds, date: ed.cell.date, value: v })
-    } else exec({ kind: 'text.set', id: ed.id, text: ed.value })
+    }
   }
   useEffect(() => {
     clickedOutside.current = false
@@ -133,6 +137,14 @@ function Workspace({ store }: { store: Store }) {
         <button onClick={() => store.undo()} disabled={!store.undoStack.length}>Undo</button><button onClick={() => store.redo()} disabled={!store.redoStack.length}>Redo</button>
         {slides.length === 1 && !store.deck.deck.slides[0]!.elements.length && Object.keys(store.project.datasets).length > 0 && <button className="primary" onClick={draftDeck}>Draft deck from evidence</button>}
         <button onClick={async () => { const v = await store.saveVersion(`Version ${new Date().toLocaleString()}`); say(`Saved version ${v.version}`); if (tab === 'versions') loadVersions() }}>Save version</button>
+        {editing && !editing.cell && <span className="format" role="toolbar" aria-label="Text format">
+          {/* mousedown + preventDefault keeps focus and the selection in the editor; the editor reads bold/italic/underline back from the DOM on commit */}
+          {([['bold', 'B'], ['italic', 'I'], ['underline', 'U']] as const).map(([cmd, label]) => <button key={cmd} title={cmd} className={'fmt-' + cmd} onMouseDown={(e) => { e.preventDefault(); document.execCommand(cmd) }}>{label}</button>)}
+        </span>}
+        {store.selection.length >= 2 && <span className="align" role="toolbar" aria-label="Align">
+          {(['left', 'centerH', 'right', 'top', 'centerV', 'bottom'] as const).map((m) => <button key={m} title={`Align ${m}`} onClick={() => exec({ kind: 'elements.align', ids: store.selection, mode: m })}>{{ left: '⇤', centerH: '↔', right: '⇥', top: '⤒', centerV: '↕', bottom: '⤓' }[m]}</button>)}
+          {store.selection.length >= 3 && (['horizontal', 'vertical'] as const).map((a) => <button key={a} title={`Distribute ${a}`} onClick={() => exec({ kind: 'elements.distribute', ids: store.selection, axis: a })}>{a === 'horizontal' ? '⋯' : '⋮'}</button>)}
+        </span>}
         <span className="status" data-save={saveState}>{saveState}</span>
       </header>
       <main className="body">
@@ -151,9 +163,10 @@ function Workspace({ store }: { store: Store }) {
               editingText={editing && !editing.cell ? { sourceId: sourceIdsFor(slide, [editing.id])[0]! } : null} />
             {editing && (editing.cell
               ? <input className="edit-overlay" autoFocus value={editing.value} onChange={(e) => setEditing({ ...editing, value: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(null) }} onBlur={keepFocus} style={{ left: editing.box.x, top: editing.box.y, width: editing.box.w, height: editing.box.h, textAlign: 'right' }} />
-              : <textarea className="edit-overlay" autoFocus value={editing.value} onChange={(e) => setEditing({ ...editing, value: e.target.value })} onKeyDown={(e) => { if (e.key === 'Escape') setEditing(null); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) commitEdit() }} onBlur={keepFocus} style={{ left: editing.box.x, top: editing.box.y, width: editing.box.w, minHeight: editing.box.h }} />)}
+              : (() => { const src = sourceIdsFor(slide, [editing.id])[0]; const n = src && nodeOf(src)
+                  return n ? <TextEditOverlay key={editing.id} node={n} scale={slide.scale} caretPoint={editing.caret} onCommit={commitText} onCancel={() => setEditing(null)} zoom={1} /> : null })())}
           </div>
-          <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span> · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.unverified} unverified edits · selected {store.selection.length}</div>
+          <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>{!ig.ok && <> <button onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button></>} · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.unverified} unverified edits · selected {store.selection.length}</div>
         </section>
         <aside className="panel">
           <nav className="tabs">{(['journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>)}</nav>
@@ -173,7 +186,7 @@ function App() {
   useEffect(() => {
     if (params.has('checks')) { runChecks().then((r) => { const pre = document.createElement('pre'); pre.id = 'checks'; pre.hidden = true; pre.textContent = JSON.stringify(r); document.body.appendChild(pre) }); return }
     const id = params.get('project')
-    if (id) Store.open(id).then(setStore).catch((e) => setError(String(e)))
+    if (id) Promise.all([Store.open(id), loadFonts()]).then(([s, m]) => { s.metrics = m; setStore(s) }).catch((e) => setError(String(e)))
   }, [])
   useEffect(() => { // ?selftest=1: headless boot check
     if (!params.has('selftest')) return
@@ -182,7 +195,7 @@ function App() {
   }, [])
   if (params.has('checks')) return <div className="picker"><h1>Running checks…</h1></div>
   if (error) return <div className="picker"><h1>Could not open the project</h1><p>{error}</p><a href="./">Back to projects</a></div>
-  return store ? <Workspace store={store} /> : <Picker onOpen={setStore} />
+  return store ? <Workspace store={store} /> : <Picker onOpen={(s) => loadFonts().then((m) => { s.metrics = m; setStore(s) })} />
 }
 
 createRoot(document.getElementById('root')!).render(<App />)

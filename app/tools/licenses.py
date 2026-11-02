@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWED = {"MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "0BSD", "Apache-2.0", "Zlib", "CC-BY-4.0", "PSF-2.0",
-           "Python-2.0", "Unlicense", "BlueOak-1.0.0", "MPL-2.0"}
+           "Python-2.0", "Unlicense", "BlueOak-1.0.0", "MPL-2.0", "OFL-1.1"}
 # Dual/compound expressions we accept, with the licence we take
 CHOICES = {"(MIT OR GPL-3.0-or-later)": "MIT (chosen)", "(MIT AND Zlib)": "MIT AND Zlib",
            "(Apache-2.0 AND BSD-3-Clause)": "Apache-2.0 AND BSD-3-Clause", "Apache-2.0 OR BSD-3-Clause": "Apache-2.0 (chosen)",
@@ -65,6 +65,13 @@ def main(write: bool):
         rows.append(("python", name, ver, CHOICES.get(lic, lic)))
         if not ok(lic):
             bad.append(f"python {name}=={ver}: {lic}")
+    # shipped fonts (app/web/public/fonts/README.md records sources and licence files)
+    fonts = ROOT / "app/web/public/fonts"
+    for family, licence_file in (("Inter", "Inter-OFL.txt"), ("Liberation Sans", "LiberationSans-OFL.txt")):
+        present = (fonts / licence_file).exists()
+        rows.append(("font", family, "4.1" if family == "Inter" else "2.x", "OFL-1.1" if present else "MISSING LICENCE FILE"))
+        if not present:
+            bad.append(f"font {family}: licence file {licence_file} missing")
     manifest = json.loads((ROOT / "vendor/genoffice/manifest.json").read_text())
     rows.append(("vendored", f"genoffice ({len(manifest['files'])} files)", manifest["commit"][:12], "Apache-2.0"))
     counts: dict[str, int] = {}

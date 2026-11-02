@@ -1966,7 +1966,7 @@
   }
  ],
  "design_dna": {
-  "font": "Liberation Sans",
+  "font": "Inter",
   "ink": "#0f2742",
   "accent": "#c8102e",
   "muted": "#5b6b7f",

@@ -31,11 +31,15 @@ export function chartColors(p: Project, spec: ChartSpec) {
   return spec.series.map((d, i) => { const k = ['fr', 'de', 'it', 'es'].indexOf(p.datasets[d]?.geo.toLowerCase() ?? ''); return p.design_dna.series[k < 0 ? i % 4 : k]! })
 }
 
-export function fmt(v: number) { return v.toFixed(v % 1 && Math.abs(v) < 10 ? 2 : 1) }
+/** Decimals for a dataset: as many as its source values carry (at least 1, at most 2), so a column reads evenly. */
+export function decimalsOf(ds: Dataset | undefined) {
+  const d = (ds?.observations ?? []).reduce((m, o) => (o.value == null ? m : Math.max(m, (String(o.value).split('.')[1] ?? '').length)), 1)
+  return Math.min(d, 2)
+}
 
 export function cellText(p: Project, dsId: string, date: string) {
-  const o = effectiveObs(p.datasets[dsId]).find((x) => x.date === date)
-  return o?.value == null ? '—' : fmt(o.value) + (o.edited ? ' ✎' : '')
+  const ds = p.datasets[dsId], o = effectiveObs(ds).find((x) => x.date === date)
+  return o?.value == null ? '—' : o.value.toFixed(decimalsOf(ds)) + (o.edited ? ' ✎' : '')
 }
 
 /** Write a working value (or a deliberate gap) next to the source. Typing the source value back clears the edit. */

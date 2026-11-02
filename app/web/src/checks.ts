@@ -5,6 +5,7 @@ import { Store } from './core/store'
 import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { findEl, textOf, walk } from './core/deck'
+import { loadFonts } from './core/fonts'
 
 export async function runChecks() {
   const r: Record<string, { ok: boolean; detail: string }> = {}
@@ -105,6 +106,22 @@ export async function runChecks() {
     const old = await (await fetch(`/api/projects/${s.project.id}/versions/${v.version}`)).json()
     const cur = await (await fetch(`/api/projects/${s.project.id}`)).json()
     check('versions_freeze_state', old.journal.length === cur.journal.length - 1, `${old.journal.length} vs ${cur.journal.length}`)
+  })
+  // ---- M2 (fonts need a real browser: FontFace + canvas)
+  await safe('fonts_measure_like_the_browser_draws', async () => {
+    const m = await loadFonts(), c = document.createElement('canvas').getContext('2d')!
+    const errs = (['400', '700'] as const).map((w) => { c.font = `${w === '700' ? 'bold ' : ''}20px Inter`; const draw = c.measureText("France's debt ratio rose from 111.4% to 115.7%").width
+      return Math.abs(m.measure("France's debt ratio rose from 111.4% to 115.7%", { fontFamily: 'Inter', fontSizePx: 20, bold: w === '700', italic: false }) - draw) / draw })
+    check('fonts_measure_like_the_browser_draws', errs.every((e) => e < 0.02), errs.map((e) => (e * 100).toFixed(2) + '%').join(', '))
+  })
+  await safe('rich_runs_and_combined_move', () => {
+    const t = byRole('title', 's_2')
+    const r1 = s.exec({ kind: 'text.set', id: t, paragraphs: [{ runs: [{ text: 'The deficit ' }, { text: 'narrowed', bold: false }, { text: ' in 2025' }] }] })
+    const runs = findEl(s.deck, t)!.el.text.paragraphs[0].runs.map((x: any) => !!x.bold)
+    const a = chartOn('s_2'), b = byRole('label', 's_2'), n = s.undoStack.length
+    const bx = (id: string) => { const o = findEl(s.deck, id)!.el.transform.offset; return { x: o.x / 9525, y: o.y / 9525 + 10, w: o.cx / 9525, h: o.cy / 9525 } }
+    const r2 = s.exec({ kind: 'elements.transform', items: [{ id: a, box: bx(a) }, { id: b, box: bx(b) }] })
+    check('rich_runs_and_combined_move', r1.ok && JSON.stringify(runs) === '[true,false,true]' && r2.ok && s.undoStack.length === n + 1 && ig().ok, `${JSON.stringify(runs)} ${r2.error ?? ''}`)
   })
   const fin = ig()
   check('final_integrity', fin.ok, `${fin.resolved}/${fin.bindings}, ${fin.points} points, ${fin.cells} cells, ${fin.unverified} unverified edits`)
