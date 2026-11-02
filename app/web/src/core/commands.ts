@@ -5,6 +5,7 @@ import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } f
 import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, chartColors, chartData, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
 import { findEl, slideIndex, walk } from './deck'
+import { chartKindRefusal } from './vocabulary'
 import type { Binding, ChartSpec, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
 
 export const EMU = 9525 // EMU per slide px; slides are 1280 x 720 px
@@ -104,6 +105,8 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   text('subtitle', p.subtitle, [40, 92, 1200, 18], 9, d.muted)
   out.push({ op: { op: 'addElement', kind: 'rect', offset: off(40, 116, 1200, 2), fill: d.rule }, bind: (slide) => ({ kind: 'decor', slide }) })
   if (p.chart) {
+    const refusal = chartKindRefusal(p.chart.type)
+    if (refusal) throw new Error(refusal)
     const spec: ChartSpec = { type: p.chart.type, title: p.chart.title, series: [...p.chart.series] }
     out.push({ op: { op: 'addChart', kind: spec.type, offset: off(40, 136, p.table || p.bullets ? 720 : 1200, 400), title: spec.title, ...chartData(ctx.project, spec), colorScheme: chartColors(ctx.project, spec) }, bind: (slide) => ({ kind: 'chart', slide, chart: spec }) })
   }
@@ -287,6 +290,10 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       return { summary: 'Re-project all bound values from data', slides: reproject(ctx, all) }
     }
     case 'ops.raw': {
+      for (const op of cmd.ops as any[]) {
+        const refusal = (op.op === 'addChart' && chartKindRefusal(op.kind)) || (op.op === 'setChart' && chartKindRefusal(op.patch?.kind))
+        if (refusal) throw new Error(refusal)
+      }
       txn(ctx, cmd.ops)
       return { summary: cmd.summary ?? `${cmd.ops.length} operation(s)`, slides: [] }
     }

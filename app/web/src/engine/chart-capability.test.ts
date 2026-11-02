@@ -9,6 +9,7 @@ import { Store } from '../core/store'
 import { integrity } from '../core/integrity'
 import { render } from '../core/deck'
 import { BUNDLE_SCHEMA, type Project } from '../core/types'
+import { chartKindRefusal } from '../core/vocabulary'
 
 const KINDS: { id: string; kind: string; barDir?: 'bar' }[] = [
   { id: 'bar (clustered column)', kind: 'bar' }, { id: 'barStacked', kind: 'barStacked' }, { id: 'barPercentStacked', kind: 'barPercentStacked' },
@@ -33,8 +34,11 @@ async function audit(k: (typeof KINDS)[number]) {
   const r: Record<string, any> = { type: k.id }
   const s = await fresh()
   const a = add(s, k)
+  // V0 (decision D-V3): 3-D kinds are refused by our commands; the engine still renders them in imported decks
+  if (chartKindRefusal(k.kind)) { r.excluded = true; r.insert = a.ok ? 'ok' : `refused: ${a.error}`; return r }
   r.insert = a.ok ? 'ok' : `fails: ${a.error}`
   if (!a.ok) return r
+  if (r.excluded) return r
   const el = chartEl(s)
   r.parsedAs = `${el.chart.kind}${el.chart.barDir ? '/' + el.chart.barDir : ''}${el.chart.grouping ? '/' + el.chart.grouping : ''}${el.chart.holePct ? '/hole' + el.chart.holePct : ''}${el.chart.pseudo3D ? '/3D' : ''}`
   r.gapParsed = values(s)?.[0]?.[1] === null && values(s)?.[1]?.[2] === null
@@ -54,7 +58,7 @@ async function audit(k: (typeof KINDS)[number]) {
   if (!e.ok) r.dataEditError = e.error
   const toBar = setChart(s, { kind: 'bar' })
   r.typeChangeToBar = toBar.ok && chartEl(s).chart.kind === 'bar'
-  r.typeChangeKeepsGap = toBar.ok && values(s)?.[0]?.[1] === null  // engine rebuild maps null -> 0 when the patch has no series
+  r.typeChangeKeepsGap = toBar.ok && values(s)?.[0]?.[1] === null
   const s2 = await fresh(); add(s2, KINDS[0]!)
   const fromBar = setChart(s2, { kind: k.kind, ...(k.barDir ? { barDir: k.barDir } : {}) })
   r.typeChangeFromBar = fromBar.ok && chartEl(s2).chart.kind === el.chart.kind
@@ -76,12 +80,13 @@ describe('VIS-01 chart capability audit', () => {
     if (out) { const { writeFileSync } = await import('node:fs' as string); writeFileSync(out, JSON.stringify(matrix, null, 1)) }
     expect(matrix.length).toBe(KINDS.length)
     for (const r of matrix) {
+      if (r.excluded) { expect(r.insert).toMatch(/^refused: 3-D charts distort comparisons/); continue }
       // verified in our app for every type the engine writes
       expect([r.type, r.insert, r.gapParsed, r.renders, r.saveReopen, r.undoRedo, r.dataEdit, r.typeChangeToBar, r.typeChangeFromBar, r.boundCompose])
         .toEqual([r.type, 'ok', true, true, true, true, true, true, true, 'ok'])
-      // KNOWN ENGINE BUG (VIS-01 finding F2): setChart without a series patch rebuilds values with `v ?? 0`, so a
-      // type change or a style-only edit turns gaps into zeros. Flip these when the vendor patch lands.
-      expect([r.type, r.typeChangeKeepsGap, r.styleEditKeepsGap]).toEqual([r.type, false, false])
+      // VIS-01 finding F2, fixed by vendor patch 0005: a rebuild without a series patch (type change,
+      // style-only edit) used to map gaps to zeros
+      expect([r.type, r.typeChangeKeepsGap, r.styleEditKeepsGap]).toEqual([r.type, true, true])
     }
   })
 })

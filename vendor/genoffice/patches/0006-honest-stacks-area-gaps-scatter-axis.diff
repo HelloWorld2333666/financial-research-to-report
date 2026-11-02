@@ -1,0 +1,170 @@
+--- a/packages/pptx-render/src/build-chart.ts
++++ b/packages/pptx-render/src/build-chart.ts
+@@ -495,12 +495,24 @@
+     const k = serKind(s)
+     return k === 'bar' || k === 'area' || (model.kind === 'line' && k === 'line')
+   }
++  // frr patch 0006: a stack missing one of its components would show a false total (or false
++  // shares in a 100% stack); that category is left empty instead. dispBlanksAs="zero" keeps
++  // PowerPoint's zero-fill for decks that ask for it.
++  const incompleteCat = Array.from(
++    { length: catCount },
++    (_, i) =>
++      stacked &&
++      model.dispBlanksAs !== 'zero' &&
++      model.series.some((s) => isStackSer(s) && s.values[i] == null) &&
++      model.series.some((s) => isStackSer(s) && s.values[i] != null),
++  )
+   const catAbsTotals = Array.from({ length: catCount }, (_, i) =>
+     model.series.reduce((a, s) => a + (isStackSer(s) ? Math.abs(s.values[i] ?? 0) : 0), 0),
+   )
+   const valueAt = (si: number, i: number): number | null => {
+     const v = model.series[si]?.values[i]
+     if (v == null) return null
++    if (incompleteCat[i] && isStackSer(model.series[si]!)) return null
+     if (grouping !== 'percentStacked' || !isStackSer(model.series[si]!)) return v
+     const total = catAbsTotals[i] || 1
+     return (v / total) * 100
+@@ -1329,9 +1341,22 @@
+       // Stacked area: bands accumulate per category (even for sparse series) and label
+       // at the band center; handled before the pts-based path and its length guard
+       if (k === 'area' && stacked && !secSer) {
+-        const top: number[] = []
+-        const bottom: number[] = []
++        let top: number[] = []
++        let bottom: number[] = []
++        // frr patch 0006: bands break at incomplete categories instead of stacking a false total
++        const flush = () => {
++          if (top.length >= 4) {
++            for (let j = bottom.length - 2; j >= 0; j -= 2) top.push(bottom[j]!, bottom[j + 1]!)
++            node.polylines.push({ points: top, color, widthPx: 1, closed: true, fill: color })
++          }
++          top = []
++          bottom = []
++        }
+         for (let i = 0; i < n; i++) {
++          if (incompleteCat[i]) {
++            flush()
++            continue
++          }
+           let v = ser.values[i] ?? 0
+           if (grouping === 'percentStacked') v = (v / (areaTotals[i] || 1)) * 100
+           const x = plot.x + (catSlot(i) + 0.5) * slotW
+@@ -1343,8 +1368,7 @@
+           if (ser.values[i] != null)
+             dLbl(si, i, x, (y0 + y1) / 2 - dlSize * 0.55, ser.values[i]!, true)
+         }
+-        for (let i = bottom.length - 2; i >= 0; i -= 2) top.push(bottom[i]!, bottom[i + 1]!)
+-        node.polylines.push({ points: top, color, widthPx: 1, closed: true, fill: color })
++        flush()
+         return
+       }
+       const lineStack = k === 'line' && stacked && !secSer && model.kind === 'line'
+@@ -1352,7 +1376,8 @@
+       // Line segments split at missing values: dispBlanksAs 'gap' (and an absent setting) must not
+       // join the neighbours of a blank; only 'span' connects across it.
+       const segs: number[][] = [[]]
+-      ser.values.forEach((v, i) => {
++      ser.values.forEach((raw, i) => {
++        const v = lineStack && incompleteCat[i] ? null : raw // frr patch 0006
+         if (i < n && v == null && segs[segs.length - 1]!.length) segs.push([])
+         if (v == null || i >= n) return
+         const x = plot.x + (catSlot(i) + 0.5) * slotW
+@@ -1376,13 +1401,19 @@
+         const sMin = secSer ? sec!.min : min
+         const sMax = secSer ? sec!.max : max
+         const baseY = yOfSer(Math.min(Math.max(0, sMin), sMax))
+-        node.polylines.push({
+-          points: [pts[0]!, baseY, ...pts, pts[pts.length - 2]!, baseY],
+-          color,
+-          widthPx: 1,
+-          closed: true,
+-          fill: color,
+-        })
++        // frr patch 0006: areas break at gaps like lines (only dispBlanksAs="span" bridges them), and
++        // overlapping unstacked areas are translucent so a later series cannot hide an earlier one
++        const overlapping = model.series.filter((s) => serKind(s) === 'area').length > 1
++        const fill = overlapping && /^#[0-9a-f]{6}$/i.test(color) ? `${color}8C` : color
++        const runs = model.dispBlanksAs === 'span' ? [pts] : segs.filter((g) => g.length >= 4)
++        for (const run of runs)
++          node.polylines.push({
++            points: [run[0]!, baseY, ...run, run[run.length - 2]!, baseY],
++            color,
++            widthPx: 1,
++            closed: true,
++            fill,
++          })
+       } else {
+         const w = ser.lineWidthPt ? Math.max(1, ptToPx(ser.lineWidthPt, vp.scale)) : lineW
+         const runs = lineStack || model.dispBlanksAs === 'span' ? [pts] : segs.filter((g) => g.length >= 4)
+@@ -2837,9 +2868,19 @@
+   const catAbsTotals = Array.from({ length: catCount }, (_, i) =>
+     model.series.reduce((a, s) => a + Math.abs(s.values[i] ?? 0), 0),
+   )
++  // frr patch 0006: as in buildChartNodeInner, an incomplete stack is not drawn
++  const incompleteCat = Array.from(
++    { length: catCount },
++    (_, i) =>
++      stacked &&
++      model.dispBlanksAs !== 'zero' &&
++      model.series.some((s) => s.values[i] == null) &&
++      model.series.some((s) => s.values[i] != null),
++  )
+   const valueAt = (si: number, i: number): number | null => {
+     const v = model.series[si]?.values[i]
+     if (v == null) return null
++    if (incompleteCat[i]) return null
+     if (grouping !== 'percentStacked') return v
+     return (v / (catAbsTotals[i] || 1)) * 100
+   }
+@@ -3234,20 +3275,36 @@
+   const yPad = bubblePad(yMin, yMax)
+ 
+   // The catAxis slot = the x axis (the engine dispatched by axPos)
+-  const xTicksR = ppTicks(
+-    model.catAxis?.min ?? xMin - (xMin < 0 ? xPad : 0),
+-    model.catAxis?.max ?? xMax + xPad,
+-    model.catAxis?.min == null,
+-    model.catAxis?.max == null,
+-    true,
+-  )
+-  const yTicksR = ppTicks(
+-    model.valAxis?.min ?? yMin - (yMin < 0 ? yPad : 0),
+-    model.valAxis?.max ?? yMax + yPad,
+-    model.valAxis?.min == null,
+-    model.valAxis?.max == null,
+-    true,
+-  )
++  // frr patch 0006: like Excel, an automatic axis starts near the data (not at 0) when the
++  // data's minimum is within a sixth of its maximum (years on x were drawn on 0-2500); data in
++  // whole numbers (years) keeps whole-number steps. (xMin/yMin above are seeded with 0, so the
++  // calls below pass the true data minimum.)
++  const nearData = (lo: number, hi: number, vals: number[], explicitMin?: number, explicitMax?: number) => {
++    if (explicitMin != null || explicitMax != null || !(lo > 0) || hi - lo >= hi / 6) return null
++    let step = ppUnitLegacy((hi - lo || 1) / 8)
++    if (vals.every((v) => Number.isInteger(v))) step = Math.max(1, Math.round(step))
++    const from = Math.floor(lo / step) * step - (lo % step === 0 ? step : 0)
++    const to = Math.ceil(hi / step) * step + (hi % step === 0 ? step : 0)
++    return ppTicks(from, to, false, false, true, undefined, false, step)
++  }
++  const xTicksR =
++    nearData(arrayMin(allX), arrayMax(allX) + xPad, allX, model.catAxis?.min, model.catAxis?.max) ??
++    ppTicks(
++      model.catAxis?.min ?? xMin - (xMin < 0 ? xPad : 0),
++      model.catAxis?.max ?? xMax + xPad,
++      model.catAxis?.min == null,
++      model.catAxis?.max == null,
++      true,
++    )
++  const yTicksR =
++    nearData(arrayMin(allY), arrayMax(allY) + yPad, allY, model.valAxis?.min, model.valAxis?.max) ??
++    ppTicks(
++      model.valAxis?.min ?? yMin - (yMin < 0 ? yPad : 0),
++      model.valAxis?.max ?? yMax + yPad,
++      model.valAxis?.min == null,
++      model.valAxis?.max == null,
++      true,
++    )
+ 
+   const pad = Math.max(4, box.w * 0.01)
+   const legendPos = model.legendPos
