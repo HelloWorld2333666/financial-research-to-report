@@ -3,8 +3,9 @@
     python3 app/server/service.py [--port 8791] [--projects DIR]
 
 Serves the JSON API under /api and the built web client (app/web/dist) at /.
-M1: projects (bundle save/load, versions) and the deterministic composer. Evidence, agent and tasks
-arrive in M3–M5 (docs/workspace-prototype/PHASE3-PLAN.md).
+M1: projects (bundle save/load, versions) and the deterministic composer. M3: working-data
+validation on save, integrity of the saved deck, and the export policy. Agent and tasks arrive in
+M4–M5 (docs/workspace-prototype/PHASE3-PLAN.md).
 """
 
 from __future__ import annotations
@@ -22,10 +23,12 @@ sys.path.insert(0, str(HERE))
 
 from starlette.applications import Starlette  # noqa: E402
 from starlette.requests import Request  # noqa: E402
-from starlette.responses import JSONResponse  # noqa: E402
+from starlette.responses import FileResponse, JSONResponse  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 from starlette.staticfiles import StaticFiles  # noqa: E402
 
+import export  # noqa: E402
+import integrity  # noqa: E402
 from composer import compose  # noqa: E402
 from frr.schema import SCHEMA_VERSION  # noqa: E402
 from projects import BundleError, ProjectStore  # noqa: E402
@@ -62,7 +65,35 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS) -> Sta
         return JSONResponse(store.load(request.path_params["pid"]))
 
     async def put_project(request: Request):
-        return JSONResponse(store.save(request.path_params["pid"], await request.json()))
+        pid, bundle = request.path_params["pid"], await request.json()
+        meta = store.save(pid, bundle)
+        res = integrity.check(store.deck_bytes(pid), bundle["project"], bundle["sidecar"])
+        return JSONResponse({**meta, "integrity": {k: (len(v) if isinstance(v, list) else v) for k, v in res.items()}})
+
+    async def get_integrity(request: Request):
+        pid = request.path_params["pid"]
+        b = store.load(pid)
+        return JSONResponse(integrity.check(store.deck_bytes(pid), b["project"], b["sidecar"]))
+
+    async def get_export_policy(request: Request):
+        pid = request.path_params["pid"]
+        return JSONResponse({**export.policy(store.load(pid), store.deck_bytes(pid)), "exports": store.exports(pid)})
+
+    async def post_export(request: Request):
+        pid, body = request.path_params["pid"], await request.json()
+        b, deck = store.load(pid), store.deck_bytes(pid)
+        pol = export.policy(b, deck)
+        mode, ack = body.get("mode"), list(body.get("acknowledged") or [])
+        ok, why = export.decide(pol, mode, ack)
+        if not ok:
+            return JSONResponse({"error": why, "policy": pol}, status_code=409)
+        data, record = export.build(b, deck, mode, ack, pol)
+        record = store.write_export(pid, mode, data, record)
+        return JSONResponse({**record, "url": f"/api/projects/{pid}/exports/{record['file']}"}, status_code=201)
+
+    async def get_export(request: Request):
+        f = store.export_file(request.path_params["pid"], request.path_params["name"])
+        return FileResponse(f, filename=f.name, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation")
 
     async def post_version(request: Request):
         body = await request.json()
@@ -88,6 +119,10 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS) -> Sta
         Route("/api/projects/{pid}/versions", guarded(list_versions), methods=["GET"]),
         Route("/api/projects/{pid}/versions", guarded(post_version), methods=["POST"]),
         Route("/api/projects/{pid}/versions/{n:int}", guarded(get_version), methods=["GET"]),
+        Route("/api/projects/{pid}/integrity", guarded(get_integrity), methods=["GET"]),
+        Route("/api/projects/{pid}/export", guarded(get_export_policy), methods=["GET"]),
+        Route("/api/projects/{pid}/export", guarded(post_export), methods=["POST"]),
+        Route("/api/projects/{pid}/exports/{name}", guarded(get_export), methods=["GET"]),
         Route("/api/compose", guarded(post_compose), methods=["POST"]),
     ]
     if web_dist.joinpath("index.html").exists():

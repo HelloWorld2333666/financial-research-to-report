@@ -1,9 +1,9 @@
 [
  {
   "key": "debt",
-  "kicker": "FRANCE · DEBT",
-  "title": "France's debt ratio rose from 111.4% to 115.7% of GDP (2022–2025); Germany's was 62.8% in 2025 (64.1% in 2022)",
-  "subtitle": "General government gross debt, % of GDP · Eurostat (gov_10dd_edpt1)",
+  "kicker": "FRANCE \u00b7 DEBT",
+  "title": "France's debt ratio rose from 111.4% to 115.7% of GDP (2022\u20132025); Germany's was 62.8% in 2025 (64.1% in 2022)",
+  "subtitle": "General government gross debt, % of GDP \u00b7 Eurostat (gov_10dd_edpt1)",
   "chart": {
    "type": "line",
    "title": "Gross debt, % of GDP",
@@ -15,13 +15,62 @@
   "bullets": [
    "France: 115.7% of GDP in 2025, +4.3 pp since 2022.",
    "Germany: 62.8% in 2025."
+  ],
+  "numbers": {
+   "title": [
+    {
+     "text": "111.4%",
+     "evidence": "ev.exp2.1"
+    },
+    {
+     "text": "115.7%",
+     "evidence": "ev.exp2.4"
+    },
+    {
+     "text": "62.8%",
+     "evidence": "ev.exp2.8"
+    },
+    {
+     "text": "64.1%",
+     "evidence": "ev.exp2.5"
+    }
+   ],
+   "body": [
+    {
+     "text": "115.7%",
+     "evidence": "ev.exp2.4"
+    },
+    {
+     "text": "+4.3 pp",
+     "derivation": "der.fr.debt.change.2022-2025"
+    },
+    {
+     "text": "62.8%",
+     "evidence": "ev.exp2.8"
+    }
+   ]
+  },
+  "derivations": [
+   {
+    "id": "der.fr.debt.change.2022-2025",
+    "statement": "Change in France's debt ratio, 2022 to 2025",
+    "formula": "end - start",
+    "inputs": {
+     "start": "ev.exp2.1",
+     "end": "ev.exp2.4"
+    },
+    "value": 4.3,
+    "unit": "pp",
+    "period": "2022-2025",
+    "rounding": 1
+   }
   ]
  },
  {
   "key": "fiscal",
-  "kicker": "FRANCE · FISCAL",
+  "kicker": "FRANCE \u00b7 FISCAL",
   "title": "The deficit was 5.1% of GDP in 2025; interest costs reached 2.2% in 2025",
-  "subtitle": "Deficit and interest payable, % of GDP · Eurostat (gov_10dd_edpt1, gov_10a_main)",
+  "subtitle": "Deficit and interest payable, % of GDP \u00b7 Eurostat (gov_10dd_edpt1, gov_10a_main)",
   "chart": {
    "type": "line",
    "title": "Deficit (-) / surplus (+), % of GDP",
@@ -41,13 +90,39 @@
     "2024",
     "2025"
    ]
-  }
+  },
+  "numbers": {
+   "title": [
+    {
+     "text": "5.1%",
+     "derivation": "der.fr.deficit.size.2025"
+    },
+    {
+     "text": "2.2%",
+     "evidence": "ev.exp2.32"
+    }
+   ]
+  },
+  "derivations": [
+   {
+    "id": "der.fr.deficit.size.2025",
+    "statement": "Size of France's 2025 deficit (Eurostat records deficits as negative values)",
+    "formula": "abs(balance)",
+    "inputs": {
+     "balance": "ev.exp2.14"
+    },
+    "value": 5.1,
+    "unit": "% of GDP",
+    "period": "2025",
+    "rounding": 1
+   }
+  ]
  },
  {
   "key": "market",
-  "kicker": "FRANCE · GROWTH & MARKETS",
+  "kicker": "FRANCE \u00b7 GROWTH & MARKETS",
   "title": "Growth slowed to 0.8% in 2025; the 10-year spread over Germany was 76 bp in 2025",
-  "subtitle": "Real GDP growth, %; 10-year government bond yields, % · Eurostat (nama_10_gdp, irt_lt_mcby_a)",
+  "subtitle": "Real GDP growth, %; 10-year government bond yields, % \u00b7 Eurostat (nama_10_gdp, irt_lt_mcby_a)",
   "chart": {
    "type": "line",
    "title": "Real GDP growth, %",
@@ -68,27 +143,66 @@
     "2025"
    ]
   },
-  "derived": {
-   "spread_bp": 76,
-   "inputs": [
-    "ds.fr.yield@2025",
-    "ds.de.yield@2025"
+  "bullets": [
+   "10-year spread over Germany: 76 bp in 2025 (France 3.35% \u2212 Germany 2.59%)."
+  ],
+  "numbers": {
+   "title": [
+    {
+     "text": "0.8%",
+     "evidence": "ev.exp2.44"
+    },
+    {
+     "text": "76 bp",
+     "derivation": "der.frde.spread.2025"
+    }
+   ],
+   "body": [
+    {
+     "text": "76 bp",
+     "derivation": "der.frde.spread.2025"
+    },
+    {
+     "text": "3.35%",
+     "evidence": "ev.exp2.52"
+    },
+    {
+     "text": "2.59%",
+     "evidence": "ev.exp2.48"
+    }
    ]
-  }
+  },
+  "derivations": [
+   {
+    "id": "der.frde.spread.2025",
+    "statement": "10-year yield spread, France over Germany, 2025",
+    "formula": "(own - peer) * 100",
+    "inputs": {
+     "own": "ev.exp2.52",
+     "peer": "ev.exp2.48"
+    },
+    "value": 76,
+    "unit": "bp",
+    "period": "2025",
+    "rounding": 0
+   }
+  ]
  },
  {
   "key": "ratings",
-  "kicker": "FRANCE · RATINGS",
+  "kicker": "FRANCE \u00b7 RATINGS",
   "title": "Rating actions: pending a primary source",
   "subtitle": "Agency press releases are not machine-accessible (bot protection / JavaScript apps); upload them or connect a data feed",
   "placeholder": {
-   "label": "Rating history — pending research",
+   "label": "Rating history \u2014 pending research",
    "request": {
     "schema": "frr-research-request/0.1",
     "topic": "rating actions",
     "entity": "France",
     "reason": "primary sources blocked in Experiment 2 (S&P 403, AFT 403, Fitch/Moody's JavaScript)"
    }
-  }
+  },
+  "numbers": {},
+  "derivations": []
  }
 ]

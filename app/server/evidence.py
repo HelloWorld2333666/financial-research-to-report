@@ -58,12 +58,12 @@ def project_from_record(record: dict, project_id: str, title: str) -> dict:
     for ds in datasets.values():
         ds["observations"].sort(key=lambda o: o["date"])
     return {"schema": PROJECT_SCHEMA, "id": project_id, "title": title, "record_id": record["record_id"],
-            "datasets": datasets, "evidence": evidence, "gaps": record.get("gaps", []), "design_dna": dict(DESIGN_DNA)}
+            "datasets": datasets, "evidence": evidence, "derivations": {}, "gaps": record.get("gaps", []), "design_dna": dict(DESIGN_DNA)}
 
 
 def seed_project(seed: str, project_id: str, title: str) -> dict:
     if seed == "france":
         return project_from_record(json.loads((SEEDS / "france-record.json").read_text()), project_id, title)
     if seed == "blank":
-        return {"schema": PROJECT_SCHEMA, "id": project_id, "title": title, "datasets": {}, "evidence": {}, "gaps": [], "design_dna": dict(DESIGN_DNA)}
+        return {"schema": PROJECT_SCHEMA, "id": project_id, "title": title, "datasets": {}, "evidence": {}, "derivations": {}, "gaps": [], "design_dna": dict(DESIGN_DNA)}
     raise ValueError(f"unknown seed {seed!r}")

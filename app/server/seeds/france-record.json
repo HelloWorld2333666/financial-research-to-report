@@ -1,5 +1,5 @@
 {
- "schema_version": "0.1",
+ "schema_version": "0.2",
  "record_id": "exp2-1793515436",
  "mode": "live",
  "created_at": "2026-11-01T06:49:20.334333Z",
@@ -85,7 +85,48 @@
    "status": "answered"
   }
  ],
- "metrics": [],
+ "metrics": [
+  {
+   "id": "debt",
+   "name": "General government gross debt",
+   "unit": "% of GDP",
+   "definition": "Eurostat gov_10dd_edpt1 with {\"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+   "formula": null,
+   "caveats": null
+  },
+  {
+   "id": "deficit",
+   "name": "Government deficit (-) / surplus (+)",
+   "unit": "% of GDP",
+   "definition": "Eurostat gov_10dd_edpt1 with {\"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+   "formula": null,
+   "caveats": null
+  },
+  {
+   "id": "growth",
+   "name": "Real GDP growth",
+   "unit": "%",
+   "definition": "Eurostat nama_10_gdp with {\"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+   "formula": null,
+   "caveats": null
+  },
+  {
+   "id": "interest",
+   "name": "Interest payable",
+   "unit": "% of GDP",
+   "definition": "Eurostat gov_10a_main with {\"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+   "formula": null,
+   "caveats": null
+  },
+  {
+   "id": "yield",
+   "name": "10-year government bond yield",
+   "unit": "%",
+   "definition": "Eurostat irt_lt_mcby_a",
+   "formula": null,
+   "caveats": null
+  }
+ ],
  "sources": [
   {
    "id": "src.7ed25250f5",
@@ -248,11 +289,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 111.4,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.2",
@@ -269,11 +318,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 109.5,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.3",
@@ -290,11 +347,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 112.6,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.4",
@@ -311,11 +376,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 115.7,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.5",
@@ -332,11 +405,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 64.1,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.6",
@@ -353,11 +434,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 61.8,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.7",
@@ -374,11 +463,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 61.4,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.8",
@@ -395,11 +492,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "debt",
    "value": 62.8,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.9",
@@ -416,11 +521,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -8.9,
    "unit": "PC_GDP",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.10",
@@ -437,11 +550,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -6.6,
    "unit": "PC_GDP",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.11",
@@ -458,11 +579,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -4.7,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.12",
@@ -479,11 +608,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -5.4,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.13",
@@ -500,11 +637,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -5.8,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.14",
@@ -521,11 +666,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -5.1,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.15",
@@ -542,11 +695,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -4.3,
    "unit": "PC_GDP",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.16",
@@ -563,11 +724,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -3.2,
    "unit": "PC_GDP",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.17",
@@ -584,11 +753,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -1.9,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.18",
@@ -605,11 +782,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -2.2,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.19",
@@ -626,11 +811,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -2.7,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.20",
@@ -647,11 +840,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -2.9,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.21",
@@ -668,11 +869,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 0.6,
    "unit": "PC_GDP",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.22",
@@ -689,11 +898,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 0.6,
    "unit": "PC_GDP",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.23",
@@ -710,11 +927,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 0.7,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.24",
@@ -731,11 +956,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 0.9,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.25",
@@ -752,11 +985,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 1.0,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.26",
@@ -773,11 +1014,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 1.1,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.27",
@@ -794,11 +1043,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 1.3,
    "unit": "PC_GDP",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.28",
@@ -815,11 +1072,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 1.4,
    "unit": "PC_GDP",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.29",
@@ -836,11 +1101,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 1.9,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.30",
@@ -857,11 +1130,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 1.9,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.31",
@@ -878,11 +1159,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 2.0,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.32",
@@ -899,11 +1188,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "interest",
    "value": 2.2,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.33",
@@ -920,11 +1217,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": -4.0,
    "unit": "CLV_PCH_PRE",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.34",
@@ -941,11 +1246,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 4.0,
    "unit": "CLV_PCH_PRE",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.35",
@@ -962,11 +1275,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 1.9,
    "unit": "CLV_PCH_PRE",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.36",
@@ -983,11 +1304,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": -1.0,
    "unit": "CLV_PCH_PRE",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.37",
@@ -1004,11 +1333,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 0.0,
    "unit": "CLV_PCH_PRE",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.38",
@@ -1025,11 +1362,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 0.2,
    "unit": "CLV_PCH_PRE",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.39",
@@ -1046,11 +1391,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": -7.4,
    "unit": "CLV_PCH_PRE",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.40",
@@ -1067,11 +1420,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 6.9,
    "unit": "CLV_PCH_PRE",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.41",
@@ -1088,11 +1449,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 2.7,
    "unit": "CLV_PCH_PRE",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.42",
@@ -1109,11 +1478,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 1.6,
    "unit": "CLV_PCH_PRE",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.43",
@@ -1130,11 +1507,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 1.5,
    "unit": "CLV_PCH_PRE",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.44",
@@ -1151,11 +1536,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "growth",
    "value": 0.8,
    "unit": "CLV_PCH_PRE",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.45",
@@ -1172,11 +1565,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 1.14,
-   "unit": null,
+   "unit": "%",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.46",
@@ -1193,11 +1594,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 2.43,
-   "unit": null,
+   "unit": "%",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.47",
@@ -1214,11 +1623,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 2.32,
-   "unit": null,
+   "unit": "%",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.48",
@@ -1235,11 +1652,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 2.59206,
-   "unit": null,
+   "unit": "%",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.49",
@@ -1256,11 +1681,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 1.7,
-   "unit": null,
+   "unit": "%",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.50",
@@ -1277,11 +1710,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 2.99,
-   "unit": null,
+   "unit": "%",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.51",
@@ -1298,11 +1739,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 2.97,
-   "unit": null,
+   "unit": "%",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.52",
@@ -1319,11 +1768,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "yield",
    "value": 3.34979,
-   "unit": null,
+   "unit": "%",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.53",
@@ -1340,11 +1797,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -8.9,
    "unit": "PC_GDP",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.54",
@@ -1361,11 +1826,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -6.6,
    "unit": "PC_GDP",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.55",
@@ -1382,11 +1855,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -4.7,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.56",
@@ -1403,11 +1884,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -5.4,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.57",
@@ -1424,11 +1913,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -5.8,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.58",
@@ -1445,11 +1942,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -5.1,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.59",
@@ -1466,11 +1971,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -4.3,
    "unit": "PC_GDP",
    "period": "2020",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.60",
@@ -1487,11 +2000,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -3.2,
    "unit": "PC_GDP",
    "period": "2021",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.61",
@@ -1508,11 +2029,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -1.9,
    "unit": "PC_GDP",
    "period": "2022",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.62",
@@ -1529,11 +2058,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -2.2,
    "unit": "PC_GDP",
    "period": "2023",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.63",
@@ -1550,11 +2087,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -2.7,
    "unit": "PC_GDP",
    "period": "2024",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   },
   {
    "id": "ev.exp2.64",
@@ -1571,11 +2116,19 @@
    "verification": "verified",
    "verified_by": "exp2-validator",
    "verified_on": "2026-11-01",
-   "metric_id": null,
+   "metric_id": "deficit",
    "value": -2.9,
    "unit": "PC_GDP",
    "period": "2025",
-   "issuer_definition": null
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   }
   }
  ],
  "findings": [],

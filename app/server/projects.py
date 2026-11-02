@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from evidence import PROJECT_SCHEMA, seed_project
+from integrity import validate_working
 
 BUNDLE_SCHEMA = "frr-bundle/1"
 SIDECAR_SCHEMA = "frr-sidecar/1"
@@ -48,6 +49,9 @@ def validate_bundle(b: dict) -> bytes | None:
         raise BundleError(f"sidecar binding keys must be durable element ids, got {bad[:3]}")
     if not isinstance(b.get("journal", []), list) or not isinstance(b.get("threads", {}), dict):
         raise BundleError("journal must be a list and threads an object")
+    problems = validate_working(b["project"])
+    if problems:
+        raise BundleError("working data refused: " + "; ".join(problems[:5]))
     if b.get("deck") is None:
         return None
     deck = base64.b64decode(b["deck"], validate=True)
@@ -126,6 +130,32 @@ class ProjectStore:
 
     def load(self, pid: str) -> dict:
         return self._read(self._dir(pid) / "current")
+
+    def deck_bytes(self, pid: str) -> bytes | None:
+        f = self._dir(pid) / "current" / "deck.pptx"
+        return f.read_bytes() if f.exists() else None
+
+    def write_export(self, pid: str, mode: str, data: bytes, record: dict) -> dict:
+        d = self._dir(pid) / "exports"
+        d.mkdir(exist_ok=True)
+        name = f"{pid}-{mode}-{record['at'].replace(':', '').replace('+0000', 'Z')[:17]}.pptx"
+        (d / name).write_bytes(data)
+        record = {**record, "file": name, "bytes": len(data)}
+        with (d / "log.jsonl").open("a") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        return record
+
+    def export_file(self, pid: str, name: str) -> Path:
+        if not re.fullmatch(r"[a-z0-9-]+-(draft|final)-[0-9T-]+Z?\.pptx", name):
+            raise BundleError("not found")
+        f = self._dir(pid) / "exports" / name
+        if not f.exists():
+            raise BundleError("not found")
+        return f
+
+    def exports(self, pid: str) -> list[dict]:
+        log = self._dir(pid) / "exports" / "log.jsonl"
+        return [json.loads(line) for line in log.read_text().splitlines() if line] if log.exists() else []
 
     def save_version(self, pid: str, label: str) -> dict:
         d = self._dir(pid)

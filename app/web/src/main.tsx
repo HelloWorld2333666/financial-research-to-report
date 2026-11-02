@@ -10,6 +10,7 @@ import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
 import { runChecks } from './checks'
+import { DataPanel, EvidencePanel, ExportDialog } from './panels'
 
 const FIT = 800
 const K = 1280 / FIT // canvas px -> slide px
@@ -38,7 +39,8 @@ function Workspace({ store }: { store: Store }) {
   const [cur, setCur] = useState(0)
   const [editing, setEditing] = useState<any>(null)
   const [entered, setEntered] = useState<string | null>(null)
-  const [tab, setTab] = useState<'journal' | 'integrity' | 'claims' | 'versions'>('journal')
+  const [tab, setTab] = useState<'evidence' | 'data' | 'journal' | 'integrity' | 'claims' | 'versions'>('evidence')
+  const [exporting, setExporting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [saveState, setSaveState] = useState('Saved')
   const [versions, setVersions] = useState<any[]>([])
@@ -146,6 +148,7 @@ function Workspace({ store }: { store: Store }) {
           {store.selection.length >= 3 && (['horizontal', 'vertical'] as const).map((a) => <button key={a} title={`Distribute ${a}`} onClick={() => exec({ kind: 'elements.distribute', ids: store.selection, axis: a })}>{a === 'horizontal' ? '⋯' : '⋮'}</button>)}
         </span>}
         <span className="status" data-save={saveState}>{saveState}</span>
+        <button onClick={() => setExporting(true)} disabled={!store.deck.deck.slides[0]?.elements.length}>Export…</button>
       </header>
       <main className="body">
         <aside className="rail">{thumbs.map((t, i) => (
@@ -166,16 +169,19 @@ function Workspace({ store }: { store: Store }) {
               : (() => { const src = sourceIdsFor(slide, [editing.id])[0]; const n = src && nodeOf(src)
                   return n ? <TextEditOverlay key={editing.id} node={n} scale={slide.scale} caretPoint={editing.caret} onCommit={commitText} onCancel={() => setEditing(null)} zoom={1} /> : null })())}
           </div>
-          <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>{!ig.ok && <> <button onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button></>} · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.unverified} unverified edits · selected {store.selection.length}</div>
+          <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>{ig.mismatch.some((m) => !m.startsWith('text says')) && <> <button onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button></>}{ig.mismatch.some((m) => m.startsWith('text says')) && <> <button className="link" onClick={() => setTab('integrity')}>text disagrees with data</button></>} · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.sourced}/{ig.figures} figures in text sourced · {ig.unverified} unverified edits · selected {store.selection.length}</div>
         </section>
         <aside className="panel">
-          <nav className="tabs">{(['journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>)}</nav>
+          <nav className="tabs">{(['evidence', 'data', 'journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{t}</button>)}</nav>
+          {tab === 'evidence' && <EvidencePanel store={store} />}
+          {tab === 'data' && <DataPanel store={store} exec={exec} />}
           {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {j.at.slice(11, 19)}</span></li>)}</ol>}
           {tab === 'integrity' && <div>{ig.ok ? <p className="good">Every bound value matches the working layer.</p> : ig.mismatch.slice(0, 20).map((m) => <p key={m} className="bad">{m}</p>)}</div>}
           {tab === 'claims' && <div>{claims.length ? claims.map((c, i) => <div key={i} className={'claim ' + c.status}><div>{c.text}</div><div className="muted">{c.status}: {c.detail}</div></div>) : <p className="muted">No numeric claims on this slide.</p>}</div>}
           {tab === 'versions' && <ul>{versions.map((v) => <li key={v.version}>{v.version}. {v.label} <span className="muted">· {v.journal} entries</span></li>)}</ul>}
         </aside>
       </main>
+      {exporting && <ExportDialog store={store} close={() => setExporting(false)} reproject={() => exec({ kind: 'deck.reproject' })} />}
     </div>
   )
 }

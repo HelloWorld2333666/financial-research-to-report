@@ -40,6 +40,22 @@
     .slide-text-editor > div[data-bullet-text]::before { content: attr(data-bullet-text); display: inline-block; margin-left: calc(-1 * var(--bullet-hang)); width: var(--bullet-w); line-height: 0; font-family: var(--bullet-font, inherit); font-size: var(--bullet-size, inherit); font-weight: var(--bullet-weight, normal); color: var(--bullet-color, inherit); }
     .slide-text-editor > div[data-bullet-img] { position: relative; }
     .slide-text-editor > div[data-bullet-img]::after { content: ''; position: absolute; left: var(--bullet-x); top: var(--bullet-y); width: var(--bullet-img-w); height: var(--bullet-h); background: var(--bullet-img) center / contain no-repeat; user-select: none; pointer-events: none; }
+    .tabs { flex-wrap: wrap; } .tabs button { flex: 1 0 30%; padding: 4px 6px; font-size: 12px; }
+    button.link { border: none; background: none; color: var(--accent); padding: 0 4px; text-decoration: underline; font-size: inherit; }
+    .small { font-size: 11px; } .evidence, .data { font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .ev-series h4 { margin: 8px 0 4px; font-size: 12px; } .num { border-left: 3px solid #12b76a; padding: 2px 0 2px 8px; margin-bottom: 3px; }
+    .num.stale, .num.unsourced { border-color: #f04438; } .num.edited { border-color: #f79009; } .num.verified-edit { border-color: #2e90fa; }
+    .num summary { cursor: pointer; } .num-v { font-weight: 600; font-variant-numeric: tabular-nums; } .badge { margin-left: 6px; font-size: 10px; text-transform: uppercase; color: #b42318; }
+    .ev-card { background: #f6f8fb; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin: 4px 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+    .ev-q a { color: var(--accent); font-size: 11px; } .formula { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: #eef2f7; padding: 1px 4px; border-radius: 3px; }
+    .ev-input { margin-left: 6px; } .ev-input .ev-card { margin-left: 8px; }
+    .grid { border-collapse: collapse; width: 100%; } .grid th, .grid td { border-bottom: 1px solid var(--line); padding: 3px 4px; text-align: left; } .grid td.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .grid input { width: 64px; text-align: right; font: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; } .grid tr.edited td { background: #fffaeb; } .grid tr.verified td { background: #eff8ff; }
+    .grid button { padding: 1px 6px; font-size: 11px; margin-right: 2px; } .data select { font: inherit; padding: 3px; }
+    .modal-bg { position: fixed; inset: 0; background: rgba(16, 24, 40, .35); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: var(--surface); border-radius: 10px; padding: 18px 20px; width: 520px; max-width: calc(100vw - 32px); max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+    .modal h3 { margin: 0; } .seg { display: flex; gap: 4px; } .seg button { flex: 1; } .seg button.on { background: #e8eef8; border-color: #c7d4ea; }
+    .ack { display: flex; gap: 8px; align-items: flex-start; } .block { border-left: 3px solid #f04438; padding-left: 8px; } .row.end { justify-content: flex-end; display: flex; gap: 8px; }
   </style>
 </head>
 <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>

@@ -82,7 +82,8 @@ describe('store and commands', () => {
     const d = s.project.datasets['ds.fr.interest']!
     expect(d.working['2025']!.value).toBe(2.3)
     expect(d.observations.find((o) => o.date === '2025')!.value).toBe(2.2)
-    expect(ig(s).ok).toBe(true)
+    // the table was re-projected; only the sentence that cites 2025 interest is now stale (M3)
+    expect(ig(s).mismatch).toEqual(['text says 2.2, data now 2.3'])
     const title = textOf(findEl(s.deck, byRole(s, 'title', 's_2'))!.el)
     expect(checkText(title, s.project).some((c) => c.status === 'mismatch' && /2\.3/.test(c.detail))).toBe(true)
     expect(s.exec({ kind: 'data.set', dataset: 'ds.fr.debt', date: '2023', value: null }).ok).toBe(true)

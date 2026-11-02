@@ -3,7 +3,7 @@
 // wraps it in one undo snapshot and one journal entry. Numbers always come from the project.
 import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } from '@genoffice/pptx-engine'
 import { runTxn, type Op } from '@genoffice/pptx-ops'
-import { cellText, chartColors, chartData, setWorking } from './evidence'
+import { cellText, chartColors, chartData, setWorking, verifyWorking } from './evidence'
 import { findEl, slideIndex, walk } from './deck'
 import type { Binding, ChartSpec, Dataset, Project, Sidecar, TableSpec } from './types'
 
@@ -28,6 +28,8 @@ export type Command =
   | { kind: 'elements.distribute'; ids: string[]; axis: 'horizontal' | 'vertical' }
   | { kind: 'text.set'; id: string; text?: string; paragraphs?: any[] }
   | { kind: 'data.set'; dataset: string; date: string; value: number | null }
+  | { kind: 'data.verify'; dataset: string; date: string }
+  | { kind: 'data.restore'; dataset: string; date: string }
   | { kind: 'chart.addSeries'; id: string; dataset: Dataset; evidence?: Record<string, any> }
   | { kind: 'element.group'; ids: string[] }
   | { kind: 'element.ungroup'; id: string }
@@ -84,7 +86,8 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
   const para = (t: string, pt: number, color: string, bold = false) => ({ runs: [{ text: t, fontSize: pt, bold, color, fontFamily: d.font }] })
   // Titles and bullets shrink to fit their frame (bodyPr autoFit) instead of spilling into the next element
   const text = (role: string, t: string, box: [number, number, number, number], pt: number, color: string, bold = false) =>
-    out.push({ op: { op: 'addElement', kind: 'textbox', offset: off(...box), paragraphs: t.split('\n').map((l) => para(l, pt, color, bold)), bodyPr: { wrap: 'square', insetsEmu: { l: 0, t: 0, r: 0, b: 0 }, ...(role === 'title' || role === 'body' ? { autoFit: 'shrink' } : {}) } }, bind: (slide) => ({ kind: 'text', slide, role }) })
+    out.push({ op: { op: 'addElement', kind: 'textbox', offset: off(...box), paragraphs: t.split('\n').map((l) => para(l, pt, color, bold)), bodyPr: { wrap: 'square', insetsEmu: { l: 0, t: 0, r: 0, b: 0 }, ...(role === 'title' || role === 'body' ? { autoFit: 'shrink' } : {}) } },
+      bind: (slide) => ({ kind: 'text', slide, role, ...(p.numbers?.[role]?.length ? { numbers: structuredClone(p.numbers[role]) } : {}) }) })
   text('kicker', p.kicker, [40, 26, 900, 16], 8.5, d.accent, true)
   text('title', p.title, [40, 44, 1200, 44], 17, d.ink, true)
   text('subtitle', p.subtitle, [40, 92, 1200, 18], 9, d.muted)
@@ -99,7 +102,7 @@ function planSlide(ctx: Ctx, p: any): Planned[] {
       fill: (el, i) => [{ op: 'setTableStyle', target: { slide: i, el }, ...TABLE_STYLE }, ...tableFill(ctx, el, i, t)] })
     text('label', t.title, [784, 136, 456, 18], 9, d.muted, true)
   }
-  const bullets = [...(p.bullets || []), ...(p.derived ? [`10-year spread over Germany: ${p.derived.spread_bp} bp (derived: ${p.derived.inputs.join(' − ')})`] : [])]
+  const bullets: string[] = p.bullets || []
   if (bullets.length) text('body', bullets.map((b: string) => '• ' + b).join('\n'), [784, p.table ? 320 : 160, 456, 200], 10.5, d.ink)
   if (p.placeholder) out.push({ op: { op: 'addElement', kind: 'roundRect', offset: off(40, 160, 1200, 300), fill: '#F3F5F8', stroke: { color: '#B8C2CF', widthEmu: 9525 }, paragraphs: [para(p.placeholder.label, 14, d.muted, true), para('Research request: ' + p.placeholder.request.reason, 9, d.muted)] },
     bind: (slide) => ({ kind: 'placeholder', slide, label: p.placeholder.label, request: p.placeholder.request }) })
@@ -113,6 +116,7 @@ function composeSlide(ctx: Ctx, p: any): Outcome {
   if (si < 0) { txn(ctx, [{ op: 'addBlankSlide', target: { slide: ctx.deck.deck.slides.length - 1 } }]); si = ctx.deck.deck.slides.length - 1 }
   const plan = planSlide(ctx, p)
   txn(ctx, plan.map((x) => ({ ...x.op, target: { slide: si } })))
+  for (const d of p.derivations ?? []) (ctx.project.derivations ??= {})[d.id] = structuredClone(d)
   materializeSlide(ctx.deck, si) // new elements receive their creationId (durable id) on reparse
   const added = (ctx.deck.deck.slides[si] as any).elements.slice(-plan.length)
   const slide = sid(ctx, si), fills: Op[] = [], created: string[] = []
@@ -162,6 +166,16 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
     case 'data.set': {
       setWorking(ctx.project, cmd.dataset, cmd.date, cmd.value)
       return { summary: `Edit ${cmd.dataset} ${cmd.date} = ${cmd.value ?? 'gap'}`, slides: reproject(ctx, new Set([cmd.dataset])) }
+    }
+    case 'data.verify': {
+      verifyWorking(ctx.project, cmd.dataset, cmd.date)
+      return { summary: `Verify ${cmd.dataset} ${cmd.date}`, slides: [] }
+    }
+    case 'data.restore': {
+      const d = ctx.project.datasets[cmd.dataset]
+      if (!d?.working[cmd.date]) throw new Error(`${cmd.dataset} ${cmd.date} has no manual edit`)
+      delete d.working[cmd.date]
+      return { summary: `Restore source value ${cmd.dataset} ${cmd.date}`, slides: reproject(ctx, new Set([cmd.dataset])) }
     }
     case 'chart.addSeries': {
       const b = ctx.sidecar.bindings[cmd.id]

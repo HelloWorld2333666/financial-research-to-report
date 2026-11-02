@@ -96,10 +96,13 @@ export class Store {
   slides() { return slideList(this.deck) }
 
   // ---------------------------------------------------------------- persistence through the service
+  /** Integrity of the deck as the SERVER read it from disk after the last save (app/server/integrity.py). */
+  serverIntegrity: any = null
   async save(): Promise<{ ok: boolean; error?: string }> {
     const rev = this.revision
     const r = await fetch(`/api/projects/${this.project.id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(await this.toBundle()) })
     if (!r.ok) return { ok: false, error: (await r.json()).error }
+    this.serverIntegrity = (await r.json()).integrity ?? null
     this.savedRevision = rev; this.changed(); this.savedRevision = this.revision
     return { ok: true }
   }

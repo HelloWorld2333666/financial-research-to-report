@@ -1,10 +1,11 @@
 // End-to-end checks in the browser against the real service (/?checks=1). They cover Experiment 3's
 // 16 checks plus the M1 acceptance behaviours (save/reopen, group/ungroup bindings, independent paste,
-// versions). Results go to <pre id="checks">, read by app/server/tests/test_web_checks.py.
+// versions), M2's editing checks and M3's provenance and export policy (server endpoints included). Results go to <pre id="checks">, read by app/server/tests/test_web_checks.py.
 import { Store } from './core/store'
 import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { findEl, textOf, walk } from './core/deck'
+import { effectiveObs, evidenceValue, textNumbers } from './core/evidence'
 import { loadFonts } from './core/fonts'
 
 export async function runChecks() {
@@ -41,9 +42,12 @@ export async function runChecks() {
   await safe('table_working_edit_keeps_source', () => {
     s.exec({ kind: 'data.set', dataset: 'ds.fr.interest', date: '2025', value: 2.3 })
     const d = s.project.datasets['ds.fr.interest']!
-    check('table_working_edit_keeps_source', d.working['2025']?.value === 2.3 && d.observations.find((o) => o.date === '2025')!.value === 2.2 && ig().ok, JSON.stringify(d.working))
+    // the table is re-projected; the only remaining mismatch is the sentence that cites the 2025 value (M3)
+    const left = ig().mismatch
+    check('table_working_edit_keeps_source', d.working['2025']?.value === 2.3 && d.observations.find((o) => o.date === '2025')!.value === 2.2 && left.length === 1 && left[0]!.startsWith('text says 2.2'), JSON.stringify(d.working) + ' ' + left.join(' | '))
     const t = checkText(textOf(findEl(s.deck, byRole('title', 's_2'))!.el), s.project)
     check('claim_flagged_stale_after_data_edit', t.some((c) => c.status === 'mismatch' && /2\.3/.test(c.detail)), t.map((c) => c.detail).join(' | '))
+    s.exec({ kind: 'data.restore', dataset: 'ds.fr.interest', date: '2025' })
   })
   await safe('deleted_value_is_gap_not_zero', () => {
     s.exec({ kind: 'data.set', dataset: 'ds.fr.debt', date: '2023', value: null })
@@ -122,6 +126,62 @@ export async function runChecks() {
     const bx = (id: string) => { const o = findEl(s.deck, id)!.el.transform.offset; return { x: o.x / 9525, y: o.y / 9525 + 10, w: o.cx / 9525, h: o.cy / 9525 } }
     const r2 = s.exec({ kind: 'elements.transform', items: [{ id: a, box: bx(a) }, { id: b, box: bx(b) }] })
     check('rich_runs_and_combined_move', r1.ok && JSON.stringify(runs) === '[true,false,true]' && r2.ok && s.undoStack.length === n + 1 && ig().ok, `${JSON.stringify(runs)} ${r2.error ?? ''}`)
+  })
+  // ---------------------------------------------------------------- M3: provenance and export policy
+  const api = async (method: string, path: string, body?: any) => { const r = await fetch(`/api/projects/${s.project.id}${path}`, { method, headers: { 'content-type': 'application/json' }, body: body && JSON.stringify(body) }); return { status: r.status, j: await r.json() } }
+  await safe('every_number_resolves_to_source', () => {
+    const missing: string[] = []; let n = 0
+    const sourced = (eid?: string) => !!eid && !!s.project.evidence[eid]?.retrieval?.query_url && /ec\.europa\.eu\/eurostat\/api/.test(s.project.evidence[eid].retrieval.query_url)
+    for (const [id, b] of Object.entries(s.sidecar.bindings)) {
+      const el = findEl(s.deck, id)?.el
+      if (b.kind === 'chart') for (const d of b.chart.series) for (const o of effectiveObs(s.project.datasets[d])) { n++; if (!o.edited && !sourced(o.evidence_id)) missing.push(`${d} ${o.date}`) }
+      if (b.kind === 'table') for (const d of b.table.datasets) for (const x of b.table.dates) { n++; const o = effectiveObs(s.project.datasets[d]).find((y) => y.date === x); if (!sourced(o?.evidence_id)) missing.push(`${d} ${x}`) }
+      if (b.kind === 'text' && b.role !== 'source') for (const t of textNumbers(textOf(el), b.numbers, s.project)) {
+        n++
+        const ok = t.status === 'ok' && (t.ref?.evidence ? sourced(t.ref.evidence) : Object.values(s.project.derivations?.[t.ref!.derivation!]?.inputs ?? { x: '' }).every(sourced))
+        if (!ok) missing.push(`${b.slide} "${t.text}" ${t.status}`)
+      }
+    }
+    check('every_number_resolves_to_source', n > 50 && missing.length === 0, `${n} numbers; unresolved: ${missing.join(', ') || 'none'}`)
+  })
+  await safe('spread_derivation_inputs', () => {
+    const d = Object.values(s.project.derivations ?? {}).find((x) => /spread/.test(x.id))!
+    const [own, peer] = [evidenceValue(s.project, d.inputs.own!), evidenceValue(s.project, d.inputs.peer!)]
+    const ok = d.formula === '(own - peer) * 100' && own.ds === 'ds.fr.yield' && peer.ds === 'ds.de.yield' && own.date === d.period && Math.round((own.value! - peer.value!) * 100) === d.value
+      && s.project.evidence[d.inputs.own!].retrieval.query_url.includes('geo=FR') && s.project.evidence[d.inputs.peer!].retrieval.query_url.includes('geo=DE')
+    check('spread_derivation_inputs', ok, `${d.id}: ${d.formula} with own=${own.value} (${own.ds}), peer=${peer.value} (${peer.ds}) = ${d.value} ${d.unit}`)
+  })
+  await safe('final_export_blocked_until_ack', async () => {
+    s.exec({ kind: 'data.set', dataset: 'ds.de.interest', date: '2023', value: 1.0 })
+    await s.save()
+    const pol = (await api('GET', '/export')).j, keys = pol.acknowledge.map((a: any) => a.key)
+    const refused = await api('POST', '/export', { mode: 'final', acknowledged: keys.filter((k: string) => k !== 'edits') })
+    const draft = await api('POST', '/export', { mode: 'draft' })
+    const final = await api('POST', '/export', { mode: 'final', acknowledged: keys })
+    s.exec({ kind: 'data.verify', dataset: 'ds.de.interest', date: '2023' }); await s.save()
+    const mine = (pl: any) => (pl.acknowledge.find((a: any) => a.key === 'edits')?.items ?? []).some((i: any) => i.dataset === 'ds.de.interest' && i.date === '2023')
+    const before = mine(pol), after = mine((await api('GET', '/export')).j)
+    s.exec({ kind: 'data.restore', dataset: 'ds.de.interest', date: '2023' }); await s.save()
+    check('final_export_blocked_until_ack', keys.includes('edits') && keys.includes('placeholders') && refused.status === 409 && /manually edited/.test(refused.j.error)
+      && draft.status === 201 && draft.j.draft_banner && final.status === 201 && final.j.acknowledged.some((a: any) => a.key === 'edits') && before && !after,
+      `ack ${keys} → final w/o edits ${refused.status}; draft ${draft.status} banner=${draft.j.draft_banner}; final ${final.status}; listed before verify ${before}, after ${after}`)
+  })
+  await safe('stale_text_blocks_final_export', async () => {
+    // pick a figure still written on a slide (earlier checks rewrite some text) and change the value under it
+    const cited = Object.entries(s.sidecar.bindings).flatMap(([id, b]) => b.kind === 'text' ? textNumbers(textOf(findEl(s.deck, id)?.el), b.numbers, s.project).filter((t) => t.status === 'ok' && t.ref?.evidence) : [])[0]!
+    const at = evidenceValue(s.project, cited.ref!.evidence!)
+    s.exec({ kind: 'data.set', dataset: at.ds!, date: at.date!, value: 99.9 }); await s.save()
+    const pol = (await api('GET', '/export')).j
+    const res = await api('POST', '/export', { mode: 'final', acknowledged: pol.acknowledge.map((a: any) => a.key) })
+    s.undo(); await s.save()
+    check('stale_text_blocks_final_export', pol.blocking.some((b: any) => b.key === 'integrity' && b.items.some((i: any) => i.detail === `text says ${cited.text}, data now 99.9`)) && res.status === 409,
+      `${pol.blocking.map((b: any) => b.text).join(' | ')} → ${res.status}`)
+  })
+  await safe('server_integrity_matches_client', async () => {
+    await s.save()
+    const srv = (await api('GET', '/integrity')).j, c = ig()
+    check('server_integrity_matches_client', srv.ok === c.ok && srv.points === c.points && srv.cells === c.cells && srv.figures === c.figures && srv.sourced === c.sourced,
+      `server ok=${srv.ok} ${srv.points}/${srv.cells}/${srv.sourced}of${srv.figures}; client ok=${c.ok} ${c.points}/${c.cells}/${c.sourced}of${c.figures}`)
   })
   const fin = ig()
   check('final_integrity', fin.ok, `${fin.resolved}/${fin.bindings}, ${fin.points} points, ${fin.cells} cells, ${fin.unverified} unverified edits`)
