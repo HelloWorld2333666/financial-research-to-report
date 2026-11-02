@@ -11,6 +11,7 @@ import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
 import { runChecks } from './checks'
 import { DataPanel, EvidencePanel, ExportDialog } from './panels'
+import { ChatPanel } from './chat'
 
 const FIT = 800
 const K = 1280 / FIT // canvas px -> slide px
@@ -39,7 +40,7 @@ function Workspace({ store }: { store: Store }) {
   const [cur, setCur] = useState(0)
   const [editing, setEditing] = useState<any>(null)
   const [entered, setEntered] = useState<string | null>(null)
-  const [tab, setTab] = useState<'evidence' | 'data' | 'journal' | 'integrity' | 'claims' | 'versions'>('evidence')
+  const [tab, setTab] = useState<'chat' | 'evidence' | 'data' | 'journal' | 'integrity' | 'claims' | 'versions'>('chat')
   const [exporting, setExporting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [saveState, setSaveState] = useState('Saved')
@@ -172,7 +173,9 @@ function Workspace({ store }: { store: Store }) {
           <div className="statusline"><span className={ig.ok ? 'good' : 'bad'}>Integrity {ig.ok ? 'OK' : 'MISMATCH'}</span>{ig.mismatch.some((m) => !m.startsWith('text says')) && <> <button onClick={() => exec({ kind: 'deck.reproject' })}>Re-project from data</button></>}{ig.mismatch.some((m) => m.startsWith('text says')) && <> <button className="link" onClick={() => setTab('integrity')}>text disagrees with data</button></>} · {ig.resolved}/{ig.bindings} bindings · {ig.points} chart points · {ig.cells} table cells · {ig.sourced}/{ig.figures} figures in text sourced · {ig.unverified} unverified edits · selected {store.selection.length}</div>
         </section>
         <aside className="panel">
-          <nav className="tabs">{(['evidence', 'data', 'journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{t}</button>)}</nav>
+          <nav className="tabs">{(['chat', 'evidence', 'data', 'journal', 'integrity', 'claims', 'versions'] as const).map((t) => <button key={t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{t}</button>)}</nav>
+          {/* always mounted: a request in flight survives switching tabs */}
+          <ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} />
           {tab === 'evidence' && <EvidencePanel store={store} />}
           {tab === 'data' && <DataPanel store={store} exec={exec} />}
           {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {j.at.slice(11, 19)}</span></li>)}</ol>}

@@ -9,6 +9,9 @@
   "licenses": "node scripts/licenses.mjs"
  },
  "dependencies": {
+  "@ag-ui/client": "1.0.3",
+  "@assistant-ui/react": "0.15.32",
+  "@assistant-ui/react-ag-ui": "0.1.1",
   "bidi-js": "1.0.3",
   "buffer": "6.0.3",
   "fast-xml-parser": "5.10.1",
@@ -19,7 +22,8 @@
   "react": "19.2.7",
   "react-dom": "19.2.7",
   "react-konva": "19.2.5",
-  "utif2": "4.1.0"
+  "utif2": "4.1.0",
+  "zod": "3.25.76"
  },
  "devDependencies": {
   "@types/react": "19.2.14",

@@ -7,7 +7,7 @@ import { findEl, slideList } from './deck'
 import { migrateSidecar } from './sidecar'
 import { BUNDLE_SCHEMA, type Actor, type Bundle, type JournalEntry, type Project, type Sidecar } from './types'
 
-interface Snapshot { slides: any; entries: Map<string, unknown>; size: any; project: Project; sidecar: Sidecar }
+interface Snapshot { slides: any; entries: Map<string, unknown>; size: any; project: Project; sidecar: Sidecar; proposalId?: string }
 export interface ExecResult extends Partial<Outcome> { ok: boolean; error?: string }
 
 const b64 = (bytes: Uint8Array) => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s) }
@@ -66,8 +66,9 @@ export class Store {
     const before = this.snap()
     try {
       const out = run({ deck: this.deck, project: this.project, sidecar: this.sidecar }, cmd)
-      this.undoStack.push(before); this.redoStack = []
+      this.undoStack.push({ ...before, proposalId: meta.proposalId }); this.redoStack = []
       this.log(cmd.kind, meta.actor, out.summary, out.slides, meta.proposalId)
+      if (meta.proposalId) this.proposals[meta.proposalId] = 'applied'
       this.selection = this.selection.filter((d) => findEl(this.deck, d))
       this.changed()
       return { ok: true, ...out }
@@ -85,8 +86,20 @@ export class Store {
     finally { this.restore(before) }
   }
 
-  undo() { const s = this.undoStack.pop(); if (!s) return false; this.redoStack.push(this.snap()); this.restore(s); this.log('history.undo', 'user', 'Undo', []); this.changed(); return true }
-  redo() { const s = this.redoStack.pop(); if (!s) return false; this.undoStack.push(this.snap()); this.restore(s); this.log('history.redo', 'user', 'Redo', []); this.changed(); return true }
+  // undoing an applied proposal reopens it (its card offers Apply again); redo re-applies it
+  undo() { const s = this.undoStack.pop(); if (!s) return false; this.redoStack.push({ ...this.snap(), proposalId: s.proposalId }); this.restore(s); if (s.proposalId) this.proposals[s.proposalId] = 'undone'; this.log('history.undo', 'user', 'Undo', []); this.changed(); return true }
+  redo() { const s = this.redoStack.pop(); if (!s) return false; this.undoStack.push({ ...this.snap(), proposalId: s.proposalId }); this.restore(s); if (s.proposalId) this.proposals[s.proposalId] = 'applied'; this.log('history.redo', 'user', 'Redo', []); this.changed(); return true }
+
+  // ---------------------------------------------------------------- chat threads and proposal states (saved with the bundle)
+  /** proposal id -> applied | rejected | undone (absent = open) */
+  get proposals(): Record<string, string> { return (this.threads.proposals ??= {}) }
+  reject(proposalId: string) { this.proposals[proposalId] = 'rejected'; this.changed() }
+  threadMessages(threadId: string): any[] { return this.threads.messages?.[threadId] ?? [] }
+  setThreadMessages(threadId: string, messages: readonly any[]) {
+    const json = JSON.parse(JSON.stringify(messages))
+    if (JSON.stringify(this.threadMessages(threadId)) === JSON.stringify(json)) return
+    ;(this.threads.messages ??= {})[threadId] = json; this.changed()
+  }
 
   select(ids: string[]) { this.selection = ids; this.changed() }
   copy(ids: string[]) {

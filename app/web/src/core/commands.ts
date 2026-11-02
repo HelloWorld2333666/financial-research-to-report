@@ -5,7 +5,7 @@ import { materializeSlide, slideDurableId, elementDurableId, type OpenedPptx } f
 import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, chartColors, chartData, setWorking, verifyWorking } from './evidence'
 import { findEl, slideIndex, walk } from './deck'
-import type { Binding, ChartSpec, Dataset, Project, Sidecar, TableSpec } from './types'
+import type { Binding, ChartSpec, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
 
 export const EMU = 9525 // EMU per slide px; slides are 1280 x 720 px
 /** Built-in table style driven by the theme's accent1 (Design DNA navy) instead of PowerPoint's default orange. */
@@ -26,7 +26,7 @@ export type Command =
   | { kind: 'elements.transform'; items: { id: string; box: Box; rotDeg?: number }[] }
   | { kind: 'elements.align'; ids: string[]; mode: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom' }
   | { kind: 'elements.distribute'; ids: string[]; axis: 'horizontal' | 'vertical' }
-  | { kind: 'text.set'; id: string; text?: string; paragraphs?: any[] }
+  | { kind: 'text.set'; id: string; text?: string; paragraphs?: any[]; numbers?: NumberRef[] }
   | { kind: 'data.set'; dataset: string; date: string; value: number | null }
   | { kind: 'data.verify'; dataset: string; date: string }
   | { kind: 'data.restore'; dataset: string; date: string }
@@ -38,6 +38,7 @@ export type Command =
   | { kind: 'placeholder.add'; slide: string; label: string; request: any }
   | { kind: 'ops.raw'; ops: Op[]; summary?: string }
   | { kind: 'deck.reproject' }
+  | { kind: 'batch'; commands: Command[]; summary?: string }
 
 export interface Ctx { deck: OpenedPptx; project: Project; sidecar: Sidecar }
 export interface Outcome { summary: string; slides: string[]; created?: string[] }
@@ -161,11 +162,18 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       // the rich-text editor sends EditParagraph[] (runs with bold/italic/size/colour); plain text keeps existing styles
       const paragraphs = cmd.paragraphs ?? (cmd.text ?? '').split('\n').map((t) => ({ runs: [{ text: t }] }))
       txn(ctx, [{ op: 'setText', target: { slide: f.index, el: f.el.id }, ...(f.group ? { group: f.group.id } : {}), paragraphs }])
-      return { summary: 'Edit text', slides: [sid(ctx, f.index)] }
+      // generated wording (AI rewrite) brings the evidence reference of every figure it writes
+      const b = ctx.sidecar.bindings[cmd.id]
+      if (cmd.numbers && b?.kind === 'text') b.numbers = structuredClone(cmd.numbers)
+      return { summary: cmd.numbers ? `Rewrite text (${cmd.numbers.length} figures bound to evidence)` : 'Edit text', slides: [sid(ctx, f.index)] }
     }
     case 'data.set': {
       setWorking(ctx.project, cmd.dataset, cmd.date, cmd.value)
       return { summary: `Edit ${cmd.dataset} ${cmd.date} = ${cmd.value ?? 'gap'}`, slides: reproject(ctx, new Set([cmd.dataset])) }
+    }
+    case 'batch': {
+      const outs = cmd.commands.map((c) => run(ctx, c))
+      return { summary: cmd.summary ?? outs.map((o) => o.summary).join('; '), slides: [...new Set(outs.flatMap((o) => o.slides))], created: outs.flatMap((o) => o.created ?? []) }
     }
     case 'data.verify': {
       verifyWorking(ctx.project, cmd.dataset, cmd.date)

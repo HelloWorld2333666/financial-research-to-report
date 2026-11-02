@@ -4,8 +4,9 @@
 
 Serves the JSON API under /api and the built web client (app/web/dist) at /.
 M1: projects (bundle save/load, versions) and the deterministic composer. M3: working-data
-validation on save, integrity of the saved deck, and the export policy. Agent and tasks arrive in
-M4–M5 (docs/workspace-prototype/PHASE3-PLAN.md).
+validation on save, integrity of the saved deck, and the export policy. M4: the AG-UI agent at
+/api/agent (tools return proposals; see agent.py). Tasks arrive in M5
+(docs/workspace-prototype/PHASE3-PLAN.md).
 """
 
 from __future__ import annotations
@@ -17,16 +18,21 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(HERE))
 
+import httpx  # noqa: E402
+from pydantic_ai.ui import StateDeps  # noqa: E402
+from pydantic_ai.ui.ag_ui import AGUIAdapter  # noqa: E402
 from starlette.applications import Starlette  # noqa: E402
 from starlette.requests import Request  # noqa: E402
 from starlette.responses import FileResponse, JSONResponse  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 from starlette.staticfiles import StaticFiles  # noqa: E402
 
+import agent as workspace_agent  # noqa: E402
 import export  # noqa: E402
 import integrity  # noqa: E402
 from composer import compose  # noqa: E402
@@ -38,8 +44,10 @@ MANIFEST = ROOT / "vendor" / "genoffice" / "manifest.json"
 PROJECTS = Path(os.environ.get("FRR_PROJECTS", HERE / "projects"))
 
 
-def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS) -> Starlette:
+def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=None, fetch=None) -> Starlette:
+    """``model`` and ``fetch`` replace the configured model and Eurostat access (tests)."""
     store = ProjectStore(projects_root)
+    agent = workspace_agent.create_agent(store, model, **({"get": fetch} if fetch else {}))
 
     def guarded(fn):
         async def handler(request: Request):
@@ -105,6 +113,18 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS) -> Sta
     async def get_version(request: Request):
         return JSONResponse(store.load_version(request.path_params["pid"], request.path_params["n"]))
 
+    async def run_agent(request: Request):
+        return await AGUIAdapter.dispatch_request(request, agent=agent, deps=StateDeps(workspace_agent.WorkspaceState()))
+
+    async def agent_config(_):
+        cfg = workspace_agent.model_config()
+        try:
+            async with httpx.AsyncClient(timeout=2) as c:
+                reachable = (await c.get(cfg["url"].rstrip("/") + "/models")).status_code == 200
+        except httpx.HTTPError:
+            reachable = False
+        return JSONResponse({**cfg, "reachable": reachable})
+
     async def post_compose(request: Request):
         body = await request.json()
         project = store.load(body["project"])["project"] if "project" in body else body["data"]
@@ -124,6 +144,8 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS) -> Sta
         Route("/api/projects/{pid}/export", guarded(post_export), methods=["POST"]),
         Route("/api/projects/{pid}/exports/{name}", guarded(get_export), methods=["GET"]),
         Route("/api/compose", guarded(post_compose), methods=["POST"]),
+        Route("/api/agent", run_agent, methods=["POST"]),
+        Route("/api/agent/config", agent_config, methods=["GET"]),
     ]
     if web_dist.joinpath("index.html").exists():
         routes.append(Mount("/", StaticFiles(directory=web_dist, html=True), name="web"))

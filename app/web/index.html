@@ -56,6 +56,20 @@
     .modal { background: var(--surface); border-radius: 10px; padding: 18px 20px; width: 520px; max-width: calc(100vw - 32px); max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
     .modal h3 { margin: 0; } .seg { display: flex; gap: 4px; } .seg button { flex: 1; } .seg button.on { background: #e8eef8; border-color: #c7d4ea; }
     .ack { display: flex; gap: 8px; align-items: flex-start; } .block { border-left: 3px solid #f04438; padding-left: 8px; } .row.end { justify-content: flex-end; display: flex; gap: 8px; }
+    .tabs button { flex: 1 0 22%; }
+    .chat { flex-direction: column; gap: 6px; flex: 1; min-height: 0; } .chat-scope button { font-size: 12px; padding: 3px 6px; }
+    .thread { flex-direction: column; flex: 1; min-height: 0; } .thread-root { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .thread-viewport { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 2px; min-height: 240px; }
+    .msg-user { align-self: flex-end; background: #e8eef8; border-radius: 8px; padding: 6px 10px; max-width: 90%; font-size: 13px; }
+    .msg-assistant { font-size: 13px; } .msg-text { white-space: pre-wrap; }
+    .composer { display: flex; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); } .composer textarea { flex: 1; font: inherit; font-size: 13px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; resize: none; }
+    .composer button { align-self: flex-end; background: var(--accent); color: #fff; border-color: var(--accent); }
+    .proposal { border: 1px solid #cfd6df; border-radius: 8px; padding: 8px; margin: 4px 0; background: #fff; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .proposal[data-state=applied] { background: #eef7f0; border-color: #b7dfc3; } .proposal[data-state=rejected] { background: #f6f6f6; color: var(--muted); }
+    .p-title { font-weight: 600; } .p-summary { color: #344054; } .p-actions { display: flex; gap: 6px; } .p-actions button { padding: 3px 9px; font-size: 12px; } .p-state { font-size: 11px; color: var(--muted); }
+    .pv-thumb { overflow: hidden; pointer-events: none; border: 1px solid var(--line); background: #fff; }
+    .rw { display: flex; flex-direction: column; gap: 2px; } .rw-before { text-decoration: line-through; color: var(--muted); } .rw-after { font-weight: 600; }
+    .tool-running { color: var(--muted); font-size: 12px; font-style: italic; }
   </style>
 </head>
 <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>

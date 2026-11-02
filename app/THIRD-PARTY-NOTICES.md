@@ -67,6 +67,18 @@ and development tooling and are not shipped in the application.
 
 | Ecosystem | Package | Version | Licence |
 |---|---|---|---|
+| npm | @ag-ui/client | 1.0.3 | MIT |
+| npm | @ag-ui/core | 1.0.3 | MIT |
+| npm | @ag-ui/encoder | 1.0.3 | MIT |
+| npm | @ag-ui/proto | 1.0.3 | MIT |
+| npm | @assistant-ui/core | 0.3.32 | MIT |
+| npm | nanoid | 6.0.2 | MIT |
+| npm | @assistant-ui/generative-ui | 0.0.8 | MIT |
+| npm | @assistant-ui/react | 0.15.32 | MIT |
+| npm | @assistant-ui/react-ag-ui | 0.1.1 | MIT |
+| npm | zod | 4.6.7 | MIT |
+| npm | @assistant-ui/store | 0.3.22 | MIT |
+| npm | @assistant-ui/tap | 0.9.24 | MIT |
 | npm (dev) | @babel/code-frame | 7.29.7 | MIT |
 | npm (dev) | @babel/compat-data | 7.29.7 | MIT |
 | npm (dev) | @babel/core | 7.29.7 | MIT |
@@ -83,9 +95,11 @@ and development tooling and are not shipped in the application.
 | npm (dev) | @babel/parser | 7.29.12 | MIT |
 | npm (dev) | @babel/plugin-transform-react-jsx-self | 7.29.7 | MIT |
 | npm (dev) | @babel/plugin-transform-react-jsx-source | 7.29.7 | MIT |
+| npm | @babel/runtime | 7.29.10 | MIT |
 | npm (dev) | @babel/template | 7.29.7 | MIT |
 | npm (dev) | @babel/traverse | 7.29.12 | MIT |
 | npm (dev) | @babel/types | 7.29.11 | MIT |
+| npm | @bufbuild/protobuf | 2.16.0 | Apache-2.0 AND BSD-3-Clause |
 | npm (dev) | @esbuild/aix-ppc64 | 0.28.2 | MIT |
 | npm (dev) | @esbuild/android-arm | 0.28.2 | MIT |
 | npm (dev) | @esbuild/android-arm64 | 0.28.2 | MIT |
@@ -112,6 +126,10 @@ and development tooling and are not shipped in the application.
 | npm (dev) | @esbuild/win32-arm64 | 0.28.2 | MIT |
 | npm (dev) | @esbuild/win32-ia32 | 0.28.2 | MIT |
 | npm (dev) | @esbuild/win32-x64 | 0.28.2 | MIT |
+| npm | @floating-ui/core | 1.8.0 | MIT |
+| npm | @floating-ui/dom | 1.8.0 | MIT |
+| npm | @floating-ui/react-dom | 2.1.9 | MIT |
+| npm | @floating-ui/utils | 0.2.12 | MIT |
 | npm (dev) | @jridgewell/gen-mapping | 0.3.13 | MIT |
 | npm (dev) | @jridgewell/remapping | 2.3.5 | MIT |
 | npm (dev) | @jridgewell/resolve-uri | 3.1.2 | MIT |
@@ -119,6 +137,67 @@ and development tooling and are not shipped in the application.
 | npm (dev) | @jridgewell/trace-mapping | 0.3.31 | MIT |
 | npm (dev) | @napi-rs/lzma-linux-x64-gnu | 1.5.1 | MIT |
 | npm | @nodable/entities | 3.1.0 | MIT |
+| npm | @protobuf-ts/protoc | 2.11.1 | Apache-2.0 |
+| npm | @radix-ui/number | 1.1.3 | MIT |
+| npm | @radix-ui/primitive | 1.2.0 | MIT |
+| npm | @radix-ui/react-accessible-icon | 1.2.0 | MIT |
+| npm | @radix-ui/react-accordion | 1.3.1 | MIT |
+| npm | @radix-ui/react-alert-dialog | 1.2.1 | MIT |
+| npm | @radix-ui/react-arrow | 1.1.17 | MIT |
+| npm | @radix-ui/react-aspect-ratio | 1.2.0 | MIT |
+| npm | @radix-ui/react-avatar | 1.3.1 | MIT |
+| npm | @radix-ui/react-checkbox | 1.4.1 | MIT |
+| npm | @radix-ui/react-collapsible | 1.2.1 | MIT |
+| npm | @radix-ui/react-collection | 1.2.0 | MIT |
+| npm | @radix-ui/react-compose-refs | 1.1.5 | MIT |
+| npm | @radix-ui/react-context | 1.3.0 | MIT |
+| npm | @radix-ui/react-context-menu | 2.4.1 | MIT |
+| npm | @radix-ui/react-dialog | 1.3.1 | MIT |
+| npm | @radix-ui/react-direction | 1.2.0 | MIT |
+| npm | @radix-ui/react-dismissable-layer | 1.2.1 | MIT |
+| npm | @radix-ui/react-dropdown-menu | 2.2.1 | MIT |
+| npm | @radix-ui/react-focus-guards | 1.2.0 | MIT |
+| npm | @radix-ui/react-focus-scope | 1.3.1 | MIT |
+| npm | @radix-ui/react-form | 0.3.0 | MIT |
+| npm | @radix-ui/react-hover-card | 1.2.1 | MIT |
+| npm | @radix-ui/react-id | 1.1.4 | MIT |
+| npm | @radix-ui/react-label | 2.1.17 | MIT |
+| npm | @radix-ui/react-menu | 2.2.1 | MIT |
+| npm | @radix-ui/react-menubar | 1.2.1 | MIT |
+| npm | @radix-ui/react-navigation-menu | 1.4.1 | MIT |
+| npm | @radix-ui/react-one-time-password-field | 0.2.1 | MIT |
+| npm | @radix-ui/react-password-toggle-field | 0.2.1 | MIT |
+| npm | @radix-ui/react-popover | 1.3.1 | MIT |
+| npm | @radix-ui/react-popper | 1.4.0 | MIT |
+| npm | @radix-ui/react-portal | 1.2.0 | MIT |
+| npm | @radix-ui/react-presence | 1.1.11 | MIT |
+| npm | @radix-ui/react-primitive | 2.2.0 | MIT |
+| npm | @radix-ui/react-progress | 1.2.1 | MIT |
+| npm | @radix-ui/react-radio-group | 1.5.1 | MIT |
+| npm | @radix-ui/react-roving-focus | 1.2.1 | MIT |
+| npm | @radix-ui/react-scroll-area | 1.4.0 | MIT |
+| npm | @radix-ui/react-select | 2.4.1 | MIT |
+| npm | @radix-ui/react-separator | 1.2.0 | MIT |
+| npm | @radix-ui/react-slider | 1.6.1 | MIT |
+| npm | @radix-ui/react-slot | 1.5.0 | MIT |
+| npm | @radix-ui/react-switch | 1.4.1 | MIT |
+| npm | @radix-ui/react-tabs | 1.2.1 | MIT |
+| npm | @radix-ui/react-toast | 1.3.1 | MIT |
+| npm | @radix-ui/react-toggle | 1.2.1 | MIT |
+| npm | @radix-ui/react-toggle-group | 1.2.1 | MIT |
+| npm | @radix-ui/react-toolbar | 1.2.1 | MIT |
+| npm | @radix-ui/react-tooltip | 1.4.1 | MIT |
+| npm | @radix-ui/react-use-callback-ref | 1.1.5 | MIT |
+| npm | @radix-ui/react-use-controllable-state | 1.3.0 | MIT |
+| npm | @radix-ui/react-use-effect-event | 0.0.5 | MIT |
+| npm | @radix-ui/react-use-escape-keydown | 1.1.6 | MIT |
+| npm | @radix-ui/react-use-is-hydrated | 0.1.3 | MIT |
+| npm | @radix-ui/react-use-layout-effect | 1.1.4 | MIT |
+| npm | @radix-ui/react-use-previous | 1.1.4 | MIT |
+| npm | @radix-ui/react-use-rect | 1.1.4 | MIT |
+| npm | @radix-ui/react-use-size | 1.1.5 | MIT |
+| npm | @radix-ui/react-visually-hidden | 1.2.13 | MIT |
+| npm | @radix-ui/rect | 1.1.3 | MIT |
 | npm (dev) | @rolldown/pluginutils | 1.0.0-rc.3 | MIT |
 | npm (dev) | @rollup/rollup-android-arm-eabi | 4.67.4 | MIT |
 | npm (dev) | @rollup/rollup-android-arm64 | 4.67.4 | MIT |
@@ -146,7 +225,7 @@ and development tooling and are not shipped in the application.
 | npm (dev) | @rollup/rollup-win32-ia32-msvc | 4.67.4 | MIT |
 | npm (dev) | @rollup/rollup-win32-x64-gnu | 4.67.4 | MIT |
 | npm (dev) | @rollup/rollup-win32-x64-msvc | 4.67.4 | MIT |
-| npm (dev) | @standard-schema/spec | 1.1.0 | MIT |
+| npm | @standard-schema/spec | 1.1.0 | MIT |
 | npm (dev) | @types/babel__core | 7.20.5 | MIT |
 | npm (dev) | @types/babel__generator | 7.27.0 | MIT |
 | npm (dev) | @types/babel__template | 7.4.4 | MIT |
@@ -154,9 +233,11 @@ and development tooling and are not shipped in the application.
 | npm (dev) | @types/chai | 5.2.3 | MIT |
 | npm (dev) | @types/deep-eql | 4.0.2 | MIT |
 | npm (dev) | @types/estree | 1.0.10 | MIT |
+| npm | @types/json-schema | 7.0.15 | MIT |
 | npm (dev) | @types/react | 19.2.14 | MIT |
 | npm (dev) | @types/react-dom | 19.2.3 | MIT |
 | npm | @types/react-reconciler | 0.33.1 | MIT |
+| npm | @types/uuid | 10.0.0 | MIT |
 | npm (dev) | @vitejs/plugin-react | 5.2.0 | MIT |
 | npm (dev) | @vitest/expect | 4.1.12 | MIT |
 | npm (dev) | @vitest/mocker | 4.1.12 | MIT |
@@ -166,7 +247,11 @@ and development tooling and are not shipped in the application.
 | npm (dev) | @vitest/spy | 4.1.12 | MIT |
 | npm (dev) | @vitest/utils | 4.1.12 | MIT |
 | npm | anynum | 1.0.1 | MIT |
+| npm | aria-hidden | 1.2.6 | MIT |
 | npm (dev) | assertion-error | 2.0.1 | MIT |
+| npm | assistant-cloud | 0.2.9 | MIT |
+| npm | assistant-stream | 0.3.55 | MIT |
+| npm | nanoid | 6.0.2 | MIT |
 | npm | base64-js | 1.5.1 | MIT |
 | npm (dev) | baseline-browser-mapping | 2.11.34 | Apache-2.0 |
 | npm | bidi-js | 1.0.3 | MIT |
@@ -174,22 +259,26 @@ and development tooling and are not shipped in the application.
 | npm | buffer | 6.0.3 | MIT |
 | npm (dev) | caniuse-lite | 1.0.30001820 | CC-BY-4.0 |
 | npm (dev) | chai | 6.3.0 | MIT |
+| npm | compare-versions | 6.1.1 | MIT |
 | npm (dev) | convert-source-map | 2.0.0 | MIT |
 | npm | core-util-is | 1.0.3 | MIT |
 | npm (dev) | csstype | 3.2.3 | MIT |
 | npm (dev) | debug | 4.4.3 | MIT |
+| npm | detect-node-es | 1.1.0 | MIT |
 | npm (dev) | electron-to-chromium | 1.5.472 | ISC |
 | npm (dev) | es-module-lexer | 2.3.2 | MIT |
 | npm (dev) | esbuild | 0.28.2 | MIT |
 | npm (dev) | escalade | 3.2.0 | MIT |
 | npm (dev) | estree-walker | 3.0.3 | MIT |
 | npm (dev) | expect-type | 1.4.0 | Apache-2.0 |
+| npm | fast-json-patch | 3.1.1 | MIT |
 | npm | fast-xml-builder | 1.3.1 | MIT |
 | npm | fast-xml-parser | 5.10.1 | MIT |
 | npm (dev) | fdir | 6.5.0 | MIT |
 | npm | fflate | 0.8.3 | MIT |
 | npm (dev) | fsevents | 2.3.3 | MIT |
 | npm (dev) | gensync | 1.0.0-beta.2 | MIT |
+| npm | get-nonce | 1.0.1 | MIT |
 | npm | ieee754 | 1.2.1 | BSD-3-Clause |
 | npm | immediate | 3.0.6 | MIT |
 | npm | inherits | 2.0.4 | ISC |
@@ -217,16 +306,24 @@ and development tooling and are not shipped in the application.
 | npm (dev) | picomatch | 4.0.7 | MIT |
 | npm (dev) | postcss | 8.5.32 | MIT |
 | npm | process-nextick-args | 2.0.1 | MIT |
+| npm | radix-ui | 1.8.1 | MIT |
 | npm | react | 19.2.7 | MIT |
 | npm | react-dom | 19.2.7 | MIT |
 | npm | react-konva | 19.2.5 | MIT |
 | npm | react-reconciler | 0.33.0 | MIT |
 | npm (dev) | react-refresh | 0.18.0 | MIT |
+| npm | react-remove-scroll | 2.7.2 | MIT |
+| npm | react-remove-scroll-bar | 2.3.8 | MIT |
+| npm | react-style-singleton | 2.2.3 | MIT |
+| npm | react-textarea-autosize | 8.5.9 | MIT |
 | npm | readable-stream | 2.3.8 | MIT |
 | npm | require-from-string | 2.0.2 | MIT |
 | npm (dev) | rollup | 4.67.4 | MIT |
+| npm | rxjs | 7.8.1 | Apache-2.0 |
 | npm | safe-buffer | 5.1.2 | MIT |
+| npm | safe-content-frame | 0.0.34 | MIT |
 | npm | scheduler | 0.27.0 | MIT |
+| npm | secure-json-parse | 4.1.1 | BSD-3-Clause |
 | npm (dev) | semver | 6.3.1 | ISC |
 | npm | setimmediate | 1.0.5 | MIT |
 | npm (dev) | siginfo | 2.0.0 | ISC |
@@ -239,19 +336,33 @@ and development tooling and are not shipped in the application.
 | npm (dev) | tinyexec | 1.3.1 | MIT |
 | npm (dev) | tinyglobby | 0.2.17 | MIT |
 | npm (dev) | tinyrainbow | 3.2.0 | MIT |
+| npm | tslib | 2.9.1 | 0BSD |
 | npm (dev) | typescript | 5.9.3 | Apache-2.0 |
+| npm | untruncate-json | 0.0.1 | MIT |
 | npm (dev) | update-browserslist-db | 1.3.4 | MIT |
+| npm | use-callback-ref | 1.3.3 | MIT |
+| npm | use-composed-ref | 1.4.0 | MIT |
+| npm | use-isomorphic-layout-effect | 1.2.1 | MIT |
+| npm | use-latest | 1.3.0 | MIT |
+| npm | use-sidecar | 1.1.3 | MIT |
 | npm | utif2 | 4.1.0 | MIT |
 | npm | util-deprecate | 1.0.2 | MIT |
+| npm | uuid | 11.1.1 | MIT |
 | npm (dev) | vite | 7.3.7 | MIT |
 | npm (dev) | vitest | 4.1.12 | MIT |
 | npm (dev) | why-is-node-running | 2.3.0 | MIT |
 | npm | xml-naming | 0.3.0 | MIT |
 | npm (dev) | yallist | 3.1.1 | ISC |
+| npm | zod | 3.25.76 | MIT |
+| npm | zustand | 5.0.16 | MIT |
+| python | ag-ui-protocol | 1.0.0 | MIT |
 | python | annotated-types | 0.8.0 | MIT |
 | python | anyio | 4.16.0 | MIT |
 | python | certifi | 2026.10.23 | MPL-2.0 |
+| python | charset-normalizer | 3.5.2 | MIT |
 | python | click | 8.5.0 | BSD-3-Clause |
+| python | genai-prices | 0.2.1 | MIT |
+| python | griffelib | 2.4.1 | ISC |
 | python | h11 | 0.16.0 | MIT |
 | python | httpcore | 1.0.9 | BSD-3-Clause |
 | python | httpcore2 | 2.16.0 | BSD-3-Clause |
@@ -259,17 +370,26 @@ and development tooling and are not shipped in the application.
 | python | httpx2 | 2.16.0 | BSD-3-Clause |
 | python | idna | 3.20 | BSD-3-Clause |
 | python | iniconfig | 2.3.1 | MIT |
+| python | jiter | 0.18.0 | MIT |
+| python | logfire-api | 5.4.0 | MIT |
+| python | openai | 3.42.1 | Apache-2.0 |
+| python | opentelemetry-api | 1.45.2 | Apache-2.0 |
 | python | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
 | python | pluggy | 1.7.0 | MIT |
 | python | pydantic | 2.14.1 | MIT |
+| python | pydantic-ai-slim | 2.64.0 | MIT |
+| python | pydantic-graph | 2.64.0 | MIT |
 | python | pydantic_core | 2.50.1 | MIT |
 | python | Pygments | 2.21.0 | BSD-2-Clause |
 | python | pypdf | 6.21.2 | BSD-3-Clause |
 | python | pytest | 9.1.1 | MIT |
+| python | requests | 2.34.2 | Apache-2.0 |
+| python | sniffio | 1.3.1 | MIT |
 | python | starlette | 1.10.0 | BSD-3-Clause |
 | python | truststore | 0.10.5 | MIT |
 | python | typing-inspection | 0.4.4 | MIT |
 | python | typing_extensions | 4.16.0 | PSF-2.0 |
+| python | urllib3 | 2.8.0 | MIT |
 | python | uvicorn | 0.54.0 | BSD-3-Clause |
 | font | Inter | 4.1 | OFL-1.1 |
 | font | Liberation Sans | 2.x | OFL-1.1 |

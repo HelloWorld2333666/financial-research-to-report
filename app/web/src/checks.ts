@@ -183,6 +183,18 @@ export async function runChecks() {
     check('server_integrity_matches_client', srv.ok === c.ok && srv.points === c.points && srv.cells === c.cells && srv.figures === c.figures && srv.sourced === c.sourced,
       `server ok=${srv.ok} ${srv.points}/${srv.cells}/${srv.sourced}of${srv.figures}; client ok=${c.ok} ${c.points}/${c.cells}/${c.sourced}of${c.figures}`)
   })
+  // ---------------------------------------------------------------- M4: proposal states and threads persist with the project
+  await safe('proposals_and_threads_survive_reopen', async () => {
+    const t = byRole('kicker', 's_2')
+    s.exec({ kind: 'text.set', id: t, text: 'FRANCE · FISCAL POSITION' }, { actor: 'ai', proposalId: 'check:kicker' })
+    s.reject('check:other')
+    s.setThreadMessages(`${s.project.id}:s_2`, [{ id: 'm1', role: 'user', createdAt: new Date(), content: [{ type: 'text', text: 'Make the kicker clearer' }] }])
+    await s.save()
+    const back = await Store.open(s.project.id)
+    check('proposals_and_threads_survive_reopen', back.proposals['check:kicker'] === 'applied' && back.proposals['check:other'] === 'rejected'
+      && back.threadMessages(`${s.project.id}:s_2`)[0]?.content[0].text === 'Make the kicker clearer' && back.journal.at(-1)?.actor === 'ai',
+      JSON.stringify(back.proposals).slice(0, 160))
+  })
   const fin = ig()
   check('final_integrity', fin.ok, `${fin.resolved}/${fin.bindings}, ${fin.points} points, ${fin.cells} cells, ${fin.unverified} unverified edits`)
   return r
