@@ -22,6 +22,18 @@ METRICS = {
     "growth": ("nama_10_gdp", {"na_item": "B1GQ", "unit": "CLV_PCH_PRE"}, "Real GDP growth", "%"),
     "yield": ("irt_lt_mcby_a", {}, "10-year government bond yield", "%"),
 }
+# Government debt by remaining maturity (VIS V4, maturity ladder): non-overlapping buckets that add up to the total
+MATURITY = [("rmd_le1", "Y_LE1", "1 year or less"), ("rmd_1_5", "Y1-5", "1 to 5 years"), ("rmd_5_10", "Y5-10", "5 to 10 years"),
+            ("rmd_10_30", "Y10-30", "10 to 30 years"), ("rmd_gt30", "Y_GT30", "over 30 years")]
+for _k, _code, _label in MATURITY:
+    METRICS[_k] = ("gov_10dd_rmd", {"sector": "S13", "na_item": "GD", "unit": "PC_GDP", "maturity": _code}, f"Debt maturing in {_label}", "% of GDP")
+METRICS["rmd_total"] = ("gov_10dd_rmd", {"sector": "S13", "na_item": "GD", "unit": "PC_GDP", "maturity": "TOTAL"}, "Debt by remaining maturity, total", "% of GDP")
+# Euro-area government yield curves (VIS V4): one request per curve returns every tenor (agent.fetch_curve)
+CURVES = {"yc_all": ("irt_euryld_m", {"yld_curv": "SPOT_RT", "bonds": "CGB_EA"}, "Euro-area government bond spot yield (all ratings)"),
+          "yc_aaa": ("irt_euryld_m", {"yld_curv": "SPOT_RT", "bonds": "CGB_EA_AAA"}, "Euro-area AAA government bond spot yield")}
+# what a research request can name besides single metrics
+GROUPS = {"fiscal": ["debt", "deficit", "interest", "growth", "yield"], "maturity": [k for k, *_ in MATURITY] + ["rmd_total"], "yield_curve": list(CURVES)}
+EU27 = ["BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", "FR", "HR", "IT", "CY", "LV", "LT", "LU", "HU", "MT", "NL", "AT", "PL", "PT", "RO", "SI", "SK", "FI", "SE"]
 # metric key -> what kind of measure it is (VIS V2). Visual rules read this instead of guessing: a ratio of
 # GDP for several countries is not a set of parts of one total, so it can never be a pie or a stack.
 # additive_parts_of names the total a dataset is a part of (None = not additive across datasets).
@@ -32,7 +44,20 @@ MEASURES = {
     "growth": {"kind": "rate", "of": None, "signed": True, "additive_parts_of": None, "scale": "interval"},
     "yield": {"kind": "rate", "of": None, "signed": False, "additive_parts_of": None, "scale": "interval"},
 }
-NAMES = {"FR": "France", "DE": "Germany", "IT": "Italy", "ES": "Spain", "NL": "Netherlands", "BE": "Belgium", "AT": "Austria", "PT": "Portugal",
+# maturity buckets are parts of ONE country's debt: "{geo}" is filled in per dataset, so France's buckets never
+# add up with Italy's; bucket.order keeps the ladder in maturity order
+for _i, (_k, _code, _label) in enumerate(MATURITY):
+    MEASURES[_k] = {"kind": "debt_by_maturity", "of": "GDP", "signed": False, "additive_parts_of": "{geo}.debt_by_maturity", "scale": "interval",
+                    "bucket": {"order": _i, "label": _label}}
+MEASURES["rmd_total"] = {"kind": "debt_by_maturity_total", "of": "GDP", "signed": False, "additive_parts_of": None, "scale": "interval"}
+
+
+def measure_for(metric: str, geo: str) -> dict:
+    m = json.loads(json.dumps(MEASURES[metric]))
+    if m.get("additive_parts_of"):
+        m["additive_parts_of"] = m["additive_parts_of"].replace("{geo}", geo.lower())
+    return m
+NAMES = {"EA": "Euro area", "FR": "France", "DE": "Germany", "IT": "Italy", "ES": "Spain", "NL": "Netherlands", "BE": "Belgium", "AT": "Austria", "PT": "Portugal",
          "EL": "Greece", "IE": "Ireland", "FI": "Finland", "LU": "Luxembourg", "SK": "Slovakia", "SI": "Slovenia", "LT": "Lithuania",
          "LV": "Latvia", "EE": "Estonia", "CY": "Cyprus", "MT": "Malta", "HR": "Croatia", "PL": "Poland", "SE": "Sweden", "DK": "Denmark",
          "CZ": "Czechia", "HU": "Hungary", "RO": "Romania", "BG": "Bulgaria"}

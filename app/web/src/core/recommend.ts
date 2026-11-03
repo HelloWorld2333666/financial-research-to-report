@@ -6,11 +6,11 @@ import { measureOf, profile, type Finding, type Profile } from './constraints'
 import { assess, newVizId, project, VIZ_SCHEMA, VizError, type Family, type Projected, type Subtype, type Transform, type View, type VizSpec } from './viz'
 import type { Project, TableSpec } from './types'
 
-export type Intent = 'trend' | 'ranking' | 'change' | 'composition' | 'relationship' | 'spotlight' | 'ratings'
-export const INTENTS: Intent[] = ['trend', 'ranking', 'change', 'composition', 'relationship', 'spotlight', 'ratings']
+export type Intent = 'trend' | 'ranking' | 'change' | 'composition' | 'relationship' | 'spotlight' | 'ratings' | 'distribution' | 'curve' | 'maturity' | 'sensitivity'
+export const INTENTS: Intent[] = ['trend', 'ranking', 'change', 'composition', 'relationship', 'spotlight', 'ratings', 'distribution', 'curve', 'maturity', 'sensitivity']
 
 /** ratings: rating-action evidence ids instead of datasets */
-export interface VisualRequest { intent: Intent; datasets: string[]; evidence?: string[]; title?: string; at?: string; between?: [string, string]; from?: string; to?: string }
+export interface VisualRequest { intent: Intent; datasets: string[]; evidence?: string[]; title?: string; at?: string; between?: [string, string]; from?: string; to?: string; params?: View['params'] }
 export interface Candidate {
   key: string; label: string
   /** a chart from a spec, or a compact table (new visuals only) */
@@ -37,13 +37,20 @@ const OPTIONS: Record<Intent, Option[]> = {
   relationship: [{ family: 'scatter', transform: 'none', label: 'Scatter' }],
   spotlight: [{ family: 'kpi', transform: 'pair', label: 'KPI spotlight' }],
   ratings: [{ family: 'rating_timeline', transform: 'ratings', label: 'Rating timeline' }],
+  distribution: [{ family: 'box', transform: 'distribution', label: 'Box plot (with every value)' }, { family: 'histogram', transform: 'histogram', label: 'Histogram' },
+    { family: 'range', transform: 'range', label: 'Range (lowest to highest, latest marked)' }],
+  curve: [{ family: 'yield_curve', transform: 'curve', label: 'Yield curve' }],
+  maturity: [{ family: 'column', transform: 'buckets', label: 'Maturity ladder (columns)' }, { family: 'bar', transform: 'buckets', label: 'Maturity ladder (horizontal bars)' },
+    { family: 'doughnut', transform: 'buckets', label: 'Doughnut of debt by maturity' }],
+  sensitivity: [{ family: 'heatmap', transform: 'sensitivity', label: 'Sensitivity table (shaded)' }],
 }
 
 /** Fit of a family for an intent, adjusted by the data profile (higher is better; 0-1). */
 function score(intent: Intent, o: Option, pf: Profile, datasets: number): number {
   let s = ({ trend: { line: 0.85, column: 0.75, area: 0.55, combo: 0.6, multiples: 0.6, step: 0.45 }, ranking: { bar: 0.9, lollipop: 0.82, dot: 0.8, column: 0.7, table: 0.6, pie: 0.4 },
     change: { bar: 0.9, dumbbell: 0.85, waterfall: 0.6, slope: 0.75, lollipop: 0.8, column: 0.7, table: 0.55 },
-    composition: { doughnut: 0.7, pie: 0.65, column: 0.75, bar: 0.5 }, relationship: { scatter: 0.95 }, spotlight: { kpi: 0.9 }, ratings: { rating_timeline: 0.95 } } as any)[intent]?.[o.family] ?? 0.3
+    composition: { doughnut: 0.7, pie: 0.65, column: 0.75, bar: 0.5 }, relationship: { scatter: 0.95 }, spotlight: { kpi: 0.9 }, ratings: { rating_timeline: 0.95 },
+    distribution: { box: 0.85, histogram: 0.75, range: 0.7 }, curve: { yield_curve: 0.95 }, maturity: { column: 0.9, bar: 0.8, doughnut: 0.6 }, sensitivity: { heatmap: 0.95 } } as any)[intent]?.[o.family] ?? 0.3
   if (intent === 'trend') {
     if (o.family === 'column' && !o.subtype) s += pf.periods <= 6 ? 0.2 : pf.periods <= 10 && pf.negatives ? 0.15 : pf.periods >= 12 ? -0.25 : 0
     if (o.family === 'line') s += pf.periods >= 12 ? 0.1 : pf.periods <= 6 ? -0.1 : 0
@@ -60,6 +67,10 @@ function score(intent: Intent, o: Option, pf: Profile, datasets: number): number
   if (intent === 'ranking' || intent === 'change') {
     if (o.family === 'column') s += pf.categories <= 6 ? 0.05 : -0.25
     if (o.family === 'table') s += pf.categories > 12 ? 0.25 : 0
+  }
+  if (intent === 'distribution') {
+    if (o.family === 'histogram') s += datasets >= 40 ? 0.15 : datasets >= 15 ? 0 : -0.1 // a histogram needs many values; up to dozens of named entities, a box with every dot shows more
+    if (o.family === 'range') s += datasets <= 12 ? 0.1 : -0.2 // one row per entity
   }
   if (intent === 'composition' && (o.family === 'pie' || o.family === 'doughnut')) s += pf.categories <= 5 ? 0.05 : -0.1
   return Math.round(Math.min(1, Math.max(0, s)) * 100) / 100
@@ -82,6 +93,13 @@ function why(intent: Intent, o: Option, pf: Profile, pr: Projected): string {
   if (o.family === 'waterfall') return `From the ${pr.periods?.[0]} level through each period's change to ${pr.periods?.[1]}; the changes add up exactly to the difference.`
   if (o.family === 'lollipop' || o.family === 'dot') return intent === 'change' ? `Each entity's change from zero, as a dot on a stem.` : `It compares ${ents} at one point in time (${pr.periods?.[0]}), sorted${neg ? '; values left of zero are negative' : ''}.`
   if (o.family === 'kpi') return `The ${pr.periods?.[1]} value, large, with the change since ${pr.periods?.[0]}.`
+  if (o.family === 'box') return pr.categories.length > 1 ? `The spread of ${pr.series.length - (pr.stats ?? 5)} values in each period, ${pr.categories[0]}–${pr.categories.at(-1)}: box for the middle half, line for the median, every value as a dot.`
+    : `The spread of ${pr.series.length - (pr.stats ?? 5)} values in ${pr.categories[0]}: box for the middle half, line for the median, every value as a dot.`
+  if (o.family === 'histogram') return `${pr.series[0]!.values.reduce<number>((a, v) => a + (v ?? 0), 0)} values counted in ${pr.bins!.length} equal bins (${pr.periods?.[0]}).`
+  if (o.family === 'range') return `Each entity's lowest and highest value over ${pr.periods?.[0]}–${pr.periods?.[1]}, with ${pr.periods?.[1]} marked.`
+  if (o.family === 'yield_curve') return `Spot yields by maturity on a proportional tenor axis (${pr.tenors!.length} maturities, ${pr.periods!.join(' and ')}).`
+  if (intent === 'maturity' && o.family !== 'doughnut') return `Debt by remaining maturity in ${pr.periods?.[0]}, shortest first: what falls due when.`
+  if (o.family === 'heatmap') return `Debt ratio after ${pr.grid!.years} years for ${pr.grid!.rates.length} interest × ${pr.grid!.growth.length} growth assumptions, from verified ${pr.grid!.at} inputs: scenario arithmetic, not a forecast.`
   if (o.family === 'rating_timeline') return `${plural(pr.ratings?.length ?? 0, 'dated agency action')} on the ordinal rating scale; each rating holds until that agency's next action.`
   if (intent === 'relationship') return `Each point pairs the two measures for one period (${plural(pf.categories, 'point')}); correlation is not causation.`
   if (o.family === 'pie' || o.family === 'doughnut') return `Parts of one total at one period (${plural(pf.categories, 'part')}).`
@@ -97,6 +115,9 @@ function viewFor(p: Project, req: VisualRequest, o: Option): View {
   }
   if (o.transform === 'none') return { ...base, ...(req.from ? { from: req.from } : {}), ...(req.to ? { to: req.to } : {}) }
   if (o.transform === 'ratings') return { datasets: [], transform: 'ratings', evidence: req.evidence ?? [] }
+  if (o.transform === 'sensitivity') return { ...base, ...(req.at ? { at: req.at } : {}), ...(req.params ? { params: req.params } : {}) }
+  if (o.transform === 'range' || (o.transform === 'distribution' && req.between)) return { ...base, ...(req.between ? { between: req.between } : {}) }
+  if (o.transform === 'curve' && req.between) return { ...base, between: req.between }
   if (o.transform === 'diff' || o.transform === 'pct_change' || o.transform === 'pair' || o.transform === 'bridge') return { ...base, ...(req.between ? { between: req.between } : {}) }
   return { ...base, ...(req.at ? { at: req.at } : {}) }
 }
@@ -138,6 +159,10 @@ export function recommend(p: Project, req: VisualRequest): Recommendation {
 export function intentOf(spec: VizSpec): Intent {
   if (spec.family === 'scatter') return 'relationship'
   if (spec.family === 'kpi') return 'spotlight'
+  if (spec.family === 'yield_curve') return 'curve'
+  if (spec.family === 'box' || spec.family === 'histogram' || spec.family === 'range') return 'distribution'
+  if (spec.family === 'heatmap') return 'sensitivity'
+  if (spec.view.transform === 'buckets') return 'maturity'
   if (spec.family === 'rating_timeline') return 'ratings'
   if (spec.family === 'dumbbell' || spec.family === 'slope' || spec.family === 'waterfall') return 'change'
   if (spec.family === 'pie' || spec.family === 'doughnut' || spec.subtype === 'stacked' || spec.subtype === 'percent') return 'composition'
@@ -155,7 +180,7 @@ export interface ChangeOption {
 }
 /** Every visual the selected chart's data allows, with the reason for those it does not (change-visual menu). */
 export function changeOptions(p: Project, spec: VizSpec): ChangeOption[] {
-  const req: VisualRequest = { intent: intentOf(spec), datasets: spec.view.datasets, ...(spec.view.evidence ? { evidence: spec.view.evidence } : {}), ...(spec.view.at ? { at: spec.view.at } : {}), ...(spec.view.between ? { between: spec.view.between } : {}), ...(spec.view.from ? { from: spec.view.from } : {}) }
+  const req: VisualRequest = { intent: intentOf(spec), datasets: spec.view.datasets, ...(spec.view.evidence ? { evidence: spec.view.evidence } : {}), ...(spec.view.params ? { params: spec.view.params } : {}), ...(spec.view.at ? { at: spec.view.at } : {}), ...(spec.view.between ? { between: spec.view.between } : {}), ...(spec.view.from ? { from: spec.view.from } : {}) }
   const seen = new Set<string>(), out: ChangeOption[] = []
   const best = new Map<Intent, string>()
   for (const intent of INTENTS) {

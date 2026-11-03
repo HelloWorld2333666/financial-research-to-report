@@ -126,3 +126,31 @@ def test_server_checks_composite_marks_in_the_saved_deck():
     downgraded["project"]["evidence"]["ev.r.4"]["rating"]["rating"] = "AA-"
     r = integrity.check(deck, downgraded["project"], downgraded["sidecar"])
     assert not r["ok"] and any("ev.r.4: data 3, visual 2" in m["detail"] for m in r["mismatch"])
+
+
+def test_v4_views_match_the_client():
+    """Yield curve, maturity ladder, range, box plot, histogram and sensitivity: same categories and values as the client."""
+    fx = json.loads((FIX / "structures-parity.json").read_text())
+    assert len(fx["cases"]) == 9
+    for case in fx["cases"]:
+        assert viz.validate_spec(case["spec"]) == [], case["name"]
+        got, exp = viz.project_view(fx["project"], case["spec"]), case["expected"]
+        assert (got["shape"], got["categories"]) == (exp["shape"], exp["categories"]), case["name"]
+        assert [s["values"] for s in got["series"]] == exp["series"], case["name"]
+    assert viz.quantile([1, 2, 3, 4, 5, 6, 7, 8], 0.25) == 2.75 and viz.bin_edges([1, 2, 3, 4]) == [(1, 2), (2, 3), (3, 4)]
+    assert viz.validate_spec(spec(family="heatmap", view={"datasets": ["a"], "transform": "sensitivity", "params": {"years": 99}}))  # horizon bounded
+
+
+def test_server_checks_v4_visuals_in_the_saved_deck():
+    b = json.loads((FIX / "structures-bundle.json").read_text())
+    deck = base64.b64decode(b["deck"])
+    r = integrity.check(deck, b["project"], b["sidecar"])
+    assert r["ok"], r["mismatch"]
+    assert {v["spec"]["family"] for v in b["sidecar"]["bindings"].values() if v["kind"] == "viz"} == {"yield_curve", "column", "range", "box", "histogram", "heatmap"}
+    edited = copy.deepcopy(b)
+    edited["project"]["datasets"]["ds.fr.debt"]["working"]["2025"] = {"value": 120.0, "by": "you", "at": "t", "status": "manual_unverified"}
+    r = integrity.check(deck, edited["project"], edited["sidecar"])
+    assert not r["ok"] and any("heatmap" in m["detail"] or "viz_heatmap" in m["element"] or "data " in m["detail"] for m in r["mismatch"])
+    edited = copy.deepcopy(b)
+    edited["project"]["datasets"]["ds.dk.bal"]["working"]["2025"] = {"value": -9.5, "by": "you", "at": "t", "status": "manual_unverified"}  # moves Denmark to another bin
+    assert not integrity.check(deck, edited["project"], edited["sidecar"])["ok"]

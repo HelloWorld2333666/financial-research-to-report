@@ -15,9 +15,10 @@ import integrity
 
 VIZ_SCHEMA = "frr-viz/1"
 Family = Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", "combo",
-                 "dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi", "rating_timeline"]
+                 "dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi", "rating_timeline",
+                 "yield_curve", "histogram", "box", "range", "heatmap"]
 # drawn as shape groups by the client's composite adapter (VIS V3); data marks are named "frr-mark s c v"
-COMPOSITE = {"dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi", "rating_timeline"}
+COMPOSITE = {"dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi", "rating_timeline", "yield_curve", "histogram", "box", "range", "heatmap"}
 
 # Long-term rating scales on one ordinal notch index (mirrors app/web/src/core/ratings.ts)
 NOTCHES = ["AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", "BB+", "BB", "BB-", "B+", "B", "B-", "CCC+", "CCC", "CCC-", "CC", "C", "D"]
@@ -44,16 +45,25 @@ def notch(symbol: str | None) -> int | None:
     return NOTCHES.index(m.group(1)) + (-1 if hi else 1 if lo else 0)
 
 
+class Params(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    years: Optional[int] = Field(default=None, ge=1, le=30)
+    rates: Optional[list[float]] = Field(default=None, min_length=1, max_length=12)
+    growth: Optional[list[float]] = Field(default=None, min_length=1, max_length=12)
+
+
 class View(BaseModel):
     model_config = ConfigDict(extra="forbid")
     datasets: list[str] = []
-    transform: Literal["none", "latest", "at", "rank", "diff", "pct_change", "pair", "bridge", "ratings"] = "none"
+    transform: Literal["none", "latest", "at", "rank", "diff", "pct_change", "pair", "bridge", "ratings",
+                       "curve", "buckets", "range", "distribution", "histogram", "sensitivity"] = "none"
     from_: Optional[str] = Field(default=None, alias="from")
     to: Optional[str] = None
     at: Optional[str] = None
     between: Optional[tuple[str, str]] = None
     order: Optional[Literal["desc", "asc"]] = None
     evidence: Optional[list[str]] = None  # ratings: rating-action evidence ids
+    params: Optional[Params] = None  # sensitivity: the scenario's assumptions
 
     @model_validator(mode="after")
     def _inputs(self):
@@ -66,7 +76,8 @@ class View(BaseModel):
 
 # mirrors the warning codes of app/web/src/core/constraints.ts (test_vis_v2 checks they agree)
 WarningCode = Literal["negative_stack", "combo_one_unit", "many_slices", "few_periods", "many_lines", "overlapping_areas", "many_bars", "few_points",
-                      "small_steps", "step_continuous", "many_rows", "many_panels"]
+                      "small_steps", "step_continuous", "many_rows", "many_panels",
+                      "many_curves", "few_observations", "big_grid", "long_horizon", "incomplete_buckets"]
 
 
 class VizSpec(BaseModel):
@@ -130,6 +141,9 @@ def project_view(project: dict, spec: dict) -> dict:
         return {"shape": "time", "categories": dates, "series": [{"name": n, "values": [val(i, t) for t in dates]} for i, n in zip(ids, _names(project, ids))]}
     metric = _ds(project, ids[0])["title"].split(" · ", 1)[-1] if " · " in _ds(project, ids[0])["title"] else _ds(project, ids[0])["metric"]
     entities = [_ds(project, i)["entity"] for i in ids]
+    v4 = _v4(project, view, ids, eff, val, transform)
+    if v4 is not None:
+        return v4
     if transform in ("latest", "at", "rank"):
         period = view.get("at") if transform == "at" else (view.get("at") or (_common(project, ids) or [None])[-1])
         if not period:
@@ -168,6 +182,120 @@ def project_view(project: dict, spec: dict) -> dict:
         v = None if va is None or vb is None or (pct and va == 0) else ((vb / va - 1) * 100 if pct else vb - va)
         out.append(None if v is None else round(v, 6))
     return {"shape": "cross", "categories": entities, "series": [{"name": f"{a}–{b}", "values": out}]}
+
+
+def _r6(v: float) -> float:
+    return round(v, 6)
+
+
+def quantile(xs: list[float], q: float) -> float:
+    """Linear interpolation between closest ranks (type 7), as the client's viz.quantile."""
+    h = (len(xs) - 1) * q
+    lo = int(h // 1)
+    return xs[lo] + (h - lo) * (xs[lo + 1] - xs[lo]) if lo + 1 < len(xs) else xs[lo]
+
+
+def bin_edges(vals: list[float]) -> list[tuple[float, float]]:
+    """Equal-width bins, a round width near Sturges' count, as the client's viz.binEdges."""
+    import math  # noqa: PLC0415
+
+    lo, hi = min(vals), max(vals)
+    if lo == hi:
+        return [(lo - 0.5, lo + 0.5)]
+    k = math.ceil(math.log2(len(vals))) + 1
+    raw = (hi - lo) / k
+    mag = 10 ** math.floor(math.log10(raw))
+    w = next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
+    out, a = [], math.floor(lo / w) * w
+    while a <= hi:
+        out.append((_r6(a), _r6(a + w)))
+        a = _r6(a + w)
+    if len(out) > 1 and out[-1][0] == hi:
+        out.pop()
+    return out
+
+
+def _v4(project: dict, view: dict, ids: list[str], eff: dict, val, transform: str) -> dict | None:
+    """Yield curve, maturity ladder, range, distribution, histogram and sensitivity views (VIS V4), as the client's."""
+    common = _common(project, ids)
+    meas = lambda i: _ds(project, i).get("measure") or {}  # noqa: E731
+    if transform == "curve":
+        periods = list(view["between"]) if view.get("between") else [view.get("at") or (common[-1] if common else None)]
+        if not periods[0]:
+            raise VizError("the maturities share no period with data; pick one (at)")
+        tenors = sorted({meas(i)["tenor"] for i in ids})
+        curves = list(dict.fromkeys(meas(i).get("curve", "curve") for i in ids))
+        series = []
+        for c in curves:
+            for t in periods:
+                vals = []
+                for n in tenors:
+                    i = next((x for x in ids if meas(x)["tenor"] == n and meas(x).get("curve", "curve") == c), None)
+                    vals.append(val(i, t) if i else None)
+                series.append({"name": t, "values": vals})
+        return {"shape": "curve", "categories": [str(n) for n in tenors], "series": series}
+    if transform == "buckets":
+        period = view.get("at") or (common[-1] if common else None)
+        if not period:
+            raise VizError("the buckets share no period with data; pick one (at)")
+        order = sorted(ids, key=lambda i: meas(i)["bucket"]["order"])
+        return {"shape": "cross", "categories": [meas(i)["bucket"]["label"] for i in order], "series": [{"name": period, "values": [val(i, period) for i in order]}]}
+    if transform == "range":
+        a, b = view.get("between") or ((common[0], common[-1]) if common else (None, None))
+        if not a or not b or a >= b:
+            raise VizError("a range needs a start period before its end period (between)")
+        lo, hi, end = [], [], []
+        for i in ids:
+            vs = [o["value"] for t, o in sorted(eff[i].items()) if o["value"] is not None and a <= t <= b]
+            lo.append(_r6(min(vs)) if vs else None)
+            hi.append(_r6(max(vs)) if vs else None)
+            end.append(val(i, b))
+        return {"shape": "cross", "categories": [_ds(project, i)["entity"] for i in ids], "series": [{"name": "Lowest", "values": lo}, {"name": "Highest", "values": hi}, {"name": b, "values": end}]}
+    if transform in ("distribution", "histogram"):
+        if transform == "distribution" and view.get("between"):
+            a, b = view["between"]
+            periods = sorted({t for i in ids for t in eff[i] if a <= t <= b})
+        else:
+            periods = [view.get("at") or (common[-1] if common else None)]
+        if not periods[0]:
+            raise VizError("the datasets share no period with data; pick one (at)")
+        at = lambda t: [v for v in (val(i, t) for i in ids) if v is not None]  # noqa: E731
+        if transform == "histogram":
+            vs, edges = at(periods[0]), bin_edges(at(periods[0]))
+            last = len(edges) - 1
+            counts = [sum(1 for v in vs if lo <= v and (v < hi or (k == last and v <= hi))) for k, (lo, hi) in enumerate(edges)]
+            return {"shape": "distribution", "categories": [f"{_txt(lo)} to {_txt(hi)}" for lo, hi in edges], "series": [{"name": "Count", "values": counts}]}
+        stats = []
+        for q in (0, 0.25, 0.5, 0.75, 1):
+            stats.append([_r6(quantile(sorted(at(t)), q)) if at(t) else None for t in periods])
+        names = ["Lowest", "Q1", "Median", "Q3", "Highest"]
+        return {"shape": "distribution", "categories": periods,
+                "series": [{"name": n, "values": s} for n, s in zip(names, stats)] + [{"name": _ds(project, i)["entity"], "values": [val(i, t) for t in periods]} for i in ids]}
+    if transform == "sensitivity":
+        role = {(_ds(project, i)["metric"]): i for i in ids}
+        if len(ids) != 3 or set(role) != {"debt", "deficit", "interest"} or len({_ds(project, i)["geo"] for i in ids}) > 1:
+            raise VizError("a debt sensitivity needs one country's debt, balance and interest payable (all % of GDP)")
+        t = view.get("at") or (common[-1] if common else None)
+        d0, b0, i0 = (val(role[k], t) for k in ("debt", "deficit", "interest"))
+        if t is None or d0 is None or b0 is None or i0 is None:
+            raise VizError(f"debt, balance and interest are not all available for {t}")
+        p = view.get("params") or {}
+        years, rates, growth = p.get("years") or 5, p.get("rates") or [2, 3, 4, 5], p.get("growth") or [1, 2, 3, 4, 5]
+        primary = _r6(b0 + i0)
+
+        def run(i: float, g: float) -> float:
+            d = d0
+            for _ in range(years):
+                d = d * (1 + i / 100) / (1 + g / 100) - primary
+            return _r6(d)
+        return {"shape": "grid", "categories": [f"g {_txt(g)}%" for g in growth], "series": [{"name": f"i {_txt(i)}%", "values": [run(i, g) for g in growth]} for i in rates]}
+    return None
+
+
+def _txt(v: float) -> str:
+    """A number as the client's num() writes it (minus sign U+2212)."""
+    v = _r6(v)
+    return (str(int(v)) if float(v).is_integer() else repr(float(v))).replace("-", "−")
 
 
 def _ratings(project: dict, view: dict) -> dict:

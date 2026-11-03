@@ -159,6 +159,9 @@ function ResearchTool(props: any) {
 }
 
 /** A chart by intent (VIS V2): the recommender picks from the data; alternatives and refusals keep their reasons. */
+/** Slide kickers for requests whose datasets are many series of one structure (not one metric name). */
+const KICKER: Record<string, string> = { curve: 'YIELD CURVE', maturity: 'DEBT MATURITY', sensitivity: 'DEBT SENSITIVITY' }
+
 function VisualTool(props: any) {
   const { store } = useContext(HostCtx)
   useRev(store)
@@ -172,7 +175,7 @@ function VisualTool(props: any) {
     const ds = store.project.datasets[r.datasets[0]]
     const base = r.intent === 'ratings'
       ? { key: `visual:${c.key}`, kicker: 'RATINGS', title: c.spec?.title, subtitle: 'Agency actions from uploaded press releases' }
-      : { key: `visual:${c.key}`, kicker: (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
+      : { key: `visual:${c.key}`, kicker: KICKER[r.intent] ?? (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
     return { kind: 'slide.compose', proposal: c.spec ? { ...base, viz: c.spec } : { ...base, table: c.table } }
   }
   const alts = rec.candidates.filter((c) => c.state === 'valid' && c !== rec.recommended).slice(0, 2)

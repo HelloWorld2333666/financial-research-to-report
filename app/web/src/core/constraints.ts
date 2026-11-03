@@ -85,10 +85,30 @@ export function findings(p: Project, spec: VizSpec, pr: Projected): Finding[] {
   }
   if (f === 'step' && !pf.ordinal && !['policy_rate', 'held_level'].includes(pf.measure))
     warn('step_continuous', 'a step says each value holds until the next period; these are period figures that change continuously, so a line or columns describe them better')
-  if ((f === 'dot' || f === 'lollipop') && pf.categories > 25) warn('many_rows', `${pf.categories} rows are hard to read at slide size`)
+  if ((f === 'dot' || f === 'lollipop' || f === 'range') && pf.categories > 25) warn('many_rows', `${pf.categories} rows are hard to read at slide size`)
   if (f === 'dumbbell' && pf.categories > 15) warn('many_rows', `${pf.categories} rows are hard to read at slide size`)
   if (f === 'slope' && pf.categories > 10) warn('many_lines', `${pf.categories} crossing lines are hard to tell apart; a dumbbell keeps one row per entity`)
   if (f === 'multiples' && pf.series > 12) warn('many_panels', `${pf.series} panels are too small to read at slide size`)
+  // financial structures and distributions (VIS V4)
+  if (f === 'yield_curve' && (pr.tenors?.length ?? 0) < 4) no('few_tenors', 'a yield curve needs at least 4 maturities')
+  if (f === 'yield_curve' && pr.series.length > 4) warn('many_curves', `${pr.series.length} curves are hard to tell apart; compare two dates or two curves`)
+  if (f === 'histogram' || f === 'box') {
+    const counts = f === 'histogram' ? [pr.series[0]!.values.reduce<number>((a, v) => a + (v ?? 0), 0)]
+      : pr.categories.map((_, j) => pr.series.slice(pr.stats ?? 5).filter((x) => x.values[j] != null).length)
+    const n = Math.min(...counts)
+    if (n < 5) no('too_few_values', `${f === 'box' ? 'quartiles' : 'a histogram'} of ${n} values ${n === 1 ? 'is' : 'are'} not a distribution; show the values themselves (ranked bar or dot plot)`)
+    else if (n < (f === 'histogram' ? 15 : 10)) warn('few_observations', `${n} values give a rough ${f === 'box' ? 'box' : 'histogram'}; a ranked bar or dot plot shows each value`)
+  }
+  if (f === 'range' && pr.periods && pr.series[0]!.cells.some((c) => c && 'derived' in c && Object.keys(c.derived.inputs).length < 3))
+    no('short_range', 'a range needs at least 3 periods for each entity; with two, use a dumbbell')
+  if (f === 'heatmap' && pr.grid) {
+    if (pr.grid.rates.length * pr.grid.growth.length > 49) warn('big_grid', `${pr.grid.rates.length} × ${pr.grid.growth.length} scenarios are hard to read; keep the grid to about 7 × 7`)
+    if (pr.grid.years > 10) warn('long_horizon', `${pr.grid.years} years of constant assumptions compound far beyond what the inputs support`)
+  }
+  if (spec.view.transform === 'buckets') {
+    const orders = spec.view.datasets.map((id) => (p.datasets[id] as any)?.measure?.bucket?.order).filter((x) => x != null).sort((a, b) => a - b)
+    if (orders.some((o, i) => o !== i) || orders.length < 5) warn('incomplete_buckets', 'some maturity buckets are left out, so the ladder does not show all of the debt')
+  }
   return out
 }
 

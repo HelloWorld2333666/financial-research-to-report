@@ -37,7 +37,7 @@ from pydantic_ai.ui import StateDeps
 
 import integrity
 from composer import compose
-from evidence import MEASURES, METRICS, NAMES
+from evidence import CURVES, EU27, GROUPS, MATURITY, METRICS, NAMES, measure_for
 from projects import ProjectStore
 
 EUROSTAT = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/"
@@ -133,9 +133,73 @@ def fetch_verified(get: Callable[[str], bytes], metric: str, geo: str, since: st
                                        "series_key": f"{dataset} {json.dumps(filters, sort_keys=True)}", "note": "Eurostat dissemination API (JSON-stat)"}}
         observations.append({"date": p, "value": v, "status": "verified", "evidence_id": eid})
     return {"dataset": {"id": did, "title": f"{name} · {label.lower()}", "entity": name, "geo": geo, "metric": metric, "unit": unit,
-                        "measure": dict(MEASURES[metric]), "frequency": "annual", "origin": "eurostat", "verification": "verified", "source_url": url,
+                        "measure": measure_for(metric, geo), "frequency": "annual", "origin": "eurostat", "verification": "verified", "source_url": url,
                         "source_note": f"Eurostat {dataset} ({now.date().isoformat()}, live)", "observations": observations, "working": {}},
             "evidence": evidence, "rejected": len(obs) - len(accepted)}
+
+
+def fetch_curve(get: Callable[[str], bytes], curve: str, since: str) -> list[dict]:
+    """A euro-area yield curve: one dataset per tenor (monthly), from ONE request per fetch, each value confirmed
+    by a second, independent request. Tenors are read from the response, not assumed."""
+    dataset, fixed, label = CURVES[curve]
+
+    def read() -> tuple[str, bytes, dict[tuple[str, str], float]]:
+        url = EUROSTAT + dataset + "?" + urlencode(sorted({"format": "JSON", "sinceTimePeriod": since, "geo": "EA", **fixed}.items()))
+        body = get(url)
+        d = json.loads(body)
+        if "value" not in d:
+            raise ValueError((d.get("error") or {}).get("label") or "no data in the response")
+        ids, sizes = d["id"], d["size"]
+        cats = {dim: {v: k for k, v in d["dimension"][dim]["category"]["index"].items()} for dim in ids}
+        out = {}
+        for flat, v in d["value"].items():
+            n, coord = int(flat), {}
+            for dim, size in zip(reversed(ids), reversed(sizes)):
+                coord[dim] = cats[dim][n % size]
+                n //= size
+            out[(coord["maturity"], coord["time"])] = float(v)
+        return url, body, out
+
+    url, body, obs = read()
+    _, _, again = read()
+    now = datetime.now(timezone.utc)
+    sha = hashlib.sha256(body).hexdigest()
+    out = []
+    for tenor in sorted({m for m, _ in obs}, key=lambda m: int(m[1:]) if m[1:].isdigit() else 0):
+        if not re.fullmatch(r"Y\d+", tenor):
+            continue  # only whole-year tenors (Y1..Y30); a curve is drawn on a numeric tenor axis
+        years, metric = int(tenor[1:]), f"{curve}_{tenor.lower()}"
+        did, filters = f"ds.ea.{metric}", {**fixed, "geo": "EA", "maturity": tenor}
+        evidence, observations = {}, []
+        for (m, p), v in sorted(obs.items()):
+            if m != tenor or again.get((m, p)) != v:
+                continue
+            eid = f"ev.live.ea.{metric}.{p}"
+            evidence[eid] = {"id": eid, "source_id": f"src.live.{dataset}.{curve}", "kind": "metric_value", "subject": "Euro area",
+                             "statement": f"{label}, {years}-year [{dataset}] {p}: {v:g}", "metric_id": metric, "value": v, "unit": "%", "period": p,
+                             "locator": f"{dataset} {json.dumps(filters, sort_keys=True)} @ {p}", "verification": "verified",
+                             "verified_by": "frr-live-validator (independent re-fetch)", "verified_on": now.date().isoformat(),
+                             "source_title": f"Eurostat: {label}", "source_url": url,
+                             "retrieval": {"method": "api", "query_url": url, "retrieved_at": now.isoformat(timespec="seconds"), "content_sha256": sha,
+                                           "series_key": f"{dataset} {json.dumps(filters, sort_keys=True)}", "note": "Eurostat dissemination API (JSON-stat)"}}
+            observations.append({"date": p, "value": v, "status": "verified", "evidence_id": eid})
+        out.append({"dataset": {"id": did, "title": f"Euro area · {label.lower()}, {years}-year", "entity": "Euro area", "geo": "EA", "metric": metric, "unit": "%",
+                                "measure": {"kind": "yield", "of": None, "signed": True, "additive_parts_of": None, "scale": "interval", "tenor": years, "curve": curve},
+                                "frequency": "monthly", "origin": "eurostat", "verification": "verified", "source_url": url,
+                                "source_note": f"Eurostat {dataset} ({now.date().isoformat()}, live)", "observations": observations, "working": {}},
+                    "evidence": evidence, "rejected": sum(1 for (m, p), v in obs.items() if m == tenor and again.get((m, p)) != v)})
+    return out
+
+
+def research_scope(countries: Optional[list[str]], country: str, metrics: Optional[list[str]]) -> tuple[list[str], list[str]]:
+    """Countries (EU27 expands) and metrics (groups expand: fiscal, maturity, yield_curve) of a research request."""
+    geos: list[str] = []
+    for c in countries or [country]:
+        geos += EU27 if c.upper() in ("EU27", "EU-27", "EU") else [c.upper()[:2]]
+    ms: list[str] = []
+    for m in metrics or ["fiscal"]:
+        ms += GROUPS.get(m, [m] if m in METRICS or m in CURVES else [])
+    return list(dict.fromkeys(geos)), list(dict.fromkeys(ms))
 
 
 # ------------------------------------------------------------------ rewrite with placeholders
@@ -255,9 +319,11 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 f"Countries with verified data in the project: {', '.join(geos) or 'none'} (ISO-2 codes).\n"
                 "Tools: compose_deck (draft a deck from verified data); add_comparison (add a country to the selected chart); "
                 "rewrite_text (reword the selected text; pass the user's instruction, the tool does the wording); "
-                "layout_suggestion (align or distribute the selected elements); start_research (Eurostat data for one or more countries, or a rating request); "
+                "layout_suggestion (align or distribute the selected elements); start_research (Eurostat data for one or more countries or ['EU27']; metrics 'fiscal' (default), a single metric such as 'deficit', 'maturity' or 'yield_curve'; or a rating request); "
                 "propose_visual (a chart of project data: name the analytical INTENT — trend over time, ranking at one period, change between two periods, "
-                "composition of a total, relationship between two measures, spotlight (one headline number), ratings (the rating history from rating actions) — "
+                "composition of a total, relationship between two measures, spotlight (one headline number), ratings (the rating history from rating actions), "
+                "distribution (spread across many countries), curve (euro-area yield curve), maturity (debt by remaining maturity), sensitivity (debt under "
+                "assumed interest and growth rates) — "
                 "the metric and the countries; the app picks the chart type from the data); "
                 "change_visual (turn the selected chart into another type, e.g. a dumbbell, slope, lollipop, waterfall bridge, small multiples or step line).\n"
                 "If a request does not make the intent clear (e.g. 'compare France with the PIIGS' could mean the trend, the current ranking or the change "
@@ -351,13 +417,16 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "summary": f"Proposed: {action.replace('_', ' ')} for {len(ids)} elements. {NOTHING_YET}"}
 
     @agent.tool
-    async def start_research(ctx: RunContext[Deps], topic: str, country: str = "FR", countries: Optional[list[str]] = None) -> dict:
+    async def start_research(ctx: RunContext[Deps], topic: str = "economic data", country: str = "FR", countries: Optional[list[str]] = None,
+                             metrics: Optional[list[str]] = None) -> dict:
         """Start research. Rating history: records a request on the current slide, completed by uploading the agency's PDF.
-        Economic or fiscal data (debt, deficit, interest, growth, yields) for one country, or several via `countries`
-        (ISO-2 / Eurostat codes, e.g. ["IT","ES","PT","EL","BE"]): starts a background Eurostat task."""
-        geos = [c.upper()[:2] for c in (countries or [country])]
+        Economic or fiscal data for one country, or several via `countries` (ISO-2 / Eurostat codes, e.g. ["IT","ES","PT"],
+        or ["EU27"] for all member states): starts a background Eurostat task. `metrics`: "fiscal" (debt, deficit, interest,
+        growth, 10-year yield; the default), single metrics such as "deficit", "maturity" (debt by remaining maturity),
+        or "yield_curve" (euro-area government yield curves)."""
+        geos, ms = research_scope(countries, country, metrics)
         geo = geos[0]
-        name = NAMES.get(geo, country) if len(geos) == 1 else ", ".join(NAMES.get(g, g) for g in geos)
+        name = NAMES.get(geo, country) if len(geos) == 1 else "the EU-27" if len(geos) == 27 else ", ".join(NAMES.get(g, g) for g in geos)
         if re.search(r"rating|agency|outlook|moody|fitch|s&p|dbrs|scope", topic, re.I) or center is None:
             request = {"schema": "frr-research-request/0.1", "topic": topic[:120], "entity": name,
                        "reason": "rating agencies publish press releases that cannot be fetched automatically; upload the agency's PDF to complete this"}
@@ -366,19 +435,63 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                                f"the agency's press release PDF (Evidence tab); the rating is verified on the page. {NOTHING_YET}"}
         if not ctx.deps.state.project:
             return {"kind": "error", "message": "No project is open."}
-        t = center.create(ctx.deps.state.project, "eurostat_pack", {"geos": geos, "metrics": list(METRICS), "since": "2015"}, f"Eurostat data for {name}")
+        if not ms:
+            return {"kind": "error", "message": f"Unknown data request {metrics}; ask for fiscal data, deficit, debt, maturity or yield_curve."}
+        t = center.create(ctx.deps.state.project, "eurostat_pack", {"geos": geos, "metrics": ms, "since": "2015"}, f"Eurostat data for {name}")
+        n = sum(1 for m in ms if m in METRICS) * len(geos) + sum(1 for m in ms if m in CURVES)
+        what = "series" if not any(m in CURVES for m in ms) else "requests (each yield curve is one request covering every tenor)"
         return {"kind": "task_started", "task_id": t["id"], "title": t["title"],
-                "summary": f"Started a background task: {len(METRICS) * len(geos)} Eurostat series for {name}, each confirmed by an independent re-fetch. "
+                "summary": f"Started a background task: {n} Eurostat {what} for {name}, each confirmed by an independent re-fetch. "
                            "It keeps running while you work; its result appears in Tasks as a proposal."}
 
     @agent.tool
-    def propose_visual(ctx: RunContext[Deps], intent: Literal["trend", "ranking", "change", "composition", "relationship", "spotlight", "ratings"], metric: str = "",
+    def propose_visual(ctx: RunContext[Deps], intent: Literal["trend", "ranking", "change", "composition", "relationship", "spotlight", "ratings",
+                                                              "distribution", "curve", "maturity", "sensitivity"], metric: str = "",
                        countries: Optional[list[str]] = None, period: Optional[str] = None, start: Optional[str] = None, end: Optional[str] = None,
-                       second_metric: Optional[str] = None) -> dict:
+                       second_metric: Optional[str] = None, curves: Optional[Literal["all", "aaa", "both"]] = None,
+                       years: Optional[int] = None, rates: Optional[list[float]] = None, growth: Optional[list[float]] = None) -> dict:
         """Propose a chart of project data by analytical intent. metric: debt, deficit, interest, growth or yield; countries: ISO-2 codes
         (default: every country with that metric). period: the year for a ranking or composition; start/end: the years of a change.
-        relationship: a second_metric for the other axis (one country). The app chooses the chart type from the data under fixed rules."""
+        relationship: a second_metric for the other axis (one country). distribution: the spread across countries (box plot,
+        histogram, range). curve: the euro-area yield curve (curves: all ratings, AAA or both; period, or start/end to compare two months).
+        maturity: one country's debt by remaining maturity. sensitivity: one country's debt ratio after `years` under assumed interest
+        `rates` and nominal `growth` rates (%), from its verified debt, balance and interest. The app chooses the chart type under fixed rules."""
         project = project_of(ctx)
+        dsets = project["datasets"]
+        special = None
+        if intent == "curve":
+            want = {"all": ["yc_all"], "aaa": ["yc_aaa"], "both": ["yc_all", "yc_aaa"]}[curves or "all"]
+            special = [k for k, d in dsets.items() if (d.get("measure") or {}).get("curve") in want]
+            what = "the euro-area yield curve" + (" (all ratings and AAA)" if len(want) == 2 else " (AAA)" if want == ["yc_aaa"] else "")
+            hint = "start_research with metrics ['yield_curve']"
+        elif intent in ("maturity", "sensitivity"):
+            geo = (countries or ["FR"])[0].upper()[:2]
+            keys = [k for k, *_ in MATURITY] if intent == "maturity" else ["debt", "deficit", "interest"]
+            special = [f"ds.{geo.lower()}.{k}" for k in keys if f"ds.{geo.lower()}.{k}" in dsets]
+            if len(special) < len(keys):
+                special = []
+            what = f"{NAMES.get(geo, geo)}'s debt by remaining maturity" if intent == "maturity" else f"{NAMES.get(geo, geo)}'s debt sensitivity"
+            hint = f"start_research for {geo} with metrics {['maturity'] if intent == 'maturity' else ['fiscal']}"
+        read_as = []
+        if intent == "sensitivity":
+            # percent, not fractions: a grid where every value is under 0.2 (e.g. 0.02) is a list of fractions; it is converted
+            # and the summary says so (the card shows the assumptions before anything is applied), never read as 0.02 %
+            def pct(name: str, xs: Optional[list[float]]) -> Optional[list[float]]:
+                if xs and max(abs(x) for x in xs) < 0.2 and any(xs):
+                    read_as.append(f"{name} {xs} read as {[round(x * 100, 6) for x in xs]} %")
+                    return [round(x * 100, 6) for x in xs]
+                return xs
+            rates, growth = pct("rates", rates), pct("growth", growth)
+        if special is not None:
+            if not special:
+                return {"kind": "error", "message": f"The project has no verified data for {what}. Start research first ({hint})."}
+            params = {k: v for k, v in (("years", years), ("rates", rates), ("growth", growth)) if v}
+            req = {"intent": intent, "datasets": sorted(special), **({"at": period} if period else {}), **({"between": [start, end]} if start and end else {}),
+                   **({"params": params} if params and intent == "sensitivity" else {})}
+            return {"kind": "visual_request", **req, "missing": [], "slide": ctx.deps.state.slide,
+                    "summary": f"Requested {what}" + (f" with assumptions {params}" if params and intent == "sensitivity" else "")
+                               + (f" ({'; '.join(read_as)}: the values looked like fractions)" if read_as else "")
+                               + ". The app recommends a chart type from the data under fixed rules; preview and apply. Nothing has changed yet."}
         if intent == "ratings":
             # rating actions recorded as evidence (M5): the app draws them on the ordinal scale; undated ones are listed, not placed
             subjects = {NAMES.get(c.upper()[:2], c) for c in countries} if countries else None
@@ -391,7 +504,7 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                                + (f" ({undated} without a verified date cannot be placed on it)" if undated else "")
                                + ". The app checks it against the evidence; preview and apply. Nothing has changed yet."}
         m = metric.lower().strip()
-        geos = [c.upper()[:2] for c in countries] if countries else sorted({d["geo"] for d in project["datasets"].values() if d["metric"] == m})
+        geos = research_scope(countries, "FR", None)[0] if countries else sorted({d["geo"] for d in project["datasets"].values() if d["metric"] == m})  # "EU27" expands
         if intent == "relationship":
             ids = [f"ds.{geos[0].lower()}.{m}", f"ds.{geos[0].lower()}.{(second_metric or '').lower()}"] if geos and second_metric else []
         else:
@@ -409,18 +522,21 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
 
     @agent.tool
     def change_visual(ctx: RunContext[Deps], family: Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", "combo",
-                                                     "dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi"],
+                                                     "dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi",
+                                                     "box", "histogram", "range"],
                       subtype: Optional[Literal["clustered", "stacked", "percent"]] = None,
-                      view: Optional[Literal["over_time", "ranking", "change", "two_periods", "bridge"]] = None) -> dict:
+                      view: Optional[Literal["over_time", "ranking", "change", "two_periods", "bridge", "distribution", "histogram", "range"]] = None) -> dict:
         """Turn the chart selected on the canvas into another type (and optionally another view of the same data).
         The app checks the request against the data and refuses visuals that would misrepresent it, with the reason."""
         sel = next((s for s in ctx.deps.state.selection if s.kind == "chart"), None)
         if sel is None:
             return {"kind": "error", "message": "Select a chart on the canvas first."}
         # dumbbell, slope and KPI compare two periods; a waterfall bridges one series: the view follows the family unless given
-        default = {"dumbbell": "two_periods", "slope": "two_periods", "kpi": "two_periods", "waterfall": "bridge", "step": "over_time", "multiples": "over_time"}.get(family)
+        default = {"dumbbell": "two_periods", "slope": "two_periods", "kpi": "two_periods", "waterfall": "bridge", "step": "over_time", "multiples": "over_time",
+                   "box": "distribution", "histogram": "histogram", "range": "range"}.get(family)
         view = view or default
-        transform = {"over_time": "none", "ranking": "rank", "change": "diff", "two_periods": "pair", "bridge": "bridge", None: None}[view]
+        transform = {"over_time": "none", "ranking": "rank", "change": "diff", "two_periods": "pair", "bridge": "bridge",
+                     "distribution": "distribution", "histogram": "histogram", "range": "range", None: None}[view]
         return {"kind": "visual_change_request", "element": sel.id, "family": family, **({"subtype": subtype} if subtype else {}), **({"transform": transform} if transform else {}),
                 "summary": f"Requested: show “{sel.label}” as {family}{f' ({subtype})' if subtype else ''}{f', {view.replace('_', ' ')}' if view else ''}. "
                            "The app checks it against the data first. Nothing has changed yet."}

@@ -6,7 +6,7 @@ import project from './fixtures/france-project.json'
 import { Store } from './store'
 import { integrity } from './integrity'
 import { findEl, render } from './deck'
-import { layout, readGroup } from './composite'
+import { LAYOUT_VERSION, layout, readGroup } from './composite'
 import { check, VIZ_SCHEMA, type VizSpec } from './viz'
 import { changeOptions, recommend } from './recommend'
 import { notch } from './ratings'
@@ -125,10 +125,10 @@ describe('composites follow the data', () => {
   })
   it('a drawing from an earlier layout is checked on its values only, until Redraw (re-project) brings it up to date', async () => {
     const { s, id } = await compose(CASES.find((c) => c[0] === 'step')![1])
-    expect(readGroup(findEl(s.deck, id)!.el).version).toBe(1)
+    expect(readGroup(findEl(s.deck, id)!.el).version).toBe(LAYOUT_VERSION)
     // an older drawing: version-less name and a label where an older layout put it
     const f = findEl(s.deck, id)!, slide = s.deck.deck.slides[f.index] as any
-    f.el.anchor.originalXml = String(f.el.anchor.originalXml).replace(/name="frr-viz ([^"]+) L1"/, 'name="frr-viz $1"').replace(/(name="frr-label 0 3"[\s\S]*?<a:off x=")(\d+)/, (_m: string, a: string, x: string) => a + (Number(x) + 400000))
+    f.el.anchor.originalXml = String(f.el.anchor.originalXml).replace(/name="frr-viz ([^"]+) L\d+"/, 'name="frr-viz $1"').replace(/(name="frr-label 0 3"[\s\S]*?<a:off x=")(\d+)/, (_m: string, a: string, x: string) => a + (Number(x) + 400000))
     slide.structureDirty = true
     const { materializeSlide } = await import('@genoffice/pptx-engine')
     materializeSlide(s.deck, f.index)
@@ -139,7 +139,7 @@ describe('composites follow the data', () => {
     delete s.project.datasets['ds.fr.yield']!.working['2025']
     expect(s.exec({ kind: 'deck.reproject' }).ok).toBe(true)
     ig = integrity(s.deck, s.project, s.sidecar)
-    expect([ig.ok, ig.outdated, readGroup(findEl(s.deck, id)!.el).version]).toEqual([true, [], 1])
+    expect([ig.ok, ig.outdated, readGroup(findEl(s.deck, id)!.el).version]).toEqual([true, [], LAYOUT_VERSION])
   })
   it('a bound composite cannot be ungrouped into loose shapes', async () => {
     const { s, id } = await compose(CASES[0]![1])

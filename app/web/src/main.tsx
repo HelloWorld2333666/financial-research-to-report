@@ -174,7 +174,7 @@ function Workspace({ store }: { store: Store }) {
   const selId = store.selection.length === 1 ? store.selection[0]! : null
   const selBinding = selId ? store.sidecar.bindings[selId] : undefined
   const selViz = selBinding?.kind === 'viz' ? selBinding : null
-  const INTENT_LABEL: Record<Intent, string> = { trend: 'Over time', ranking: 'Ranking', change: 'Change', composition: 'Composition', relationship: 'Relationship', spotlight: 'Spotlight', ratings: 'Ratings' }
+  const INTENT_LABEL: Record<Intent, string> = { trend: 'Over time', ranking: 'Ranking', change: 'Change', composition: 'Composition', relationship: 'Relationship', spotlight: 'Spotlight', ratings: 'Ratings', distribution: 'Distribution', curve: 'Yield curve', maturity: 'Maturity', sensitivity: 'Sensitivity' }
   const visualItems = useMemo(() => {
     if (!selViz || !selId) return []
     const opts = changeOptions(store.project, selViz.spec)

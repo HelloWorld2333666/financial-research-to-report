@@ -88,7 +88,8 @@ describe('VIS V2 change-visual options', () => {
     s.exec({ kind: 'slide.compose', proposal: { key: 'y', kicker: 'K', title: 'T', subtitle: 'S', viz: { intent: 'trend', title: 'Debt', datasets: ['ds.fr.debt', 'ds.de.debt'] } } })
     const [, b] = Object.entries(s.sidecar.bindings).find(([, x]) => x.kind === 'viz') as [string, any]
     const opts = changeOptions(s.project, b.spec)
-    expect(opts.filter((o) => o.recommended).map((o) => `${o.intent}:${o.family}:${o.transform}`)).toEqual(['trend:column:none', 'ranking:bar:rank', 'change:bar:diff']) // composition's best (ranked bar) is already listed
+    expect(opts.filter((o) => o.recommended).map((o) => `${o.intent}:${o.family}:${o.transform}`)).toEqual(['trend:column:none', 'ranking:bar:rank', 'change:bar:diff', 'distribution:range:range']) // composition's best (ranked bar) is already listed
+    expect(opts.find((o) => o.family === 'box')!.refused).toMatch(/quartiles of 2 values are not a distribution/)
     expect(opts.find((o) => o.current)!.family).toBe('column')
     expect(opts.find((o) => o.family === 'pie')!.refused).toMatch(/not parts of a total/)
   })

@@ -22,7 +22,7 @@ from typing import Callable
 
 import agent as workspace_agent
 import research_runs as rr
-from evidence import METRICS, NAMES
+from evidence import CURVES, GROUPS, METRICS, NAMES
 from projects import BundleError, ProjectStore
 
 STATUSES = ("queued", "running", "done", "failed", "cancelled", "interrupted")
@@ -132,11 +132,28 @@ class TaskCenter:
 # ------------------------------------------------------------------ runners
 async def run_eurostat_pack(c: TaskCenter, pid: str, t: dict) -> dict:
     p = t["params"]
-    geos, metrics, since = [g.upper()[:2] for g in p["geos"]], p.get("metrics") or list(METRICS), str(p.get("since", "2015"))
+    geos, metrics, since = [g.upper()[:2] for g in p["geos"]], p.get("metrics") or GROUPS["fiscal"], str(p.get("since", "2015"))
     have = set(c.store.load(pid)["project"]["datasets"])
-    jobs = [(g, m) for g in geos for m in metrics if m in METRICS]
+    # a yield curve is euro-area wide and comes in one request per curve, whatever countries were asked for
+    jobs = [(g, m) for g in geos for m in metrics if m in METRICS] + [("EA", m) for m in metrics if m in CURVES]
     datasets, evidence, failed, rejected = [], {}, [], 0
     for i, (geo, metric) in enumerate(jobs):
+        if metric in CURVES:
+            c.progress(pid, t, i / len(jobs), f"Euro area · {metric}: fetching every tenor twice from Eurostat")
+            try:
+                got_all = await asyncio.to_thread(workspace_agent.fetch_curve, c.get, metric, str(p.get("curve_since", "2024-01")))
+            except Exception as exc:
+                failed.append(f"EA {metric}: {exc}")
+                c.progress(pid, t, (i + 1) / len(jobs), f"Euro area · {metric}: failed ({exc})")
+                continue
+            new = [g for g in got_all if g["dataset"]["id"] not in have and g["dataset"]["observations"]]
+            for g in new:
+                datasets.append(g["dataset"])
+                evidence.update(g["evidence"])
+                rejected += g["rejected"]
+            c.progress(pid, t, (i + 1) / len(jobs), f"Euro area · {metric}: {len(new)} tenors, {sum(len(g['dataset']['observations']) for g in new)} values verified")
+            await asyncio.sleep(c.pace)
+            continue
         c.progress(pid, t, i / len(jobs), f"{NAMES.get(geo, geo)} · {metric}: fetching twice from Eurostat")
         if f"ds.{geo.lower()}.{metric}" in have:
             c.progress(pid, t, (i + 1) / len(jobs), f"{NAMES.get(geo, geo)} · {metric}: already in the project, skipped")

@@ -17,11 +17,13 @@ export const VIZ_SCHEMA = 'frr-viz/1'
 export type NativeFamily = 'column' | 'bar' | 'line' | 'area' | 'pie' | 'doughnut' | 'scatter' | 'combo'
 /** drawn as grouped shapes by the composite adapter (VIS V3): editable as shapes, not as PowerPoint charts */
 export type CompositeFamily = 'dumbbell' | 'slope' | 'dot' | 'lollipop' | 'waterfall' | 'step' | 'multiples' | 'kpi' | 'rating_timeline'
+  | 'yield_curve' | 'histogram' | 'box' | 'range' | 'heatmap'
 export type Family = NativeFamily | CompositeFamily
 export type Subtype = 'clustered' | 'stacked' | 'percent'
 export type Transform = 'none' | 'latest' | 'at' | 'rank' | 'diff' | 'pct_change' | 'pair' | 'bridge' | 'ratings'
+  | 'curve' | 'buckets' | 'range' | 'distribution' | 'histogram' | 'sensitivity'
 export const NATIVE: NativeFamily[] = ['column', 'bar', 'line', 'area', 'pie', 'doughnut', 'scatter', 'combo']
-export const COMPOSITE: CompositeFamily[] = ['dumbbell', 'slope', 'dot', 'lollipop', 'waterfall', 'step', 'multiples', 'kpi', 'rating_timeline']
+export const COMPOSITE: CompositeFamily[] = ['dumbbell', 'slope', 'dot', 'lollipop', 'waterfall', 'step', 'multiples', 'kpi', 'rating_timeline', 'yield_curve', 'histogram', 'box', 'range', 'heatmap']
 export const FAMILIES: Family[] = [...NATIVE, ...COMPOSITE]
 export const isComposite = (f: Family): f is CompositeFamily => (COMPOSITE as string[]).includes(f)
 
@@ -39,6 +41,9 @@ export interface View {
   /** pair: the two periods per entity [start, end]; bridge: the level at start, each period's change, the level at end
    *  (both use `between`). ratings: rating-action evidence ids (no datasets) */
   evidence?: string[]
+  /** sensitivity: the ASSUMPTIONS of the scenario grid (shown on the visual): horizon in years, average nominal interest
+   *  rates on debt and nominal GDP growth rates, in % */
+  params?: { years?: number; rates?: number[]; growth?: number[] }
 }
 
 export interface VizSpec {
@@ -62,7 +67,7 @@ export type Cell =
 
 export interface RatingPoint { evidence: string; agency: string; date: string; rating: string; outlook: string | null; action: string; notch: number }
 export interface Projected {
-  shape: 'time' | 'cross' | 'pairs' | 'ratings'
+  shape: 'time' | 'cross' | 'pairs' | 'ratings' | 'curve' | 'distribution' | 'grid'
   categories: string[]
   series: { name: string; dataset?: string; values: (number | null)[]; cells: Cell[] }[]
   unit: string
@@ -75,6 +80,14 @@ export interface Projected {
   kinds?: ('total' | 'delta')[]
   /** ratings: dated actions (drawn), and actions without a verified date (listed, not placed) */
   ratings?: RatingPoint[]; undated?: string[]
+  /** curve: maturities in years (the x axis, proportional) */
+  tenors?: number[]
+  /** histogram: bin edges [lo, hi) (the last bin includes hi) */
+  bins?: [number, number][]
+  /** distribution: the first `stats` series are min, Q1, median, Q3, max; the rest are the individual values */
+  stats?: number
+  /** sensitivity: the scenario's inputs and assumptions */
+  grid?: { years: number; rates: number[]; growth: number[]; start: number; balance: number; interest: number; primary: number; at: string; entity: string }
 }
 
 export class VizError extends Error {}
@@ -122,6 +135,12 @@ export function project(p: Project, view: View, opts: { mixedUnits?: boolean; sc
       x: { dataset: xi, values: order.map((i) => X[i]!.value!), cells: order.map((i) => X[i]!.cell) },
     }
   }
+
+  if (view.transform === 'curve') return projectCurve(p, view, unit)
+  if (view.transform === 'buckets') return projectBuckets(p, view, unit)
+  if (view.transform === 'range') return projectRange(p, view, unit, metricLabel)
+  if (view.transform === 'distribution' || view.transform === 'histogram') return projectDistribution(p, view, unit, metricLabel)
+  if (view.transform === 'sensitivity') return projectSensitivity(p, view, unit)
 
   if (view.transform === 'none') {
     const dates = [...new Set(ids.flatMap((id) => effectiveObs(ds(p, id)).map((o) => o.date)))].filter((t) => (!view.from || t >= view.from) && (!view.to || t <= view.to)).sort()
@@ -193,6 +212,122 @@ export function project(p: Project, view: View, opts: { mixedUnits?: boolean; sc
   }
 }
 
+// ------------------------------------------------------------------ financial structures and distributions (VIS V4)
+const inputOf = (id: string, d: Dataset, t: string) => { const v = valueCell(id, d, t); return { evidence: v.cell && 'evidence' in v.cell ? v.cell.evidence : null, dataset: id, period: t, value: v.value } }
+const r6 = (v: number) => Number(v.toFixed(6))
+const measureOf = (d: Dataset) => ((d as any).measure ?? {}) as { tenor?: number; curve?: string; bucket?: { order: number; label: string } }
+const CURVE_LABEL: Record<string, string> = { yc_all: 'all ratings', yc_aaa: 'AAA' }
+
+/** Yield curve: spot yields by maturity at one or two periods; x is the tenor in years (proportional, never evenly spaced). */
+function projectCurve(p: Project, view: View, unit: string): Projected {
+  const ids = view.datasets, tenorOf = (id: string) => measureOf(ds(p, id)).tenor
+  if (ids.some((id) => tenorOf(id) == null)) throw new VizError('a yield curve needs one dataset per maturity (tenor)')
+  const periods = view.between ? [...view.between] : [view.at ?? commonPeriods(p, ids).at(-1)]
+  if (!periods[0]) throw new VizError('the maturities share no period with data; pick one (at)')
+  const tenors = [...new Set(ids.map((id) => tenorOf(id)!))].sort((a, b) => a - b)
+  const curves = [...new Set(ids.map((id) => measureOf(ds(p, id)).curve ?? 'curve'))]
+  const series = curves.flatMap((c) => periods.map((t) => {
+    const vc = tenors.map((n) => { const id = ids.find((x) => tenorOf(x) === n && (measureOf(ds(p, x)).curve ?? 'curve') === c); return id ? valueCell(id, ds(p, id), t!) : { value: null, cell: null } })
+    return { name: curves.length > 1 ? `${CURVE_LABEL[c] ?? c}, ${t}` : t!, values: vc.map((x) => x.value), cells: vc.map((x) => x.cell) }
+  }))
+  return { shape: 'curve', unit, label: `Government bond yield curve, ${ds(p, ids[0]!).entity.toLowerCase()}${curves.length === 1 && CURVE_LABEL[curves[0]!] ? ` (${CURVE_LABEL[curves[0]!]})` : ''}`,
+    periods: periods as string[], categories: tenors.map(String), tenors, series }
+}
+
+/** Maturity ladder: one entity's debt by remaining-maturity bucket at one period, shortest first. */
+function projectBuckets(p: Project, view: View, unit: string): Projected {
+  const ids = view.datasets, b = (id: string) => measureOf(ds(p, id)).bucket
+  if (ids.some((id) => !b(id))) throw new VizError('a maturity ladder needs debt by maturity bucket')
+  if (new Set(ids.map((id) => ds(p, id).geo)).size > 1) throw new VizError('a maturity ladder shows one country; compare countries with small multiples or a table')
+  const period = view.at ?? commonPeriods(p, ids).at(-1)
+  if (!period) throw new VizError('the buckets share no period with data; pick one (at)')
+  const order = [...ids].sort((x, y) => b(x)!.order - b(y)!.order), vc = order.map((id) => valueCell(id, ds(p, id), period))
+  return { shape: 'cross', unit, label: `Debt by remaining maturity, ${ds(p, ids[0]!).entity}, ${period}`, periods: [period], categories: order.map((id) => b(id)!.label),
+    series: [{ name: period, values: vc.map((x) => x.value), cells: vc.map((x) => x.cell) }] }
+}
+
+/** Range: each entity's lowest and highest value over a period range, and its value at the end. */
+function projectRange(p: Project, view: View, unit: string, metricLabel: string): Projected {
+  const ids = view.datasets, common = commonPeriods(p, ids)
+  const [a, b] = view.between ?? [common[0], common.at(-1)]
+  if (!a || !b || a >= b) throw new VizError('a range needs a start period before its end period (between)')
+  const rows = ids.map((id) => {
+    const d = ds(p, id), dates = effectiveObs(d).filter((o) => o.value != null && o.date >= a && o.date <= b).map((o) => o.date)
+    const inputs = Object.fromEntries(dates.map((t) => [t, inputOf(id, d, t)]))
+    const vals = dates.map((t) => inputs[t]!.value!)
+    const ext = (f: 'min' | 'max') => (vals.length ? { value: r6(Math[f](...vals)), cell: { derived: { formula: `${f === 'min' ? 'lowest' : 'highest'} value, ${a}–${b}`, inputs } } as Cell } : { value: null, cell: null })
+    return { lo: ext('min'), hi: ext('max'), end: valueCell(id, d, b) }
+  })
+  return { shape: 'cross', unit, label: `${metricLabel}, range ${a}–${b}`, periods: [a, b], categories: ids.map((id) => ds(p, id).entity),
+    series: [{ name: 'Lowest', values: rows.map((r) => r.lo.value), cells: rows.map((r) => r.lo.cell) }, { name: 'Highest', values: rows.map((r) => r.hi.value), cells: rows.map((r) => r.hi.cell) },
+      { name: b, values: rows.map((r) => r.end.value), cells: rows.map((r) => r.end.cell) }] }
+}
+
+/** Quartile by linear interpolation between closest ranks (the common "type 7" definition, as in Excel's QUARTILE.INC). */
+export function quantile(sorted: number[], q: number): number {
+  const h = (sorted.length - 1) * q, lo = Math.floor(h)
+  return lo + 1 < sorted.length ? sorted[lo]! + (h - lo) * (sorted[lo + 1]! - sorted[lo]!) : sorted[lo]!
+}
+/** Histogram bins: equal width, a round number, about Sturges' count (1 + log2 n); [lo, hi), the last bin closed. */
+export function binEdges(vals: number[]): [number, number][] {
+  const lo = Math.min(...vals), hi = Math.max(...vals)
+  if (lo === hi) return [[lo - 0.5, lo + 0.5]]
+  const k = Math.ceil(Math.log2(vals.length)) + 1, raw = (hi - lo) / k, mag = 10 ** Math.floor(Math.log10(raw))
+  const w = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= raw)!
+  const out: [number, number][] = []
+  for (let a = Math.floor(lo / w) * w; a <= hi; a = r6(a + w)) out.push([r6(a), r6(a + w)])
+  if (out.length > 1 && out.at(-1)![0] === hi) out.pop() // hi sits on the last edge: it belongs to the closed last bin
+  return out
+}
+const num = (v: number) => String(r6(v)).replace('-', '−')
+
+/** Distribution across entities: quartiles (box plot) at each period, or counts in equal bins (histogram) at one. */
+function projectDistribution(p: Project, view: View, unit: string, metricLabel: string): Projected {
+  const ids = view.datasets
+  const periods = view.transform === 'distribution' && view.between
+    ? [...new Set(ids.flatMap((id) => effectiveObs(ds(p, id)).map((o) => o.date)))].filter((t) => t >= view.between![0] && t <= view.between![1]).sort()
+    : [view.at ?? commonPeriods(p, ids).at(-1)]
+  if (!periods[0]) throw new VizError('the datasets share no period with data; pick one (at)')
+  const at = (t: string) => ids.map((id) => ({ id, entity: ds(p, id).entity, input: inputOf(id, ds(p, id), t) })).filter((x) => x.input.value != null)
+  if (view.transform === 'histogram') {
+    const t = periods[0]!, obs = at(t), edges = binEdges(obs.map((x) => x.input.value!))
+    const inBin = (v: number, k: number) => v >= edges[k]![0] && (v < edges[k]![1] || (k === edges.length - 1 && v <= edges[k]![1]))
+    const cells = edges.map((_, k) => { const xs = obs.filter((x) => inBin(x.input.value!, k)); return { value: xs.length, cell: { derived: { formula: `count of values in [${num(edges[k]![0])}, ${num(edges[k]![1])}${k === edges.length - 1 ? ']' : ')'}, ${t}`, inputs: Object.fromEntries(xs.map((x) => [x.entity, x.input])) } } as Cell } })
+    // counts go in the visual's note, not its title (a count in bound text reads as an unsourced figure)
+    return { shape: 'distribution', unit, label: `${metricLabel}, ${t}`, periods: [t], bins: edges, categories: edges.map(([a, b]) => `${num(a)} to ${num(b)}`),
+      series: [{ name: 'Count', values: cells.map((c) => c.value), cells: cells.map((c) => c.cell) }] }
+  }
+  const stats = ['Lowest', 'Q1', 'Median', 'Q3', 'Highest'], qs = [0, 0.25, 0.5, 0.75, 1]
+  const per = periods.map((t) => at(t!))
+  const statSeries = stats.map((name, k) => ({ name, values: per.map((obs) => (obs.length ? r6(quantile(obs.map((x) => x.input.value!).sort((a, b) => a - b), qs[k]!)) : null)),
+    cells: per.map((obs, j) => (obs.length ? { derived: { formula: `${name === 'Median' ? 'median' : name === 'Q1' ? 'first quartile' : name === 'Q3' ? 'third quartile' : name.toLowerCase() + ' value'} of ${obs.length} values, ${periods[j]} (linear interpolation)`, inputs: Object.fromEntries(obs.map((x) => [x.entity, x.input])) } } : null) as Cell) }))
+  const points = ids.map((id) => ({ name: ds(p, id).entity, dataset: id, ...(() => { const vc = periods.map((t) => valueCell(id, ds(p, id), t!)); return { values: vc.map((x) => x.value), cells: vc.map((x) => x.cell) } })() }))
+  return { shape: 'distribution', unit, label: `${metricLabel}, ${periods.length > 1 ? `${periods[0]}–${periods.at(-1)}` : periods[0]}`, periods: periods as string[],
+    categories: periods as string[], stats: stats.length, series: [...statSeries, ...points] }
+}
+
+/** Debt sensitivity: debt(t+1) = debt(t) × (1 + i) / (1 + g) − primary balance, held constant, over `years`, for a grid of
+ *  ASSUMED interest (i) and growth (g) rates. Inputs are verified data; the result is scenario arithmetic, not a forecast. */
+function projectSensitivity(p: Project, view: View, unit: string): Projected {
+  const ids = view.datasets, role = (m: string) => ids.find((id) => ds(p, id).metric === m)
+  const [debt, bal, int] = [role('debt'), role('deficit'), role('interest')]
+  if (ids.length !== 3 || !debt || !bal || !int || new Set(ids.map((id) => ds(p, id).geo)).size > 1)
+    throw new VizError('a debt sensitivity needs one country\'s debt, balance and interest payable (all % of GDP)')
+  const at = view.at ?? commonPeriods(p, ids).at(-1)
+  if (!at) throw new VizError('debt, balance and interest share no period with data; pick one (at)')
+  const [d0, b0, i0] = [debt, bal, int].map((id) => inputOf(id, ds(p, id), at))
+  if (d0!.value == null || b0!.value == null || i0!.value == null) throw new VizError(`debt, balance and interest are not all available for ${at}`)
+  const years = view.params?.years ?? 5, rates = view.params?.rates ?? [2, 3, 4, 5], growth = view.params?.growth ?? [1, 2, 3, 4, 5]
+  if (!(years >= 1 && years <= 30) || !rates.length || !growth.length) throw new VizError('the scenario needs a horizon of 1–30 years and at least one interest and one growth rate')
+  const primary = r6(b0!.value + i0!.value) // primary balance = overall balance + interest payable
+  const run = (i: number, g: number) => { let d = d0!.value!; for (let k = 0; k < years; k++) d = (d * (1 + i / 100)) / (1 + g / 100) - primary; return r6(d) }
+  const formula = (i: number, g: number) => `debt(t+1) = debt(t) × (1 + i) / (1 + g) − primary balance, for ${years} years from ${at}; i = ${i}% and g = ${g}% are assumptions; primary balance = balance + interest = ${num(primary)}`
+  const end = /^\d{4}$/.test(at) ? String(Number(at) + years) : `${at} + ${years}y`
+  return { shape: 'grid', unit, label: `Debt ratio in ${end}, ${ds(p, debt).entity}: interest and growth assumptions`, periods: [at], categories: growth.map((g) => `g ${num(g)}%`),
+    grid: { years, rates, growth, start: d0!.value!, balance: b0!.value!, interest: i0!.value!, primary, at, entity: ds(p, debt).entity },
+    series: rates.map((i) => ({ name: `i ${num(i)}%`, values: growth.map((g) => run(i, g)), cells: growth.map((g) => ({ derived: { formula: formula(i, g), inputs: { debt: d0!, balance: b0!, interest: i0! } } }) as Cell) })) }
+}
+
 /** Rating actions (evidence) on an ordinal scale: one series per agency, in date order. */
 function projectRatings(p: Project, view: View): Projected {
   const ids = view.evidence ?? []
@@ -219,6 +354,10 @@ function projectRatings(p: Project, view: View): Projected {
 export function refusal(spec: VizSpec, pr: Projected): string | null {
   const f = spec.family, n = pr.series.length, t = spec.view.transform
   // the views that only composites draw, and what each composite needs
+  const V4: Partial<Record<Transform, Family[]>> = { curve: ['yield_curve'], histogram: ['histogram'], distribution: ['box'], range: ['range'], sensitivity: ['heatmap'], buckets: ['column', 'bar', 'pie', 'doughnut'] }
+  const NEEDS: Partial<Record<Family, Transform>> = { yield_curve: 'curve', histogram: 'histogram', box: 'distribution', range: 'range', heatmap: 'sensitivity' }
+  if (V4[t] && !V4[t]!.includes(f)) return `${t === 'curve' ? 'a yield curve' : t === 'buckets' ? 'a maturity ladder' : t === 'sensitivity' ? 'a sensitivity grid' : t === 'range' ? 'a range' : 'a distribution'} is drawn as ${V4[t]!.join(' / ')}`
+  if (NEEDS[f] && NEEDS[f] !== t) return `a ${f.replace('_', ' ')} needs the ${NEEDS[f]} view`
   if ((t === 'pair' || t === 'bridge' || t === 'ratings') && !isComposite(f)) return `a ${f} chart does not draw a ${t === 'pair' ? 'two-period comparison' : t === 'bridge' ? 'bridge' : 'rating timeline'}`
   if ((f === 'dumbbell' || f === 'slope') && t !== 'pair') return `a ${f} compares two periods per entity`
   if (f === 'kpi' && (t !== 'pair' || n !== 2 || pr.categories.length !== 1)) return 'a KPI spotlight shows one dataset: its latest value and the change since an earlier period'

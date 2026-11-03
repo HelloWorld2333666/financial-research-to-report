@@ -19,7 +19,7 @@ export type Mark =
   | { name: string; kind: 'text'; box: Box; text: string; size: number; color: string; bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string }
 
 /** Bumped whenever a layout changes, so integrity can tell a stale drawing from wrong data (see integrity.ts). */
-export const LAYOUT_VERSION = 1
+export const LAYOUT_VERSION = 2 // 2: V4 (distribution titles without counts)
 export const groupName = (vizId: string) => `frr-viz ${vizId} L${LAYOUT_VERSION}`
 
 /** Where a composite is laid out: its own design space, in slide px (the group scales it to its placement). */
@@ -67,7 +67,7 @@ const markName = (s: number, c: number, v: number) => `frr-mark ${s} ${c} ${v}`
 export function compositeTitle(spec: VizSpec, pr: Projected) {
   if (pr.shape === 'ratings') return pr.label
   if (spec.family === 'kpi') return cap(pr.label.replace(/, [^,]+ and [^,]+$/, ''))
-  return pr.shape === 'cross' ? `${cap(pr.label)}, ${pr.unit}` : spec.title
+  return pr.shape === 'time' || pr.shape === 'pairs' ? spec.title : `${cap(pr.label)}, ${pr.unit}`
 }
 
 // ------------------------------------------------------------------ layouts
@@ -316,8 +316,145 @@ function ratingTimeline(g: Ctx): Mark[] {
   return out
 }
 
+// ------------------------------------------------------------------ V4: financial structures and distributions
+const num = (v: number) => String(Number(v.toFixed(6))).replace('-', '−')
+/** Blend two #rrggbb colours (t = 0: a, 1: b). */
+const mix = (a: string, b: string, t: number) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t).toString(16).padStart(2, '0')).join('')
+
+/** Yield curve: spot yields against maturity on a PROPORTIONAL tenor axis (1y to 2y is not drawn as wide as 10y to 20y). */
+function yieldCurve(g: Ctx): Mark[] {
+  const { pr, p, W, H, c } = g, out: Mark[] = [], tn = pr.tenors!
+  const x0 = 60, x1 = W - 190, y0 = TOP + 10, y1 = H - 42
+  const d = domain(pr.series.flatMap((s) => s.values), false), sy = scale(d[0], d[1], y1, y0), sx = scale(0, Math.max(...tn), x0, x1)
+  hGrid(out, g, sy, d, x0, x1)
+  for (const t of [1, 2, 3, 5, 7, 10, 15, 20, 25, 30].filter((t) => t >= Math.min(...tn) && t <= Math.max(...tn)))
+    out.push(path(`frr-xgrid ${t}`, [[[sx(t), y0], [sx(t), y1]]], c.grid, 0.5, true), text(`frr-xtick ${t}`, { x: sx(t) - 20, y: y1 + 4, w: 40, h: 14 }, `${t}y`, 8.5, c.muted, { align: 'ctr' }))
+  out.push(text('frr-xaxis', { x: x0, y: y1 + 20, w: x1 - x0, h: 14 }, 'Remaining maturity in years (proportional axis)', 8, c.muted, { align: 'ctr' }))
+  const ends = pr.series.map((s) => s.values.map((v) => v != null).lastIndexOf(true))
+  const endY = spread(pr.series.map((s, si) => (ends[si]! >= 0 ? sy(s.values[ends[si]!]!) : -1e6)), 15, y0, y1)
+  pr.series.forEach((s, si) => {
+    const col = c.series[si % c.series.length]!, runs: Pt[][] = []
+    let cur: Pt[] | null = null
+    s.values.forEach((v, i) => { if (v == null) { cur = null; return } if (!cur) { cur = []; runs.push(cur) } cur.push([sx(tn[i]!), sy(v)]) })
+    const drawn = runs.filter((r) => r.length > 1)
+    if (drawn.length) out.push(path(`frr-line ${si}`, drawn, col, 2.25))
+    s.values.forEach((v, i) => { if (v != null) out.push(dot(markName(si, i, v), sx(tn[i]!), sy(v), 2.5, col, `${s.name}, ${tn[i]}-year: ${fmt(p, v, s.cells[i]!)}%`)) })
+    const li = ends[si]!
+    if (li >= 0) { const t = `${s.name}: ${fmt(p, s.values[li]!, s.cells[li]!)} at ${tn[li]}y`; out.push(text(`frr-label ${si} ${li}`, { x: x1 + 10, y: endY[si]! - 8, w: tw(t, 9), h: 16 }, t, 9, col)) }
+  })
+  out.push(text('frr-unit', { x: 0, y: TOP - 4, w: 200, h: 14 }, `${pr.unit} (spot rates)`, 8, c.muted))
+  return out
+}
+
+/** Histogram: counts in equal bins on a proportional value axis; bars touch (the bins are contiguous). */
+function histogram(g: Ctx): Mark[] {
+  const { pr, W, H, c } = g, out: Mark[] = [], s = pr.series[0]!, edges = pr.bins!
+  const x0 = 60, x1 = W - 20, y0 = TOP + 24, y1 = H - 46
+  const max = Math.max(1, ...s.values.map((v) => v ?? 0)), sy = scale(0, max * 1.12, y1, y0), sx = scale(edges[0]![0], edges.at(-1)![1], x0, x1)
+  const step = Math.max(1, Math.ceil(max / 4))
+  for (let t = 0; t <= max; t += step) out.push(path(`frr-grid y${t}`, [[[x0, sy(t)], [x1, sy(t)]]], t === 0 ? c.muted : c.grid, t === 0 ? 1.25 : 0.75), text(`frr-tick y${t}`, { x: 0, y: sy(t) - 7, w: x0 - 8, h: 14 }, String(t), 8, c.muted, { align: 'r' }))
+  edges.forEach(([a, b], k) => {
+    const v = s.values[k] ?? 0, cell = s.cells[k], names = cell && 'derived' in cell ? Object.keys(cell.derived.inputs) : []
+    if (v > 0) out.push(rect(markName(0, k, v), { x: sx(a) + 1, y: sy(v), w: Math.max(1, sx(b) - sx(a) - 2), h: sy(0) - sy(v) }, c.series[0]!, `${num(a)} to ${num(b)}: ${v} (${names.join(', ')})`))
+    else out.push(rect(markName(0, k, 0), { x: sx(a) + 1, y: sy(0) - 1, w: Math.max(1, sx(b) - sx(a) - 2), h: 1 }, c.grid, `${num(a)} to ${num(b)}: none`))
+    out.push(text(`frr-label 0 ${k}`, { x: sx(a), y: sy(v) - 16, w: sx(b) - sx(a), h: 14 }, String(v), 9, c.ink, { align: 'ctr' }))
+    out.push(text(`frr-edge ${k}`, { x: sx(a) - 24, y: y1 + 4, w: 48, h: 14 }, num(a), 8.5, c.muted, { align: 'ctr' }))
+  })
+  out.push(text(`frr-edge ${edges.length}`, { x: sx(edges.at(-1)![1]) - 24, y: y1 + 4, w: 48, h: 14 }, num(edges.at(-1)![1]), 8.5, c.muted, { align: 'ctr' }))
+  if (edges[0]![0] < 0 && edges.at(-1)![1] > 0) out.push(path('frr-zero', [[[sx(0), y0], [sx(0), y1]]], c.muted, 1, true))
+  const n = s.values.reduce<number>((a, v) => a + (v ?? 0), 0), w = edges[0]![1] - edges[0]![0]
+  out.push(text('frr-note', { x: x0, y: y1 + 22, w: x1 - x0, h: 14 }, `${pr.unit}: ${n} values in bins of ${num(w)} (lower edge included; the last bin includes its upper edge)`, 8, c.muted, { align: 'ctr' }))
+  return out
+}
+
+/** Box plot: per period, the middle half (Q1 to Q3) as a box, the median as a line, whiskers to the lowest and highest
+ *  value, and every individual value as a dot beside the box (so a small sample can't hide behind a box). */
+function box(g: Ctx): Mark[] {
+  const { pr, p, W, H, c } = g, out: Mark[] = [], k = pr.stats!, S = pr.series
+  const x0 = 64, x1 = W - 20, y0 = TOP + 20, y1 = H - 44
+  const d = domain(S.flatMap((s) => s.values), false), sy = scale(d[0], d[1], y1, y0)
+  hGrid(out, g, sy, d, x0, x1)
+  const n = pr.categories.length, band = (x1 - x0) / n, bw = Math.min(64, band * 0.38)
+  pr.categories.forEach((cat, j) => {
+    const cx = x0 + band * (j + 0.42), [mn, q1, md, q3, mx] = S.slice(0, k).map((s) => s.values[j]!)
+    out.push(text(`frr-cat ${j}`, { x: cx - band / 2, y: y1 + 6, w: band, h: 14 }, cat, 8.5, c.muted, { align: 'ctr' }))
+    if (mn == null || q1 == null || md == null || q3 == null || mx == null) { out.push(text(`frr-gap 0 ${j}`, { x: cx - 30, y: (y0 + y1) / 2, w: 60, h: 14 }, 'n/a', 8.5, c.muted, { align: 'ctr' })); return }
+    const cell = (si: number) => S[si]!.cells[j]!
+    out.push(path(`frr-whisker ${j}`, [[[cx, sy(mx)], [cx, sy(q3)]], [[cx, sy(q1)], [cx, sy(mn)]]], c.muted, 1))
+    out.push(path(markName(0, j, mn), [[[cx - bw / 4, sy(mn)], [cx + bw / 4, sy(mn)]]], c.muted, 1.5, false, `${cat} lowest: ${fmt(p, mn, cell(0))}`))
+    out.push(path(markName(4, j, mx), [[[cx - bw / 4, sy(mx)], [cx + bw / 4, sy(mx)]]], c.muted, 1.5, false, `${cat} highest: ${fmt(p, mx, cell(4))}`))
+    out.push({ name: markName(1, j, q1), kind: 'rect', box: { x: cx - bw / 2, y: sy(q3), w: bw, h: Math.max(1, sy(q1) - sy(q3)) }, fill: mix(c.series[0]!, '#ffffff', 0.82), stroke: c.series[0]!, descr: `${cat} first quartile: ${fmt(p, q1, cell(1))}` })
+    out.push(path(markName(3, j, q3), [[[cx - bw / 2, sy(q3)], [cx + bw / 2, sy(q3)]]], c.series[0]!, 1.25, false, `${cat} third quartile: ${fmt(p, q3, cell(3))}`))
+    out.push(path(markName(2, j, md), [[[cx - bw / 2, sy(md)], [cx + bw / 2, sy(md)]]], c.ink, 2.5, false, `${cat} median: ${fmt(p, md, cell(2))}`))
+    out.push(text(`frr-label 2 ${j}`, { x: cx - bw / 2 - 6 - tw(fmt(p, md, cell(2)), 8.5), y: sy(md) - 8, w: tw(fmt(p, md, cell(2)), 8.5), h: 16 }, fmt(p, md, cell(2)), 8.5, c.ink, { align: 'r' }))
+    // every value, beside the box, in value order (a narrow zig-zag so close values stay visible)
+    const pts = S.slice(k).map((s, e) => ({ e: e + k, v: s.values[j]!, name: s.name, cell: s.cells[j]! })).filter((x) => x.v != null).sort((a, b) => a.v - b.v)
+    pts.forEach((x, r) => out.push(dot(markName(x.e, j, x.v), cx + bw / 2 + 12 + (r % 3) * 7, sy(x.v), 2.6, c.series[0]!, `${x.name}, ${cat}: ${fmt(p, x.v, x.cell)}`)))
+    if (n <= 3) for (const [si, x] of [[0, pts[0]], [4, pts.at(-1)]] as const) if (x) {
+      const t = `${x.name} ${fmt(p, x.v, x.cell)}`
+      out.push(text(`frr-label ${si} ${j}`, { x: cx + bw / 2 + 36, y: sy(x.v) - 8, w: tw(t, 8.5), h: 16 }, t, 8.5, c.muted))
+    }
+  })
+  const count = S.length - k
+  out.push(text('frr-note', { x: x0, y: y1 + 24, w: x1 - x0, h: 14 }, `Box: middle half (Q1–Q3), line: median, whiskers: lowest and highest; dots: each of ${count} values. Quartiles by linear interpolation. ${pr.unit}`, 8, c.muted, { align: 'ctr' }))
+  return out
+}
+
+/** Range: each entity's lowest-to-highest band over the period, with its latest value as a dot, sorted by that value. */
+function rangePlot(g: Ctx): Mark[] {
+  const { pr, p, W, H, c } = g, out: Mark[] = [], [L, Hi, E] = pr.series as [Projected['series'][0], Projected['series'][0], Projected['series'][0]]
+  const order = pr.categories.map((_, i) => i).sort((a, b) => (E.values[b] ?? -Infinity) - (E.values[a] ?? -Infinity))
+  const lw = labelColumn(pr.categories), x0 = lw + 60, x1 = W - 70, y0 = TOP + 22, y1 = H - 22
+  const d = domain([...L.values, ...Hi.values], false), sx = scale(d[0], d[1], x0, x1)
+  vGrid(out, g, sx, d, y0, y1, pr.unit)
+  out.push(rect('frr-legend 0', { x: W - 330, y: TOP + 3, w: 22, h: 6 }, mix(c.series[0]!, '#ffffff', 0.7)), text('frr-legend 0 text', { x: W - 302, y: TOP - 2, w: 160, h: 16 }, `lowest to highest, ${pr.periods![0]}–${pr.periods![1]}`, 9, c.ink))
+  out.push(dot('frr-legend 1', W - 120, TOP + 6, 5, c.accent), text('frr-legend 1 text', { x: W - 110, y: TOP - 2, w: 100, h: 16 }, E.name, 9, c.ink))
+  const rh = (y1 - y0) / pr.categories.length
+  order.forEach((i, row) => {
+    const y = y0 + rh * (row + 0.5), lo = L.values[i]!, hi = Hi.values[i]!, e = E.values[i]!
+    out.push(text(`frr-cat ${i}`, { x: 0, y: y - 8, w: lw, h: 16 }, pr.categories[i]!, 9.5, c.ink, { align: 'r' }))
+    if (lo == null || hi == null) { out.push(text(`frr-gap 0 ${i}`, { x: x0, y: y - 8, w: 60, h: 16 }, 'n/a', 9, c.muted)); return }
+    const h = Math.min(8, rh / 3)
+    out.push(rect(`frr-band ${i}`, { x: sx(lo), y: y - h / 2, w: Math.max(1, sx(hi) - sx(lo)), h }, mix(c.series[0]!, '#ffffff', 0.7)))
+    out.push(rect(markName(0, i, lo), { x: sx(lo) - 1, y: y - h, w: 2, h: 2 * h }, c.series[0]!, `${pr.categories[i]} lowest: ${fmt(p, lo, L.cells[i]!)}`))
+    out.push(rect(markName(1, i, hi), { x: sx(hi) - 1, y: y - h, w: 2, h: 2 * h }, c.series[0]!, `${pr.categories[i]} highest: ${fmt(p, hi, Hi.cells[i]!)}`))
+    const lt = fmt(p, lo, L.cells[i]!), ht = fmt(p, hi, Hi.cells[i]!)
+    out.push(text(`frr-label 0 ${i}`, { x: sx(lo) - 8 - tw(lt, 8.5), y: y - 8, w: tw(lt, 8.5), h: 16 }, lt, 8.5, c.muted, { align: 'r' }))
+    out.push(text(`frr-label 1 ${i}`, { x: sx(hi) + 8, y: y - 8, w: tw(ht, 8.5), h: 16 }, ht, 8.5, c.muted))
+    if (e != null) out.push(dot(markName(2, i, e), sx(e), y, Math.min(5.5, rh / 3), c.accent, `${pr.categories[i]}, ${E.name}: ${fmt(p, e, E.cells[i]!)}`))
+  })
+  return out
+}
+
+/** Sensitivity heatmap: the outcome for each pair of assumptions, shaded by how far it lies from today's value. The
+ *  assumptions and the arithmetic are written on the visual: it is a scenario, not a forecast. */
+function heatmap(g: Ctx): Mark[] {
+  const { pr, p, W, H, c } = g, out: Mark[] = [], G = pr.grid!
+  const rows = pr.series.length, cols = pr.categories.length, x0 = 190, y0 = TOP + 44
+  const cw = Math.min(130, (W - x0 - 20) / cols), ch = Math.min(40, (H - y0 - 64) / rows)
+  out.push(text('frr-axis cols', { x: x0, y: TOP + 4, w: cw * cols, h: 16 }, 'Nominal GDP growth, g (assumed, % a year)', 9, c.muted, { align: 'ctr' }))
+  out.push(text('frr-axis rows', { x: 0, y: y0 - 22, w: x0 - 12, h: 16 }, 'Interest rate on debt, i (assumed)', 9, c.muted, { align: 'r' }))
+  pr.categories.forEach((t, k) => out.push(text(`frr-colhead ${k}`, { x: x0 + k * cw, y: y0 - 20, w: cw, h: 16 }, `${num(G.growth[k]!)}%`, 9.5, c.ink, { align: 'ctr', bold: true })))
+  const all = pr.series.flatMap((s) => s.values).filter((v): v is number => v != null), span = Math.max(...all.map((v) => Math.abs(v - G.start)), 1e-9)
+  pr.series.forEach((s, si) => {
+    out.push(text(`frr-rowhead ${si}`, { x: 0, y: y0 + si * ch + ch / 2 - 8, w: x0 - 12, h: 16 }, `${num(G.rates[si]!)}%`, 9.5, c.ink, { align: 'r', bold: true }))
+    s.values.forEach((v, k) => {
+      if (v == null) return
+      const t = (v - G.start) / span, fill = t >= 0 ? mix('#ffffff', c.accent, Math.min(1, t) * 0.75) : mix('#ffffff', c.series[0]!, Math.min(1, -t) * 0.75)
+      const box = { x: x0 + k * cw + 1, y: y0 + si * ch + 1, w: cw - 2, h: ch - 2 }, label = fmt(p, v, s.cells[k]!)
+      out.push(rect(markName(si, k, v), box, fill, `i ${num(G.rates[si]!)}%, g ${num(G.growth[k]!)}%: ${label} ${pr.unit} in ${pr.label.match(/in (\S+),/)?.[1] ?? ''}`))
+      out.push(text(`frr-label ${si} ${k}`, box, label, 10, Math.abs(t) > 0.55 ? '#ffffff' : c.ink, { align: 'ctr' }))
+    })
+  })
+  const ny = y0 + rows * ch + 12
+  out.push(text('frr-note 1', { x: 0, y: ny, w: W, h: 14 }, `Scenario arithmetic, not a forecast: debt(t+1) = debt(t) × (1 + i) / (1 + g) − primary balance, ${G.years} years from ${G.at}.`, 8.5, c.ink))
+  out.push(text('frr-note 2', { x: 0, y: ny + 16, w: W, h: 14 }, `Verified ${G.at} inputs (${G.entity}): debt ${num(G.start)}, balance ${num(G.balance)}, interest ${num(G.interest)} → primary balance ${num(G.primary)}, held constant (${pr.unit}). Shading: above (red) or below (blue) today's debt ratio.`, 8, c.muted))
+  return out
+}
+
 const LAYOUTS: Record<CompositeFamily, (g: Ctx) => Mark[]> = {
   dot: (g) => dots(g, false), lollipop: (g) => dots(g, true), dumbbell, slope, waterfall, step, multiples, kpi, rating_timeline: ratingTimeline,
+  yield_curve: yieldCurve, histogram, box, range: rangePlot, heatmap,
 }
 
 /** Every shape of the composite, in design-space px. */
