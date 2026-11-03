@@ -16,7 +16,8 @@ The model never writes numbers (Experiment 2):
   reliably call a tool again after a retry prompt in the conversation; the loop lives here.
 
 Provider: ``FRR_MODEL_PROVIDER`` = ``ollama`` (default) or ``openai-compatible``;
-``FRR_MODEL`` (default ``qwen2.5:14b``); ``FRR_MODEL_URL`` (default Ollama's local endpoint);
+``FRR_MODEL`` (default ``DEFAULT_MODEL`` below); ``FRR_MODEL_URL`` (default Ollama's local endpoint);
+``FRR_MODEL_THINKING`` (``none`` | ``low`` | ``medium`` | ``xhigh``; default ``DEFAULT_THINKING``) for thinking models;
 ``FRR_MODEL_API_KEY`` for an OpenAI-compatible server.
 """
 
@@ -77,13 +78,30 @@ Deps = StateDeps[WorkspaceState]
 
 
 # ------------------------------------------------------------------ model
+# The one local model every component uses (chat agent, text writer, PDF quote extraction, background tasks).
+# Override with FRR_MODEL; nothing else names a model.
+DEFAULT_MODEL = "qwen3.8:27b"
+DEFAULT_URL = "http://localhost:11434/v1"
+# Qwen3.8 thinks before answering (Ollama's default level is medium). At about 5 tokens/s on a 32 GB M5 a long think
+# adds tens of seconds per step; "low" keeps a short think. Sent as reasoning_effort on Ollama's OpenAI-compatible
+# endpoint ("none" turns it off; Ollama ignores think=false there). Models without thinking ignore it.
+DEFAULT_THINKING = "low"
+
+
+def model_name() -> str:
+    return os.environ.get("FRR_MODEL") or DEFAULT_MODEL
+
+
 def model_from_env():
     provider = os.environ.get("FRR_MODEL_PROVIDER", "ollama")
-    name = os.environ.get("FRR_MODEL", "qwen2.5:14b")
+    name = model_name()
     if provider == "ollama":
         from pydantic_ai.models.ollama import OllamaModel
         from pydantic_ai.providers.ollama import OllamaProvider
-        return OllamaModel(name, provider=OllamaProvider(base_url=os.environ.get("FRR_MODEL_URL", "http://localhost:11434/v1")))
+        from pydantic_ai.settings import ModelSettings
+        thinking = os.environ.get("FRR_MODEL_THINKING") or DEFAULT_THINKING
+        return OllamaModel(name, provider=OllamaProvider(base_url=os.environ.get("FRR_MODEL_URL", DEFAULT_URL)),
+                           settings=ModelSettings(extra_body={"reasoning_effort": thinking}))
     if provider == "openai-compatible":
         from pydantic_ai.models.openai import OpenAIChatModel
         from pydantic_ai.providers.openai import OpenAIProvider
@@ -92,8 +110,8 @@ def model_from_env():
 
 
 def model_config() -> dict:
-    return {"provider": os.environ.get("FRR_MODEL_PROVIDER", "ollama"), "model": os.environ.get("FRR_MODEL", "qwen2.5:14b"),
-            "url": os.environ.get("FRR_MODEL_URL", "http://localhost:11434/v1")}
+    return {"provider": os.environ.get("FRR_MODEL_PROVIDER", "ollama"), "model": model_name(), "url": os.environ.get("FRR_MODEL_URL", DEFAULT_URL),
+            "thinking": os.environ.get("FRR_MODEL_THINKING") or DEFAULT_THINKING}
 
 
 # ------------------------------------------------------------------ live retrieval with independent re-fetch
