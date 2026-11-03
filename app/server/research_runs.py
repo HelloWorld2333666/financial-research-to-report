@@ -189,7 +189,7 @@ def rating_evidence(data: bytes, filename: str, entity: str, candidates: list[di
                          "statement": f"{ok['agency']} {ok['action']} {entity} at {ok['rating']}" + (f", outlook {ok['outlook']}" if ok["outlook"] else "") + (f" ({on.isoformat()})" if on else ""),
                          "page": ok["page"], "excerpt": ok["excerpt"], "locator": f"{filename}, p. {ok['page']}",
                          "verification": "verified", "verified_by": f"frr-sourcecheck (excerpt on page; found by {ok['found_by']})",
-                         "verified_on": datetime.now(timezone.utc).date().isoformat(),
+                         "verified_on": datetime.now().astimezone().date().isoformat(),  # the user's calendar day
                          "rating": {"agency": ok["agency"], "action": ok["action"], "rating": ok["rating"], "outlook": ok["outlook"], "date": on.isoformat() if on else None},
                          "source_title": f"{ok['agency']} press release ({filename})", "source_url": None,
                          "retrieval": {"method": "pdf_upload", "query_url": None, "retrieved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

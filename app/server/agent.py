@@ -77,6 +77,12 @@ class WorkspaceState(BaseModel):
 Deps = StateDeps[WorkspaceState]
 
 
+def local_day(t: datetime) -> str:
+    """The calendar day of instant `t` where the app runs (it runs on the user's machine). Timestamps stay in UTC;
+    a date written for people (source notes, "verified on") is the user's day, not UTC's."""
+    return t.astimezone().date().isoformat()
+
+
 # ------------------------------------------------------------------ model
 # The one local model every component uses (chat agent, text writer, PDF quote extraction, background tasks).
 # Override with FRR_MODEL; nothing else names a model.
@@ -145,14 +151,14 @@ def fetch_verified(get: Callable[[str], bytes], metric: str, geo: str, since: st
         evidence[eid] = {"id": eid, "source_id": f"src.live.{dataset}.{geo.lower()}", "kind": "metric_value", "subject": name,
                          "statement": f"{label} [{dataset} {geo}] {p}: {v:g}", "metric_id": metric, "value": v, "unit": unit, "period": p,
                          "locator": f"{dataset} {json.dumps(filters, sort_keys=True)} @ {p}", "verification": "verified",
-                         "verified_by": "frr-live-validator (independent re-fetch)", "verified_on": now.date().isoformat(),
+                         "verified_by": "frr-live-validator (independent re-fetch)", "verified_on": local_day(now),
                          "source_title": f"Eurostat: {label}", "source_url": url,
                          "retrieval": {"method": "api", "query_url": url, "retrieved_at": now.isoformat(timespec="seconds"), "content_sha256": sha,
                                        "series_key": f"{dataset} {json.dumps(filters, sort_keys=True)}", "note": "Eurostat dissemination API (JSON-stat)"}}
         observations.append({"date": p, "value": v, "status": "verified", "evidence_id": eid})
     return {"dataset": {"id": did, "title": f"{name} · {label.lower()}", "entity": name, "geo": geo, "metric": metric, "unit": unit,
                         "measure": measure_for(metric, geo), "frequency": "annual", "origin": "eurostat", "verification": "verified", "source_url": url,
-                        "source_note": f"Eurostat {dataset} ({now.date().isoformat()}, live)", "observations": observations, "working": {}},
+                        "source_note": f"Eurostat {dataset} ({local_day(now)}, live)", "observations": observations, "working": {}},
             "evidence": evidence, "rejected": len(obs) - len(accepted)}
 
 
@@ -196,7 +202,7 @@ def fetch_curve(get: Callable[[str], bytes], curve: str, since: str) -> list[dic
             evidence[eid] = {"id": eid, "source_id": f"src.live.{dataset}.{curve}", "kind": "metric_value", "subject": "Euro area",
                              "statement": f"{label}, {years}-year [{dataset}] {p}: {v:g}", "metric_id": metric, "value": v, "unit": "%", "period": p,
                              "locator": f"{dataset} {json.dumps(filters, sort_keys=True)} @ {p}", "verification": "verified",
-                             "verified_by": "frr-live-validator (independent re-fetch)", "verified_on": now.date().isoformat(),
+                             "verified_by": "frr-live-validator (independent re-fetch)", "verified_on": local_day(now),
                              "source_title": f"Eurostat: {label}", "source_url": url,
                              "retrieval": {"method": "api", "query_url": url, "retrieved_at": now.isoformat(timespec="seconds"), "content_sha256": sha,
                                            "series_key": f"{dataset} {json.dumps(filters, sort_keys=True)}", "note": "Eurostat dissemination API (JSON-stat)"}}
@@ -204,7 +210,7 @@ def fetch_curve(get: Callable[[str], bytes], curve: str, since: str) -> list[dic
         out.append({"dataset": {"id": did, "title": f"Euro area · {label.lower()}, {years}-year", "entity": "Euro area", "geo": "EA", "metric": metric, "unit": "%",
                                 "measure": {"kind": "yield", "of": None, "signed": True, "additive_parts_of": None, "scale": "interval", "tenor": years, "curve": curve},
                                 "frequency": "monthly", "origin": "eurostat", "verification": "verified", "source_url": url,
-                                "source_note": f"Eurostat {dataset} ({now.date().isoformat()}, live)", "observations": observations, "working": {}},
+                                "source_note": f"Eurostat {dataset} ({local_day(now)}, live)", "observations": observations, "working": {}},
                     "evidence": evidence, "rejected": sum(1 for (m, p), v in obs.items() if m == tenor and again.get((m, p)) != v)})
     return out
 

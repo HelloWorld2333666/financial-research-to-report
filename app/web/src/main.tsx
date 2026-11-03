@@ -10,9 +10,10 @@ import { durableOfSource, findEl, render, sourceIdsFor, textOf } from './core/de
 import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
-import { runChecks } from './checks'
+import { localTime } from './core/time'
 import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
-import { ChatPanel } from './chat'
+// the chat (assistant-ui, AG-UI: about 0.7 MB) loads after the deck has drawn
+const ChatPanel = React.lazy(() => import('./chat').then((m) => ({ default: m.ChatPanel })))
 import { changeOptions, type Intent } from './core/recommend'
 import type { Command } from './core/commands'
 import type { Finding } from './core/constraints'
@@ -36,7 +37,7 @@ function Picker({ onOpen }: { onOpen: (s: Store) => void }) {
     <div className="picker">
       <div className="picker-head"><span className="brand-mark">R</span><h1>Research-to-Report</h1></div>
       <div className="row"><button className="primary" disabled={busy} onClick={() => create('france', 'France sovereign credit')}>New France project (verified Eurostat data)</button><button disabled={busy} onClick={() => create('blank', 'Untitled project')}>New blank project</button></div>
-      {list?.length ? <ul className="project-grid">{list.map((p) => <li key={p.id}><a className="project-card" href={`?project=${p.id}`}><b>{p.title}</b><span>{p.slides ?? 0} slides · {p.journal} journal entries</span><span>Saved {p.saved?.replace('T', ' ').slice(0, 16)} UTC</span></a></li>)}</ul> : <p className="muted">{list ? 'No projects yet.' : 'Loading…'}</p>}
+      {list?.length ? <ul className="project-grid">{list.map((p) => <li key={p.id}><a className="project-card" href={`?project=${p.id}`}><b>{p.title}</b><span>{p.slides ?? 0} slides · {p.journal} journal entries</span><span>Saved {localTime(p.saved)}</span></a></li>)}</ul> : <p className="muted">{list ? 'No projects yet.' : 'Loading…'}</p>}
     </div>
   )
 }
@@ -273,11 +274,11 @@ function Workspace({ store }: { store: Store }) {
           </nav>
           <div className="panel-body">
             {/* always mounted: a request in flight survives switching tabs */}
-            <ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} />
+            <React.Suspense fallback={tab === 'chat' ? <p className="muted small">Loading chat…</p> : null}><ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} /></React.Suspense>
             {tab === 'evidence' && <EvidencePanel store={store} />}
             {tab === 'data' && <DataPanel store={store} exec={exec} />}
             {tab === 'tasks' && <TasksPanel store={store} />}
-            {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {j.at.slice(11, 19)}</span></li>)}</ol>}
+            {tab === 'journal' && <ol className="journal">{[...store.journal].reverse().map((j) => <li key={j.seq} data-actor={j.actor}><b>{j.actor}</b> {j.summary}<span className="muted"> · {localTime(j.at, { time: true })}</span></li>)}</ol>}
             {tab === 'integrity' && <div>{ig.ok ? <p className="good">Every bound value matches the working layer.</p> : ig.mismatch.slice(0, 20).map((m) => <p key={m} className="bad">{m}</p>)}</div>}
             {tab === 'claims' && <div>{claims.length ? claims.map((c, i) => <div key={i} className={'claim ' + c.status}><div>{c.text}</div><div className="muted">{c.status}: {c.detail}</div></div>) : <p className="muted">No numeric claims on this slide.</p>}</div>}
             {tab === 'versions' && <div><button onClick={saveVersion}>Save version now</button><ul>{versions.map((v) => <li key={v.version}>{v.version}. {v.label} <span className="muted">· {v.journal} entries</span></li>)}</ul></div>}
@@ -311,7 +312,7 @@ function App() {
   const [store, setStore] = useState<Store | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
-    if (params.has('checks')) { runChecks().then((r) => { const pre = document.createElement('pre'); pre.id = 'checks'; pre.hidden = true; pre.textContent = JSON.stringify(r); document.body.appendChild(pre) }); return }
+    if (params.has('checks')) { import('./checks').then((m) => m.runChecks()).then((r) => { const pre = document.createElement('pre'); pre.id = 'checks'; pre.hidden = true; pre.textContent = JSON.stringify(r); document.body.appendChild(pre) }); return }
     const id = params.get('project')
     if (id) Promise.all([Store.open(id), loadFonts()]).then(([s, m]) => { s.metrics = m; setStore(s) }).catch((e) => setError(String(e)))
   }, [])

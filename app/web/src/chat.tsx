@@ -8,8 +8,9 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useSync
 import { AssistantRuntimeProvider, ComposerPrimitive, MessagePrimitive, ThreadPrimitive, useAuiState } from '@assistant-ui/react'
 import { useAgUiRuntime, useAgUiSetState } from '@assistant-ui/react-ag-ui'
 import { HttpAgent } from '@ag-ui/client'
-import { SlideCanvas } from '@genoffice-slides/renderer/SlideCanvas'
+import { Thumb } from './thumb'
 import type { Store } from './core/store'
+import { summaryFor } from './core/wording'
 import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { textNumbers } from './core/evidence'
@@ -40,15 +41,7 @@ export function describeSelection(store: Store) {
   })
 }
 
-export function Thumb({ slide, width = 300 }: { slide: any; width?: number }) {
-  return (
-    <div className="pv-thumb" style={{ width, height: (width * 9) / 16 }}>
-      <div style={{ transform: `scale(${width / slide.widthPx})`, transformOrigin: '0 0' }}>
-        <SlideCanvas slide={slide} selectedIds={[]} images={new Map()} zoom={1} onSelect={() => {}} onEditText={() => {}} onTransform={() => {}} onEditTableCell={() => {}} onContextMenu={() => {}} onTableColResize={() => {}} />
-      </div>
-    </div>
-  )
-}
+export { Thumb }
 
 /** A proposal: preview (dry run on the live deck, restored), apply (one undoable step), reject. */
 /** A proposal: Preview, Apply, Reject. A visual allowed with a warning shows the warning and applies only through
@@ -68,7 +61,7 @@ function Card({ pid, title, cmd, children, blocked, warn }: { pid: string; title
   }
   const open = state === 'open' || state === 'undone'
   return (
-    <div className="proposal" data-proposal={pid} data-state={state}>
+    <CardStateCtx.Provider value={state}><div className="proposal" data-proposal={pid} data-state={state}>
       <div className="p-title">{title}</div>
       {children}
       {pv && (pv.ok ? pv.value.map((s: any, i: number) => <Thumb key={i} slide={s} />) : <div className="bad">Preview failed: {pv.error}</div>)}
@@ -83,11 +76,13 @@ function Card({ pid, title, cmd, children, blocked, warn }: { pid: string; title
           <button onClick={() => store.reject(pid)}>Reject</button>
         </div>
       ) : <div className="p-state">{state === 'applied' ? 'Applied (one step; Undo reverts it)' : 'Rejected'}</div>}
-    </div>
+    </div></CardStateCtx.Provider>
   )
 }
 
-const Summary = ({ r }: { r: any }) => <div className="p-summary" data-summary>{r.summary}</div>
+// A Card tells the summaries inside it its state, so an applied card stops saying "nothing has changed yet"
+const CardStateCtx = createContext<string>('open')
+const Summary = ({ r }: { r: any }) => <div className="p-summary" data-summary>{summaryFor(r.summary ?? '', useContext(CardStateCtx))}</div>
 const Running = ({ what }: { what: string }) => <div className="tool-running">{what}… (local model)</div>
 // a validation error (the model called the tool with the wrong arguments) arrives as a list, not our {kind, message}
 const ErrorNote = ({ r }: { r: any }) => <div className="bad small" data-tool-error>{r?.message ?? (Array.isArray(r) ? `The model called the tool incorrectly (${r.map((e: any) => e.msg ?? e).join('; ')}); nothing was changed. Ask again.` : 'The tool returned nothing; nothing was changed.')}</div>

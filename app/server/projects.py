@@ -143,7 +143,9 @@ class ProjectStore:
     def write_export(self, pid: str, mode: str, data: bytes, record: dict) -> dict:
         d = self._dir(pid) / "exports"
         d.mkdir(exist_ok=True)
-        name = f"{pid}-{mode}-{record['at'].replace(':', '').replace('+0000', 'Z')[:17]}.pptx"
+        # UTC with its Z, so the name says which clock it uses (the slice used to cut the Z off)
+        stamp = datetime.fromisoformat(record['at']).astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%SZ')
+        name = f"{pid}-{mode}-{stamp}.pptx"
         (d / name).write_bytes(data)
         record = {**record, "file": name, "bytes": len(data)}
         with (d / "log.jsonl").open("a") as f:

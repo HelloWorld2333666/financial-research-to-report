@@ -31,6 +31,14 @@ The browser pane reports the page as hidden, which throttles animation frames an
 
 ## Notes
 
-- **Dates are in UTC.** Retrieval dates, export file names and version times use UTC, so the Italy fetch at 01:16 on 4 November (UTC+8) shows as 2026-11-03. Version labels use local time.
 - **The local model is the slow step:** about 2 minutes for the Italy proposal in a fresh slide thread, as measured in `LOCAL-MODEL-QWEN3.8.md`.
-- After Apply, the chat card keeps its original wording ("Preview and apply; nothing has changed yet.") and adds "Applied (one step; Undo reverts it)" underneath.
+
+## Follow-up: M6 leftovers (same day)
+
+| Item | Change | Checked |
+|---|---|---|
+| **Fetch dates showed the UTC day.** The Italy fetch at 01:16 on 4 November (UTC+8) was labelled 2026-11-03 | Times are still stored as UTC instants. Dates written for people now use the local day of the machine the app runs on: a live fetch's source note and "verified on", and a PDF rating's "verified on". The app shows stored times in local time with the zone named (`core/time.ts`): Evidence cards ("Retrieved 2026-11-01 14:44 (UTC+8)"), the project list, the journal and the task log. The journal and task log used to print UTC clock times without saying so. Export file names stay UTC but now end in `Z`; the old slice cut it off | Unit tests; on the server 17:16 UTC on 3 November gives 2026-11-04 locally. In the app: the Evidence card and project list. Source notes saved before the change keep their old date, because they are recorded provenance |
+| **An applied card still said "nothing has changed yet"** | Once a card is applied or rejected, its summary drops the closing instruction ("Preview and apply…; nothing has changed yet.", "Apply to…; nothing has changed yet."). An undone card is open again and keeps it (`core/wording.ts`; chat cards and task results) | Unit tests; in the app the Italy card now ends with what it did, then "Applied (one step; Undo reverts it)" |
+| **Bundle size** (the plan's bundle-size risk) | 1. GenOffice's editor text in 22 languages (1.6 MB) is replaced at build time by its English and Chinese tables (`src/platform/shims/genoffice-strings.ts`, redirected in `vite.config.ts`; the vendored files are unchanged). GenOffice's lookup already falls back to English. 2. The chat (assistant-ui and AG-UI) and the self-checks load on demand, after the deck. 3. The service gzips the app's static files (level 6; never the API or the chat stream) | Startup script **2.20 MB, down from 4.57 MB**; it travels as **680 KB** (was 4.4 MB uncompressed). The chat file (813 KB, 214 KB on the wire) arrives at about 0.65 s, after the deck. Fonts travel at about half size. The app mounts at 0.85 s (was 0.99 s). Most of the remaining startup is reading the deck and fonts, which the bundle doesn't change |
+
+**Tests after the follow-up:** vitest 143 passed (5 skipped; new: local time and summary wording), pytest 254 passed, `tsc` 0 errors in our sources.

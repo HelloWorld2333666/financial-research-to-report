@@ -27,8 +27,19 @@ alias.push(
   { find: /^@genoffice-slides\/(.*)$/, replacement: `${G}/apps/slides/src/$1` },
 )
 
+// GenOffice's editor text in 22 languages is 1.6 MB; the app is English, so its string table resolves to a
+// two-language module (src/platform/shims/genoffice-strings.ts). Only locale.tsx's `./strings` import is redirected.
+const englishOnlyGenOffice = {
+  name: 'genoffice-strings-en-zh',
+  enforce: 'pre' as const,
+  resolveId(source: string, importer?: string) {
+    if (source === './strings' && importer && /renderer[\\/]i18n[\\/]locale\.tsx$/.test(importer)) return path.resolve(__dirname, 'src/platform/shims/genoffice-strings.ts')
+    return null
+  },
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react()],
+  plugins: [react(), englishOnlyGenOffice],
   // vitest runs in Node, which has the real node:crypto / node:zlib
   resolve: { alias: mode === 'test' ? alias.filter((a) => !String(a.find).includes('node:')) : alias },
   server: { fs: { allow: [__dirname, G] }, proxy: { '/api': 'http://127.0.0.1:8791' } },

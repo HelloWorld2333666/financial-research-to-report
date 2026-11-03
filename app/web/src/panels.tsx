@@ -2,16 +2,18 @@
 // data workspace (source and working values side by side; edit, verify, restore) and the export
 // dialog (the server decides; final needs every open item acknowledged).
 import React, { useEffect, useState, useSyncExternalStore } from 'react'
+import { localTime } from './core/time'
+import { summaryFor } from './core/wording'
 import type { Store } from './core/store'
 import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { cellText, derivationValue, effectiveObs, evidenceIndex, evidenceValue, RATING_COLUMNS, ratingCells, textNumbers } from './core/evidence'
 import type { Project } from './core/types'
 import { check, type Cell, type Projected } from './core/viz'
-import { Thumb } from './chat'
+import { Thumb } from './thumb'
 import * as Dialog from '@radix-ui/react-dialog'
 
-const when = (iso?: string) => (iso ? iso.replace('T', ' ').slice(0, 16) + ' UTC' : '—')
+const when = (iso?: string) => localTime(iso)
 
 /** One evidence item: the value, its source and exactly how it was retrieved. */
 export function EvidenceCard({ p, id }: { p: Project; id: string }) {
@@ -290,7 +292,7 @@ function TaskResult({ store, t }: { store: Store; t: any }) {
   const apply = () => { if (!cmd) return; const x = store.exec(cmd, { actor: 'research', proposalId: pid }); setErr(x.ok ? null : x.error!); if (x.ok) setPv(null) }
   return (
     <div className="proposal" data-proposal={pid} data-state={state}>
-      <div className="p-summary" data-summary>{r.summary}</div>
+      <div className="p-summary" data-summary>{summaryFor(r.summary ?? '', state)}</div>
       {r.kind === 'rating_proposal' && <table className="grid small"><thead><tr>{RATING_COLUMNS.map((c) => <th key={c}>{c}</th>)}</tr></thead>
         <tbody>{r.evidence.map((e: any) => <tr key={e.id}>{ratingCells(e).map((c, i) => <td key={i}>{c}</td>)}</tr>)}</tbody></table>}
       {r.kind === 'rating_proposal' && r.evidence.map((e: any) => <blockquote key={e.id} className="ev-excerpt">“{e.excerpt}” <span className="muted">(p. {e.page})</span></blockquote>)}
@@ -329,7 +331,7 @@ export function TasksPanel({ store }: { store: Store }) {
         <div key={t.id} className="task" data-task={t.id} data-status={t.status}>
           <div className="task-head"><b>{t.title}</b><span className={'badge-' + t.status}>{t.status}</span></div>
           <div className="bar"><div style={{ width: pct(t.progress) }} /></div>
-          <ol className="task-log">{t.log.slice(-4).map((l: any, i: number) => <li key={i}><span className="muted">{l.at.slice(11, 19)}</span> {l.msg}</li>)}</ol>
+          <ol className="task-log">{t.log.slice(-4).map((l: any, i: number) => <li key={i}><span className="muted">{localTime(l.at, { time: true })}</span> {l.msg}</li>)}</ol>
           {t.error && <div className="bad small">{t.error}</div>}
           <div className="p-actions">
             {(t.status === 'running' || t.status === 'queued') && <button onClick={() => act(t, 'cancel')}>Cancel</button>}
