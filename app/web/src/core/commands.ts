@@ -417,7 +417,7 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       const before = b.spec
       b.spec = followHeadings(ctx, b.slide, before, spec)
       materializeSlide(ctx.deck, f.index)
-      return { summary: `Change “${spec.title}” to ${cmd.family}${cmd.subtype && cmd.subtype !== 'clustered' ? ` (${cmd.subtype})` : ''}${cmd.transform ? `, ${cmd.transform}` : ''}${keptNote(before, spec)}`, slides: [sid(ctx, f.index)] }
+      return { summary: `Change “${spec.title}” to ${cmd.family}${cmd.subtype && cmd.subtype !== 'clustered' ? ` (${cmd.subtype})` : ''}${cmd.transform && cmd.transform !== 'none' ? `, ${cmd.transform}` : ''}${keptNote(before, spec)}`, slides: [sid(ctx, f.index)] }
     }
     case 'deck.reproject': {
       // Re-project every bound chart and table from the working layer (e.g. after a formatting change)

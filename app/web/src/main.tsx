@@ -116,7 +116,10 @@ function Workspace({ store }: { store: Store }) {
   const onEditText = (sourceId: string, caret?: any) => {
     const d = durable(sourceId); const b = d ? store.sidecar.bindings[d] : undefined
     if (b && b.kind !== 'text') return say(`${b.kind === 'viz' ? 'Chart' : 'This'} content comes from data; edit the data instead`)
-    if (d && nodeOf(sourceId)) setEditing({ id: d, caret })
+    // the editor gets the node as it was when editing began: a re-render (e.g. the click that ends the edit
+    // deselects) builds new node objects, and a new node re-populates the editor, which would drop the typing
+    const node = d && nodeOf(sourceId)
+    if (node) setEditing({ id: d, caret, node })
   }
   // GenOffice's rich-text editor commits EditParagraph[] (runs keep bold/italic/size/colour); Escape cancels
   const commitText = (paragraphs: any[]) => { const ed = editing; setEditing(null); if (ed?.id) exec({ kind: 'text.set', id: ed.id, paragraphs }) }
@@ -249,7 +252,7 @@ function Workspace({ store }: { store: Store }) {
               editingText={editing && !editing.cell ? { sourceId: sourceIdsFor(slide, [editing.id])[0]! } : null} />
             {editing && (editing.cell
               ? <input className="edit-overlay" autoFocus value={editing.value} onChange={(e) => setEditing({ ...editing, value: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(null) }} onBlur={keepFocus} style={{ left: editing.box.x, top: editing.box.y, width: editing.box.w, height: editing.box.h, textAlign: 'right' }} />
-              : (() => { const src = sourceIdsFor(slide, [editing.id])[0]; const n = src && nodeOf(src)
+              : (() => { const src = sourceIdsFor(slide, [editing.id])[0]; const n = src && nodeOf(src) && editing.node
                   return n ? <TextEditOverlay key={editing.id} node={n} scale={slide.scale} caretPoint={editing.caret} onCommit={commitText} onCancel={() => setEditing(null)} zoom={1} /> : null })())}
           </div>
           <div className="statusline">
