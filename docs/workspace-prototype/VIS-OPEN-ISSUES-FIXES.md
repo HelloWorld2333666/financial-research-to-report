@@ -15,8 +15,18 @@
 
 **Environment note:** the session's scratch Node.js was wiped by a restart. With your approval, Node.js LTS v26.13.0 (official build, SHA-256 verified) now lives in `~/.local/node`; nothing else on the system changed.
 
+## Follow-up: the three remaining items (same day)
+
+| Issue | Fix | Checked |
+|---|---|---|
+| **Slide subtitles didn't follow a change of visual** | Subtitles come from one function (`subtitleFor`: unit · Eurostat · what the visual shows, or "Agency actions from uploaded press releases" for ratings). A subtitle in that generated form follows the visual like kickers and titles; one the author wrote stays | Tests: "% of GDP · Eurostat · ranking" became "… · change" after a change to a dumbbell; an edited subtitle survived a further change |
+| **Colours repeated past four series** | After the four Design DNA colours come lighter and then darker variants of them (12 distinct before repeating), in slope, step, yield-curve and rating-timeline composites | Test: seven slope lines, seven colours, the first four exactly the Design DNA's. Colours aren't part of integrity, so saved drawings keep their old colours until redrawn |
+| **Frozen card reasons lived only in one browser's storage** | A card's recommendation is saved with the project (`threads.cards`, beside the saved proposal states), so every browser and every reload shows what the card first showed. Snapshots kept in browser storage since the earlier fix are carried over | Test: the recommendation survives save and reopen without being recomputed. In the app: 12 cards in the store, the same 12 in the saved bundle |
+
+**Tests:** vitest 137 passed (5 skipped); `tsc` 0 errors in our sources.
+
 ## Still open
 
-- **Slope charts repeat colours** beyond four entities (the Design DNA has four series colours).
-- **Recommendations frozen per browser:** another browser, or cleared storage, recomputes the card's reasons.
-- **Slide subtitles** (e.g. "% of GDP · Eurostat · ranking") don't follow a change of visual. The rule above covers kickers and titles only.
+Nothing from the VIS V1–V4 notes. Two older choices stand as designed:
+- slide titles that the author wrote never follow the chart;
+- the change-visual menu can be long, because it lists every family with its reason.

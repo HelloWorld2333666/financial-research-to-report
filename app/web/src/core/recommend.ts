@@ -241,6 +241,15 @@ export function kickerFor(p: Project, spec: VizSpec): string {
 }
 /** The kicker earlier versions wrote (the first dataset's metric id, e.g. "YC_ALL_Y1"): still recognised as generated. */
 export const legacyKicker = (p: Project, spec: VizSpec) => (p.datasets[spec.view.datasets[0]!]?.metric ?? 'data').toUpperCase()
+/** The subtitle written under a visual's title: unit, source and what it shows. */
+export function subtitleFor(p: Project, spec: VizSpec): string {
+  if (spec.view.transform === 'ratings') return 'Agency actions from uploaded press releases'
+  const ds = p.datasets[spec.view.datasets[0]!]
+  return `${ds?.unit ?? ''} · Eurostat · ${intentOf(spec)}`.replace(/^ · /, '')
+}
+/** A subtitle in the form the app writes ("unit · Eurostat · intent"), whatever the intent was. */
+export const isGeneratedSubtitle = (text: string) => text === 'Agency actions from uploaded press releases' || new RegExp(`^([^·]+ · )?Eurostat · (${INTENTS.join('|')})$`).test(text)
+
 /** The heading written for a visual: its view's label, with the unit when it runs over time (as new visuals are titled). */
 export function headingFor(p: Project, spec: VizSpec): string {
   const pr = project(p, spec.view, { mixedUnits: spec.family === 'combo', scatter: spec.family === 'scatter' })

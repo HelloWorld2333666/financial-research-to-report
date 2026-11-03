@@ -8,7 +8,7 @@ import { integrity } from './integrity'
 import { findEl, render } from './deck'
 import { LAYOUT_VERSION, layout, readGroup } from './composite'
 import { check, VIZ_SCHEMA, type VizSpec } from './viz'
-import { changeOptions, kickerFor, recommend } from './recommend'
+import { changeOptions, kickerFor, recommend, subtitleFor } from './recommend'
 import { textOf } from './deck'
 import { notch } from './ratings'
 import { BUNDLE_SCHEMA, type Project } from './types'
@@ -224,7 +224,7 @@ describe('slide headings follow their visual', () => {
   async function slide(title?: (t: string) => string, kicker?: string) {
     const p = P(), c = recommend(p, { intent: 'ranking', datasets: SEVEN, at: '2025' }).recommended!
     const s = await Store.fromBundle({ schema: BUNDLE_SCHEMA, project: p, sidecar: { schema: 'frr-sidecar/1', bindings: {} }, journal: [], threads: {}, deck: null })
-    expect(s.exec({ kind: 'slide.compose', proposal: { key: 'h', kicker: kicker ?? kickerFor(p, c.spec!), title: title ? title(c.spec!.title) : c.spec!.title, subtitle: 'S', viz: c.spec } }).ok).toBe(true)
+    expect(s.exec({ kind: 'slide.compose', proposal: { key: 'h', kicker: kicker ?? kickerFor(p, c.spec!), title: title ? title(c.spec!.title) : c.spec!.title, subtitle: subtitleFor(p, c.spec!), viz: c.spec } }).ok).toBe(true)
     const id = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'viz')![0]
     const text = (role: string) => { const [tid] = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'text' && (b as any).role === role)!; return textOf(findEl(s.deck, tid)!.el).trim() }
     return { s, id, text }
@@ -236,6 +236,16 @@ describe('slide headings follow their visual', () => {
     expect([text('kicker'), text('title'), (s.sidecar.bindings[id] as any).spec.title]).toEqual(['BAL', 'Government balance (test), 2020 and 2025', 'Government balance (test), 2020 and 2025'])
     s.undo()
     expect(text('title')).toBe('Government balance (test), 2025')
+  })
+  it('a generated subtitle follows too; one the author wrote stays', async () => {
+    const { s, id, text } = await slide()
+    expect(text('subtitle')).toBe('% of GDP · Eurostat · ranking')
+    expect(s.exec({ kind: 'viz.change', id, family: 'dumbbell', transform: 'pair' }).ok).toBe(true)
+    expect(text('subtitle')).toBe('% of GDP · Eurostat · change')
+    const [sid] = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'text' && (b as any).role === 'subtitle')!
+    expect(s.exec({ kind: 'text.set', id: sid, text: 'Eurostat EDP notification, April 2026' }).ok).toBe(true)
+    expect(s.exec({ kind: 'viz.change', id, family: 'slope', transform: 'pair' }).ok).toBe(true)
+    expect(text('subtitle')).toBe('Eurostat EDP notification, April 2026')
   })
   it('a title the author wrote is never changed', async () => {
     const { s, id, text } = await slide(() => 'Greece and Portugal ran surpluses')
@@ -253,4 +263,20 @@ describe('slide headings follow their visual', () => {
     expect(p2.text('title')).toBe('Government balance (test), 2025')
     expect(integrity(p2.s.deck, p2.s.project, p2.s.sidecar).ok).toBe(true)
   })
+})
+
+it('seven slope lines get seven different colours (Design DNA colours, then lighter and darker variants)', () => {
+  const p = P(), spec = S('slope', { datasets: SEVEN, transform: 'pair', between: ['2020', '2025'] })
+  const strokes = layout(p, spec, check(p, spec), { w: 1200, h: 400 }).filter((m: any) => m.name.startsWith('frr-link ')).map((m: any) => m.stroke)
+  expect([strokes.length, new Set(strokes).size]).toEqual([7, 7])
+  expect(strokes.slice(0, 4)).toEqual(p.design_dna.series)
+})
+
+it('a chat card keeps its recommendation in the saved project, so every browser shows what it first showed', async () => {
+  const s = await Store.fromBundle({ schema: BUNDLE_SCHEMA, project: P(), sidecar: { schema: 'frr-sidecar/1', bindings: {} }, journal: [], threads: {}, deck: null })
+  let computed = 0
+  const first = s.card('call_1', () => { computed++; return recommend(s.project, { intent: 'ranking', datasets: SEVEN }) })
+  expect(s.card('call_1', () => { computed++; return null as any })).toEqual(first)
+  const back = await Store.fromBundle(JSON.parse(JSON.stringify(await s.toBundle())))
+  expect([computed, (back.card('call_1', () => { throw new Error('recomputed') }) as any).recommended.key]).toEqual([1, 'bar:rank'])
 })

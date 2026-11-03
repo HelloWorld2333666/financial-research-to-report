@@ -6,7 +6,7 @@ import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
 import { check, fromChartSpec, gate, isComposite, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
 import { groupName, groupXml, layout, readGroup } from './composite'
-import { headingFor, kickerFor, legacyKicker, recommend } from './recommend'
+import { headingFor, isGeneratedSubtitle, kickerFor, legacyKicker, recommend, subtitleFor } from './recommend'
 import { findEl, slideIndex, textOf, walk, type Found } from './deck'
 import { chartKindRefusal } from './vocabulary'
 import type { Binding, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
@@ -148,17 +148,18 @@ export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec) {
 /**
  * Keep a visual's slide headings in step with it. Only text that still says what the app wrote is changed: a
  * title equal to the visual's previous title, a kicker equal to the one written for it (or the metric id earlier
- * versions wrote). A heading the author edited is left alone. Returns the updated spec (its title follows).
+ * versions wrote), a subtitle in the "unit · Eurostat · intent" form. A heading the author edited is left alone. Returns the updated spec (its title follows).
  */
 function followHeadings(ctx: Ctx, slide: string, before: VizSpec, after: VizSpec): VizSpec {
   let out = after
   for (const [id, b] of Object.entries(ctx.sidecar.bindings)) {
-    if (b.kind !== 'text' || b.slide !== slide || ((b as any).role !== 'title' && (b as any).role !== 'kicker')) continue
+    if (b.kind !== 'text' || b.slide !== slide || !['title', 'kicker', 'subtitle'].includes((b as any).role)) continue
     const f = findEl(ctx.deck, id); if (!f) continue
     const now = textOf(f.el).trim(), role = (b as any).role
     let next: string | null = null
     if (role === 'title' && now === before.title.trim() && !(b as any).numbers?.length) { next = headingFor(ctx.project, after); out = { ...out, title: next } }
     if (role === 'kicker' && (now === kickerFor(ctx.project, before) || now === legacyKicker(ctx.project, before))) next = kickerFor(ctx.project, after)
+    if (role === 'subtitle' && (now === subtitleFor(ctx.project, before) || isGeneratedSubtitle(now))) next = subtitleFor(ctx.project, after)
     if (next && next !== now) txn(ctx, [{ op: 'setText', target: { slide: f.index, el: f.el.id }, paragraphs: [{ runs: [{ text: next }] }] }])
   }
   return out

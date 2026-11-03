@@ -77,6 +77,12 @@ export function compositeTitle(spec: VizSpec, pr: Projected) {
 type Ctx = { p: Project; spec: VizSpec; pr: Projected; W: number; H: number; c: ReturnType<typeof palette> }
 const palette = (p: Project) => { const d = p.design_dna; return { ink: d.ink, muted: d.muted, rule: d.rule, accent: d.accent, series: d.series, grid: '#d8dee6', light: '#9aa7b6' } }
 const TOP = 34
+/** The i-th series colour: the Design DNA colours, then lighter and then darker variants of them, before repeating
+ *  (a slope or step chart of seven countries no longer gives two of them the same colour). */
+function seriesColor(c: Ctx['c'], i: number): string {
+  const n = c.series.length, base = c.series[i % n]!, round = Math.floor(i / n) % 3
+  return round === 0 ? base : round === 1 ? mix(base, '#ffffff', 0.45) : mix(base, '#000000', 0.35)
+}
 
 /** Value axis ticks and light gridlines (vertical for horizontal scales). */
 function vGrid(out: Mark[], g: Ctx, sx: (v: number) => number, d: [number, number], y0: number, y1: number, unit: string) {
@@ -163,7 +169,7 @@ function slope(g: Ctx): Mark[] {
   out.push(text('frr-period 0', { x: xL - 60, y: TOP, w: 120, h: 16 }, A.name, 10, c.ink, { bold: true, align: 'ctr' }))
   out.push(text('frr-period 1', { x: xR - 60, y: TOP, w: 120, h: 16 }, B.name, 10, c.ink, { bold: true, align: 'ctr' }))
   out.push(path('frr-axis 0', [[[xL, y0], [xL, y1]]], c.grid, 1), path('frr-axis 1', [[[xR, y0], [xR, y1]]], c.grid, 1))
-  const n = pr.categories.length, col = (i: number) => c.series[i % c.series.length]!
+  const n = pr.categories.length, col = (i: number) => seriesColor(c, i)
   const ly = spread(A.values.map((v) => (v == null ? -1e6 : sy(v))), 15, y0, y1), ry = spread(B.values.map((v) => (v == null ? -1e6 : sy(v))), 15, y0, y1)
   for (let i = 0; i < n; i++) {
     const a = A.values[i]!, b = B.values[i]!, ent = pr.categories[i]!
@@ -223,7 +229,7 @@ function step(g: Ctx): Mark[] {
   const ends = pr.series.map((s) => s.values.map((v) => v != null).lastIndexOf(true))
   const endY = spread(pr.series.map((s, si) => (ends[si]! >= 0 ? sy(s.values[ends[si]!]!) : -1e6)), 15, y0, y1)
   pr.series.forEach((s, si) => {
-    const col = c.series[si % c.series.length]!, runs: Pt[][] = []
+    const col = seriesColor(c, si), runs: Pt[][] = []
     let cur: Pt[] | null = null
     s.values.forEach((v, i) => {
       if (v == null) { cur = null; return }
@@ -303,7 +309,7 @@ function ratingTimeline(g: Ctx): Mark[] {
   }
   const agencies = [...new Set(pts.map((x) => x.agency))]
   agencies.forEach((ag, k) => {
-    const col = c.series[k % c.series.length]!, mine = pts.filter((x) => x.agency === ag)
+    const col = seriesColor(c, k), mine = pts.filter((x) => x.agency === ag)
     const line: Pt[] = []
     mine.forEach((x, i) => { const X = sx(t(x.date)), Y = sy(x.notch); if (i) line.push([X, line[line.length - 1]![1]]); line.push([X, Y]) })
     if (line.length > 1) out.push(path(`frr-line ${k}`, [line], col, 2.25))
@@ -336,7 +342,7 @@ function yieldCurve(g: Ctx): Mark[] {
   const ends = pr.series.map((s) => s.values.map((v) => v != null).lastIndexOf(true))
   const endY = spread(pr.series.map((s, si) => (ends[si]! >= 0 ? sy(s.values[ends[si]!]!) : -1e6)), 15, y0, y1)
   pr.series.forEach((s, si) => {
-    const col = c.series[si % c.series.length]!, runs: Pt[][] = []
+    const col = seriesColor(c, si), runs: Pt[][] = []
     let cur: Pt[] | null = null
     s.values.forEach((v, i) => { if (v == null) { cur = null; return } if (!cur) { cur = []; runs.push(cur) } cur.push([sx(tn[i]!), sy(v)]) })
     const drawn = runs.filter((r) => r.length > 1)

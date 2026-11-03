@@ -101,6 +101,12 @@ export class Store {
   // ---------------------------------------------------------------- chat threads and proposal states (saved with the bundle)
   /** proposal id -> applied | rejected | undone (absent = open) */
   get proposals(): Record<string, string> { return (this.threads.proposals ??= {}) }
+  /** A chat card's recommendation as first shown, saved with the project (every browser then shows the same card). */
+  card<T>(id: string, compute: () => T): T {
+    const cards = (this.threads.cards ??= {})
+    if (!(id in cards)) { cards[id] = JSON.parse(JSON.stringify(compute())); queueMicrotask(() => this.changed()) } // not during render
+    return cards[id]
+  }
   reject(proposalId: string) { this.proposals[proposalId] = 'rejected'; this.changed() }
   threadMessages(threadId: string): any[] { return this.threads.messages?.[threadId] ?? [] }
   setThreadMessages(threadId: string, messages: readonly any[]) {
