@@ -14,7 +14,7 @@ import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { textNumbers } from './core/evidence'
 import { checkText } from './core/claims'
-import { changeOptions, recommend, type Candidate } from './core/recommend'
+import { changeOptions, kickerFor, recommend, type Candidate, type Recommendation, type VisualRequest } from './core/recommend'
 import { assess } from './core/viz'
 import type { Finding } from './core/constraints'
 
@@ -159,8 +159,23 @@ function ResearchTool(props: any) {
 }
 
 /** A chart by intent (VIS V2): the recommender picks from the data; alternatives and refusals keep their reasons. */
-/** Slide kickers for requests whose datasets are many series of one structure (not one metric name). */
-const KICKER: Record<string, string> = { curve: 'YIELD CURVE', maturity: 'DEBT MATURITY', sensitivity: 'DEBT SENSITIVITY' }
+/** A card keeps the recommendation it first showed (kept per project and request in this browser): its reasons
+ *  and Apply then describe the same visual later, even after the data or the recommender changed. Applying still
+ *  checks it against current data. */
+const FROZEN = new Map<string, Recommendation>()
+function frozenRecommend(store: Store, r: VisualRequest, id: string): Recommendation {
+  const key = `frr-rec:${store.project.id}:${id}`
+  let rec = FROZEN.get(key) ?? null
+  if (!rec) {
+    try {
+      const raw = localStorage.getItem(key)
+      if (raw) { const r0: Recommendation = JSON.parse(raw); rec = { ...r0, recommended: r0.candidates.find((c) => c.key === r0.recommended?.key) ?? null } } // same object as in candidates
+    } catch { /* storage unavailable */ }
+  }
+  if (!rec) { rec = recommend(store.project, r); try { localStorage.setItem(key, JSON.stringify(rec)) } catch { /* storage full or blocked */ } }
+  FROZEN.set(key, rec)
+  return rec
+}
 
 function VisualTool(props: any) {
   const { store } = useContext(HostCtx)
@@ -168,14 +183,14 @@ function VisualTool(props: any) {
   const r = parse(props.result)
   if (!r) return <Running what="Choosing a visual" />
   if (r.kind !== 'visual_request') return <ErrorNote r={r} />
-  const rec = recommend(store.project, r)
+  const rec = frozenRecommend(store, r, props.toolCallId)
   const warned = rec.candidates.filter((c) => c.state === 'warning'), refused = rec.candidates.filter((c) => c.state === 'invalid')
   if (!rec.recommended && !warned.length) return <div><Summary r={r} /><div className="bad small" data-tool-error>No valid visual for this data: {rec.error ?? refused.map((c) => `${c.label}: ${c.refused}`).join('; ')}</div></div>
   const cmdFor = (c: Candidate): Command => {
     const ds = store.project.datasets[r.datasets[0]]
     const base = r.intent === 'ratings'
-      ? { key: `visual:${c.key}`, kicker: 'RATINGS', title: c.spec?.title, subtitle: 'Agency actions from uploaded press releases' }
-      : { key: `visual:${c.key}`, kicker: KICKER[r.intent] ?? (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
+      ? { key: `visual:${c.key}`, kicker: kickerFor(store.project, c.spec!), title: c.spec?.title, subtitle: 'Agency actions from uploaded press releases' }
+      : { key: `visual:${c.key}`, kicker: c.spec ? kickerFor(store.project, c.spec) : (ds?.metric ?? 'data').toUpperCase(), title: c.spec?.title ?? c.table?.title, subtitle: `${ds?.unit ?? ''} · Eurostat · ${r.intent}`.replace(/^ · /, '') }
     return { kind: 'slide.compose', proposal: c.spec ? { ...base, viz: c.spec } : { ...base, table: c.table } }
   }
   const alts = rec.candidates.filter((c) => c.state === 'valid' && c !== rec.recommended).slice(0, 2)

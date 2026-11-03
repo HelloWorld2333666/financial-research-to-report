@@ -8,7 +8,8 @@ import { integrity } from './integrity'
 import { findEl, render } from './deck'
 import { LAYOUT_VERSION, layout, readGroup } from './composite'
 import { check, VIZ_SCHEMA, type VizSpec } from './viz'
-import { changeOptions, recommend } from './recommend'
+import { changeOptions, kickerFor, recommend } from './recommend'
+import { textOf } from './deck'
 import { notch } from './ratings'
 import { BUNDLE_SCHEMA, type Project } from './types'
 
@@ -194,6 +195,12 @@ describe('the recommender and rules know the composites', () => {
     expect(recommend(p, { intent: 'ratings', datasets: [], evidence: ['ev.r.5'] }).candidates[0]!.refused).toMatch(/no rating action has a verified date \(1 undated/)
     expect(recommend(p, { intent: 'ratings', datasets: [], evidence: ['ev.test.FR.2025'] }).error).toMatch(/not rating actions/)
   })
+  it('the change-visual menu lists visuals whose view cannot be computed, with the reason, instead of leaving them out', () => {
+    const opts = changeOptions(P(), S('line', { datasets: SEVEN, transform: 'none' }))
+    const bridge = opts.find((o) => o.family === 'waterfall')!
+    expect([bridge.state, bridge.refused]).toEqual(['invalid', 'a bridge follows one dataset from one period to another'])
+    expect(opts.find((o) => o.family === 'kpi')!.state).toBe('invalid')
+  })
   it('warns about a step line on continuous data and a bridge whose steps are too small to see; blocks a bridge with a gap and offers the gap-free range', () => {
     const p = P()
     const stepWarn = changeOptions(p, S('line', { datasets: ['ds.fr.yield'], transform: 'none' })).find((o) => o.family === 'step')!
@@ -210,5 +217,40 @@ describe('the recommender and rules know the composites', () => {
     expect(wf.series[0]!.cells[1]).toMatchObject({ derived: { formula: 'end - start', inputs: { start: { period: '2022' }, end: { period: '2023' } } } })
     const rt = check(p, CASES.find((c) => c[0] === 'rating_timeline')![1])
     expect([rt.ratings!.map((r) => r.evidence), rt.undated]).toEqual([['ev.r.1', 'ev.r.3', 'ev.r.2', 'ev.r.4'], ['ev.r.5']])
+  })
+})
+
+describe('slide headings follow their visual', () => {
+  async function slide(title?: (t: string) => string, kicker?: string) {
+    const p = P(), c = recommend(p, { intent: 'ranking', datasets: SEVEN, at: '2025' }).recommended!
+    const s = await Store.fromBundle({ schema: BUNDLE_SCHEMA, project: p, sidecar: { schema: 'frr-sidecar/1', bindings: {} }, journal: [], threads: {}, deck: null })
+    expect(s.exec({ kind: 'slide.compose', proposal: { key: 'h', kicker: kicker ?? kickerFor(p, c.spec!), title: title ? title(c.spec!.title) : c.spec!.title, subtitle: 'S', viz: c.spec } }).ok).toBe(true)
+    const id = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'viz')![0]
+    const text = (role: string) => { const [tid] = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'text' && (b as any).role === role)!; return textOf(findEl(s.deck, tid)!.el).trim() }
+    return { s, id, text }
+  }
+  it('a generated title follows a change of view; the kicker stays when it still applies', async () => {
+    const { s, id, text } = await slide()
+    expect([text('kicker'), text('title')]).toEqual(['BAL', 'Government balance (test), 2025'])
+    expect(s.exec({ kind: 'viz.change', id, family: 'dumbbell', transform: 'pair', between: ['2020', '2025'] }).ok).toBe(true)
+    expect([text('kicker'), text('title'), (s.sidecar.bindings[id] as any).spec.title]).toEqual(['BAL', 'Government balance (test), 2020 and 2025', 'Government balance (test), 2020 and 2025'])
+    s.undo()
+    expect(text('title')).toBe('Government balance (test), 2025')
+  })
+  it('a title the author wrote is never changed', async () => {
+    const { s, id, text } = await slide(() => 'Greece and Portugal ran surpluses')
+    expect(s.exec({ kind: 'viz.change', id, family: 'dumbbell', transform: 'pair' }).ok).toBe(true)
+    expect(text('title')).toBe('Greece and Portugal ran surpluses')
+  })
+  it('re-projecting refreshes headings earlier versions wrote (a count in the title, a metric id as kicker)', async () => {
+    const { s, id, text } = await slide((t) => `${t}: 7 entities`, 'BAL')
+    ;(s.sidecar.bindings[id] as any).spec.title = 'Government balance (test), 2025: 7 entities' // as V4 before the fix stored it
+    expect(s.exec({ kind: 'viz.change', id, family: 'lollipop' }).ok).toBe(true) // the stale title equals the old spec title: it follows
+    expect(text('title')).toBe('Government balance (test), 2025')
+    const p2 = await slide((t) => `${t}: 7 entities`)
+    ;(p2.s.sidecar.bindings[p2.id] as any).spec.title = 'Government balance (test), 2025: 7 entities'
+    expect(p2.s.exec({ kind: 'deck.reproject' }).ok).toBe(true)
+    expect(p2.text('title')).toBe('Government balance (test), 2025')
+    expect(integrity(p2.s.deck, p2.s.project, p2.s.sidecar).ok).toBe(true)
   })
 })

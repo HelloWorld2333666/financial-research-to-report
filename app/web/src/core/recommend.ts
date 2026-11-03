@@ -13,6 +13,8 @@ export const INTENTS: Intent[] = ['trend', 'ranking', 'change', 'composition', '
 export interface VisualRequest { intent: Intent; datasets: string[]; evidence?: string[]; title?: string; at?: string; between?: [string, string]; from?: string; to?: string; params?: View['params'] }
 export interface Candidate {
   key: string; label: string
+  /** what was tried (kept even when the view could not be computed, so the menu can say why) */
+  family: Family | 'table'; subtype?: Subtype; transform: Transform
   /** a chart from a spec, or a compact table (new visuals only) */
   spec?: VizSpec; table?: TableSpec
   score: number; why: string
@@ -138,12 +140,13 @@ export function recommend(p: Project, req: VisualRequest): Recommendation {
     const family = o.family === 'table' ? 'column' : o.family // a table is checked like the columns it replaces
     const spec: VizSpec = { schema: VIZ_SCHEMA, id: newVizId(), title: req.title ?? '', family, ...(o.subtype ? { subtype: o.subtype } : {}), view, missing: 'gap' }
     const a = assess(p, spec)
-    if (!a.pr) return { key, label: o.label, score: 0, refused: a.invalid!.reason, invalid: a.invalid, warnings: [], state: 'invalid' as const, why: '' }
+    const tried = { family: o.family, ...(o.subtype ? { subtype: o.subtype } : {}), transform: o.transform }
+    if (!a.pr) return { key, label: o.label, ...tried, score: 0, refused: a.invalid!.reason, invalid: a.invalid, warnings: [], state: 'invalid' as const, why: '' }
     const pr = a.pr, prof = profile(p, spec, pr)
     pf ??= prof
     if (!spec.title) spec.title = pr.label.charAt(0).toUpperCase() + pr.label.slice(1) + (pr.shape === 'time' ? `, ${pr.unit}` : '')
     const state = a.invalid ? 'invalid' as const : a.warnings.length ? 'warning' as const : 'valid' as const
-    const out: Candidate = { key, label: o.label, score: a.invalid ? 0 : score(req.intent, o, prof, req.datasets.length) * (a.warnings.length ? 0.5 : 1), refused: a.invalid?.reason ?? null, invalid: a.invalid,
+    const out: Candidate = { key, label: o.label, ...tried, score: a.invalid ? 0 : score(req.intent, o, prof, req.datasets.length) * (a.warnings.length ? 0.5 : 1), refused: a.invalid?.reason ?? null, invalid: a.invalid,
       warnings: a.warnings, state, why: a.invalid ? '' : why(req.intent, o, prof, pr) }
     if (o.family === 'table') {
       const order = pr.shape === 'cross' && o.transform === 'rank' ? pr.categories.map((ent) => req.datasets.find((d) => p.datasets[d]!.entity === ent)!) : req.datasets
@@ -187,8 +190,12 @@ export function changeOptions(p: Project, spec: VizSpec): ChangeOption[] {
     const r = recommend(p, { ...req, intent })
     if (r.recommended?.spec) best.set(intent, r.recommended.key)
     for (const c of r.candidates) {
-      if (!c.spec || seen.has(c.key)) continue
+      if (c.family === 'table' || seen.has(c.key)) continue
       seen.add(c.key)
+      if (!c.spec) { // the view itself could not be computed for this data: listed as not valid, with the reason
+        out.push({ label: c.label, intent, family: c.family, ...(c.subtype ? { subtype: c.subtype } : {}), transform: c.transform, state: 'invalid', refused: c.refused, warnings: [], fixes: [], recommended: false, current: false })
+        continue
+      }
       const s = c.spec
       out.push({ label: c.label, intent, family: s.family, ...(s.subtype ? { subtype: s.subtype } : {}), transform: s.view.transform, ...(s.family === 'kpi' && s.view.between ? { between: s.view.between } : {}), state: c.state, refused: c.refused, warnings: c.warnings,
         fixes: c.invalid ? fixes(p, s, c.invalid) : [], recommended: best.get(intent) === c.key,
@@ -225,6 +232,19 @@ export function fixes(p: Project, spec: VizSpec, f: Finding): Fix[] {
   const transform: Transform = spec.view.transform === 'rank' ? 'rank' : 'at'
   for (const at of dates) if (at !== spec.view.at && complete({ ...spec.view, transform, at })) return [{ ...base, transform, at, label: `Show ${at}, the latest period where every part is reported` }]
   return []
+}
+
+/** The kicker written above a visual: the structure it shows for curves, maturity, sensitivity and ratings, else its metric. */
+export function kickerFor(p: Project, spec: VizSpec): string {
+  const k = ({ curve: 'YIELD CURVE', maturity: 'DEBT MATURITY', sensitivity: 'DEBT SENSITIVITY', ratings: 'RATINGS' } as Partial<Record<Intent, string>>)[intentOf(spec)]
+  return k ?? (p.datasets[spec.view.datasets[0]!]?.metric ?? 'data').toUpperCase()
+}
+/** The kicker earlier versions wrote (the first dataset's metric id, e.g. "YC_ALL_Y1"): still recognised as generated. */
+export const legacyKicker = (p: Project, spec: VizSpec) => (p.datasets[spec.view.datasets[0]!]?.metric ?? 'data').toUpperCase()
+/** The heading written for a visual: its view's label, with the unit when it runs over time (as new visuals are titled). */
+export function headingFor(p: Project, spec: VizSpec): string {
+  const pr = project(p, spec.view, { mixedUnits: spec.family === 'combo', scatter: spec.family === 'scatter' })
+  return pr.label.charAt(0).toUpperCase() + pr.label.slice(1) + (pr.shape === 'time' ? `, ${pr.unit}` : '')
 }
 
 export { measureOf, VizError }

@@ -6,8 +6,8 @@ import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
 import { check, fromChartSpec, gate, isComposite, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
 import { groupName, groupXml, layout, readGroup } from './composite'
-import { recommend } from './recommend'
-import { findEl, slideIndex, walk, type Found } from './deck'
+import { headingFor, kickerFor, legacyKicker, recommend } from './recommend'
+import { findEl, slideIndex, textOf, walk, type Found } from './deck'
 import { chartKindRefusal } from './vocabulary'
 import type { Binding, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
 
@@ -143,6 +143,25 @@ export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec) {
   if (xml) { if (!appendRawElements(ctx.deck, f.index, [xml])) throw new Error('the visual could not be drawn') }
   else { const r = realize(ctx.project, spec); txn(ctx, [{ op: 'addChart', target: { slide: f.index }, kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: o, title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme }]) }
   settle(ctx, f.index, idx, guid)
+}
+
+/**
+ * Keep a visual's slide headings in step with it. Only text that still says what the app wrote is changed: a
+ * title equal to the visual's previous title, a kicker equal to the one written for it (or the metric id earlier
+ * versions wrote). A heading the author edited is left alone. Returns the updated spec (its title follows).
+ */
+function followHeadings(ctx: Ctx, slide: string, before: VizSpec, after: VizSpec): VizSpec {
+  let out = after
+  for (const [id, b] of Object.entries(ctx.sidecar.bindings)) {
+    if (b.kind !== 'text' || b.slide !== slide || ((b as any).role !== 'title' && (b as any).role !== 'kicker')) continue
+    const f = findEl(ctx.deck, id); if (!f) continue
+    const now = textOf(f.el).trim(), role = (b as any).role
+    let next: string | null = null
+    if (role === 'title' && now === before.title.trim() && !(b as any).numbers?.length) { next = headingFor(ctx.project, after); out = { ...out, title: next } }
+    if (role === 'kicker' && (now === kickerFor(ctx.project, before) || now === legacyKicker(ctx.project, before))) next = kickerFor(ctx.project, after)
+    if (next && next !== now) txn(ctx, [{ op: 'setText', target: { slide: f.index, el: f.el.id }, paragraphs: [{ runs: [{ text: next }] }] }])
+  }
+  return out
 }
 
 /** A spec from a proposal: frr-viz/1 ('viz') or the M1-M5 shape ('chart': {type, title, series}). */
@@ -380,7 +399,7 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       const spec = gate(ctx.project, { ...structuredClone(cmd.spec), id: b.spec.id, accepted_warnings: b.spec.accepted_warnings }, cmd.accept)
       realizeAt(ctx, f, spec)
       const before = b.spec
-      b.spec = spec
+      b.spec = followHeadings(ctx, b.slide, before, spec)
       materializeSlide(ctx.deck, f.index)
       return { summary: `Update visual “${spec.title}”${keptNote(before, spec)}`, slides: [sid(ctx, f.index)] }
     }
@@ -395,14 +414,18 @@ export function run(ctx: Ctx, cmd: Command): Outcome {
       if (b.spec.view.transform !== 'none' && view.transform === 'none') { const pr = check(ctx.project, spec); spec.title = `${pr.label.charAt(0).toUpperCase()}${pr.label.slice(1)}, ${pr.unit}` }
       realizeAt(ctx, f, spec)
       const before = b.spec
-      b.spec = spec
+      b.spec = followHeadings(ctx, b.slide, before, spec)
       materializeSlide(ctx.deck, f.index)
       return { summary: `Change “${spec.title}” to ${cmd.family}${cmd.subtype && cmd.subtype !== 'clustered' ? ` (${cmd.subtype})` : ''}${cmd.transform ? `, ${cmd.transform}` : ''}${keptNote(before, spec)}`, slides: [sid(ctx, f.index)] }
     }
     case 'deck.reproject': {
       // Re-project every bound chart and table from the working layer (e.g. after a formatting change)
       const all = new Set(Object.keys(ctx.project.datasets))
-      return { summary: 'Re-project all bound values from data', slides: reproject(ctx, all, undefined, true) }
+      const slides = reproject(ctx, all, undefined, true)
+      // generated headings written by earlier versions (a metric id as kicker, a count in a title) follow the visual too
+      for (const b of Object.values(ctx.sidecar.bindings)) if (b.kind === 'viz') { try { b.spec = followHeadings(ctx, b.slide, b.spec, b.spec) } catch { /* a visual its data no longer fits: integrity reports it */ } }
+      ctx.deck.deck.slides.forEach((_, i) => materializeSlide(ctx.deck, i))
+      return { summary: 'Re-project all bound values from data', slides }
     }
     case 'ops.raw': {
       for (const op of cmd.ops as any[]) {

@@ -8,7 +8,8 @@ import { integrity } from './integrity'
 import { findEl, render } from './deck'
 import { layout, readGroup } from './composite'
 import { assess, binEdges, check, quantile, VIZ_SCHEMA, type VizSpec } from './viz'
-import { recommend } from './recommend'
+import { kickerFor, legacyKicker, recommend } from './recommend'
+import { textOf } from './deck'
 import { BUNDLE_SCHEMA, type Project } from './types'
 
 const EU = ['BE', 'BG', 'CZ', 'DK', 'DE', 'EE', 'IE', 'EL', 'ES', 'FR', 'HR', 'IT', 'CY', 'LV', 'LT', 'LU', 'HU', 'MT', 'NL', 'AT', 'PL', 'PT', 'RO', 'SI', 'SK', 'FI', 'SE']
@@ -157,4 +158,14 @@ it.runIf((globalThis as any).process?.env?.WRITE_FIXTURES)('writes a saved deck 
     ['yield_curve (two dates)', S('yield_curve', { datasets: CURVE, transform: 'curve', between: ['2025-09', '2026-09'] })] as [string, VizSpec]]
   const expected = cases.map(([name, spec]) => { const pr = check(p, spec); return { name, spec, expected: { shape: pr.shape, categories: pr.categories, series: pr.series.map((x) => x.values) } } })
   writeFileSync(new URL('../../../server/tests/fixtures/structures-parity.json', import.meta.url), JSON.stringify({ project: p, cases: expected }))
+})
+
+it('a yield-curve slide written with the old metric-id kicker gets the structure kicker back on re-project', async () => {
+  const spec = CASES[0]![1]
+  const s = await Store.fromBundle({ schema: BUNDLE_SCHEMA, project: P(), sidecar: { schema: 'frr-sidecar/1', bindings: {} }, journal: [], threads: {}, deck: null })
+  expect(legacyKicker(s.project, spec)).toBe('YC_ALL_Y1')
+  expect(s.exec({ kind: 'slide.compose', proposal: { key: 'k', kicker: 'YC_ALL_Y1', title: 'Curve', subtitle: 'S', viz: spec } }).ok).toBe(true)
+  expect(s.exec({ kind: 'deck.reproject' }).ok).toBe(true)
+  const [kid] = Object.entries(s.sidecar.bindings).find(([, b]) => b.kind === 'text' && (b as any).role === 'kicker')!
+  expect([textOf(findEl(s.deck, kid)!.el).trim(), kickerFor(s.project, spec)]).toEqual(['YIELD CURVE', 'YIELD CURVE'])
 })

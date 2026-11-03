@@ -6,6 +6,7 @@
 // Every data mark is named "frr-mark <series> <category> <value>" and every value label "frr-label <series>
 // <category>"; rating actions are "frr-rating <evidence id> <notch>". The names carry the values the server
 // checks; positions and label texts are checked on the client against a fresh layout.
+import { HeuristicMetrics } from '@genoffice/pptx-render'
 import { decimalsOf } from './evidence'
 import { NOTCHES } from './ratings'
 import type { Cell, CompositeFamily, Projected, VizSpec } from './viz'
@@ -19,7 +20,7 @@ export type Mark =
   | { name: string; kind: 'text'; box: Box; text: string; size: number; color: string; bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string }
 
 /** Bumped whenever a layout changes, so integrity can tell a stale drawing from wrong data (see integrity.ts). */
-export const LAYOUT_VERSION = 2 // 2: V4 (distribution titles without counts)
+export const LAYOUT_VERSION = 3 // 2: V4 (distribution titles without counts); 3: label widths measured, single-period box
 export const groupName = (vizId: string) => `frr-viz ${vizId} L${LAYOUT_VERSION}`
 
 /** Where a composite is laid out: its own design space, in slide px (the group scales it to its placement). */
@@ -27,7 +28,9 @@ export interface Size { w: number; h: number }
 
 // ------------------------------------------------------------------ helpers
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
-const tw = (t: string, pt: number) => t.length * pt * 0.7 + 4 // approximate text width in px (Inter, pt at 96 dpi)
+// text width in px as the app's renderer measures it (the same per-character metrics it lays text out with)
+const METRICS = new HeuristicMetrics()
+const tw = (t: string, pt: number) => Math.ceil(METRICS.measure(t, { fontFamily: 'Inter', fontSizePx: (pt * 96) / 72, bold: false, italic: false })) + 4
 const decimalsFor = (p: Project, cell: Cell) => {
   if (!cell) return 1
   const ds = 'derived' in cell ? Object.values(cell.derived.inputs)[0]?.dataset : cell.dataset
@@ -374,9 +377,10 @@ function box(g: Ctx): Mark[] {
   const x0 = 64, x1 = W - 20, y0 = TOP + 20, y1 = H - 44
   const d = domain(S.flatMap((s) => s.values), false), sy = scale(d[0], d[1], y1, y0)
   hGrid(out, g, sy, d, x0, x1)
-  const n = pr.categories.length, band = (x1 - x0) / n, bw = Math.min(64, band * 0.38)
+  // one period gets the room of the whole frame: a wider box and a wider strip of dots
+  const n = pr.categories.length, band = (x1 - x0) / n, bw = n === 1 ? 150 : Math.min(64, band * 0.38), cols = n === 1 ? 10 : 3, gap = n === 1 ? 13 : 7
   pr.categories.forEach((cat, j) => {
-    const cx = x0 + band * (j + 0.42), [mn, q1, md, q3, mx] = S.slice(0, k).map((s) => s.values[j]!)
+    const cx = x0 + band * (j + (n === 1 ? 0.36 : 0.42)), [mn, q1, md, q3, mx] = S.slice(0, k).map((s) => s.values[j]!)
     out.push(text(`frr-cat ${j}`, { x: cx - band / 2, y: y1 + 6, w: band, h: 14 }, cat, 8.5, c.muted, { align: 'ctr' }))
     if (mn == null || q1 == null || md == null || q3 == null || mx == null) { out.push(text(`frr-gap 0 ${j}`, { x: cx - 30, y: (y0 + y1) / 2, w: 60, h: 14 }, 'n/a', 8.5, c.muted, { align: 'ctr' })); return }
     const cell = (si: number) => S[si]!.cells[j]!
@@ -389,10 +393,10 @@ function box(g: Ctx): Mark[] {
     out.push(text(`frr-label 2 ${j}`, { x: cx - bw / 2 - 6 - tw(fmt(p, md, cell(2)), 8.5), y: sy(md) - 8, w: tw(fmt(p, md, cell(2)), 8.5), h: 16 }, fmt(p, md, cell(2)), 8.5, c.ink, { align: 'r' }))
     // every value, beside the box, in value order (a narrow zig-zag so close values stay visible)
     const pts = S.slice(k).map((s, e) => ({ e: e + k, v: s.values[j]!, name: s.name, cell: s.cells[j]! })).filter((x) => x.v != null).sort((a, b) => a.v - b.v)
-    pts.forEach((x, r) => out.push(dot(markName(x.e, j, x.v), cx + bw / 2 + 12 + (r % 3) * 7, sy(x.v), 2.6, c.series[0]!, `${x.name}, ${cat}: ${fmt(p, x.v, x.cell)}`)))
+    pts.forEach((x, r) => out.push(dot(markName(x.e, j, x.v), cx + bw / 2 + 12 + (r % cols) * gap, sy(x.v), n === 1 ? 3.2 : 2.6, c.series[0]!, `${x.name}, ${cat}: ${fmt(p, x.v, x.cell)}`)))
     if (n <= 3) for (const [si, x] of [[0, pts[0]], [4, pts.at(-1)]] as const) if (x) {
       const t = `${x.name} ${fmt(p, x.v, x.cell)}`
-      out.push(text(`frr-label ${si} ${j}`, { x: cx + bw / 2 + 36, y: sy(x.v) - 8, w: tw(t, 8.5), h: 16 }, t, 8.5, c.muted))
+      out.push(text(`frr-label ${si} ${j}`, { x: cx + bw / 2 + 24 + cols * gap, y: sy(x.v) - 8, w: tw(t, 8.5), h: 16 }, t, 8.5, c.muted))
     }
   })
   const count = S.length - k
