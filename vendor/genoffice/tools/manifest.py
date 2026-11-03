@@ -21,6 +21,8 @@ ENTRIES = [
     "apps/slides/src/renderer/SlideCanvas.tsx",
     "apps/slides/src/renderer/konva-adapter.ts",
     "apps/slides/src/renderer/TextEditOverlay.tsx",
+    # PD1: deterministic slide geometry audit (bounds, text overflow, overlaps) on render nodes
+    "packages/pipelines/src/slides/layout-audit.ts",
 ]
 ALWAYS = ["LICENSE", "NOTICE", "LICENSE-UNICODE.txt"]
 # `import type` / `export type` statements are erased at build time, so they do not pull files in

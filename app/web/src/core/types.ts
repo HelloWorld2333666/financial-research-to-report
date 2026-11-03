@@ -25,8 +25,8 @@ export interface TableSpec { title: string; datasets: string[]; dates: string[] 
 export type Binding =
   | { kind: 'text'; slide: string; role: string; numbers?: NumberRef[] }
   /** a chart realized from a renderer-independent spec (frr-viz/1); the spec is authoritative */
-  | { kind: 'viz'; slide: string; spec: VizSpec }
-  | { kind: 'table'; slide: string; table: TableSpec }
+  | { kind: 'viz'; slide: string; spec: VizSpec; style?: ElementStyle }
+  | { kind: 'table'; slide: string; table: TableSpec; style?: ElementStyle }
   | { kind: 'placeholder'; slide: string; label: string; request: any }
   /** a table of rating actions; each row is one verified evidence item (page + excerpt from an agency document) */
   | { kind: 'ratings'; slide: string; rows: string[] }
@@ -34,8 +34,18 @@ export type Binding =
 /** A number as written in slide text and the one evidence item or derivation it came from (schema 0.2 NumberRef). */
 export interface NumberRef { text: string; evidence?: string; derivation?: string }
 
+/** Design-layer styling of a bound chart or table (PD1): presentation only, never the data or the visual's meaning.
+ *  Kept beside the spec so a data refresh redraws the element with the same styling. */
+export interface ElementStyle { legend?: 'b' | 'r' | 'none'; gridlines?: boolean; gapWidthPct?: number; emphasis?: string; colors?: string[]; peer?: string; pt?: number; axisTitle?: string }
+
 export const SIDECAR_SCHEMA = 'frr-sidecar/1'
-export interface Sidecar { schema: typeof SIDECAR_SCHEMA; bindings: Record<string, Binding> }
+export interface Sidecar {
+  schema: typeof SIDECAR_SCHEMA; bindings: Record<string, Binding>
+  /** PD1: the design applied to each slide (by slide durable id) and the element that realizes each design object */
+  designs?: Record<string, import('./design/spec').AppliedDesign>
+  /** PD1: what the user set by hand on an element (position, text, chart choice); AI redesigns keep it */
+  owned?: Record<string, import('./design/spec').Owned>
+}
 
 export interface JournalEntry { seq: number; at: string; kind: string; actor: Actor; summary: string; proposalId?: string; slides: string[] }
 

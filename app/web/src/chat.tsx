@@ -11,6 +11,9 @@ import { HttpAgent } from '@ag-ui/client'
 import { Thumb } from './thumb'
 import type { Store } from './core/store'
 import { summaryFor } from './core/wording'
+import { planSlide, PLAN_VERSION, type DesignCandidate, type DesignRequest } from './core/design/planner'
+import { qaSlide, type QaFinding } from './core/design/qa'
+import { PROFILES } from './core/design/profiles'
 import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { textNumbers } from './core/evidence'
@@ -229,8 +232,61 @@ function ChangeVisualTool(props: any) {
 }
 
 const Text = ({ text }: any) => <div className="msg-text">{text}</div>
+/** QA findings of a design as previewed on the slide: errors first; nothing to show is stated. */
+function QaList({ findings }: { findings: QaFinding[] | null | undefined }) {
+  if (findings == null) return null
+  if (!findings.length) return <div className="good small" data-qa="clean">Layout check: no defects found</div>
+  const errs = findings.filter((f) => f.level === 'error')
+  return <div className={errs.length ? 'bad small' : 'warn small'} data-qa={errs.length ? 'errors' : 'warnings'}>
+    Layout check: {findings.slice(0, 4).map((f) => f.message).join('; ')}{findings.length > 4 ? ` (+${findings.length - 4} more)` : ''}</div>
+}
+
+/** PD1: the model's slide plan, turned by the app into validated designs. Each is previewed on a copy of the deck and
+ *  checked for layout defects before anything changes; one Apply is one undoable step (a redesign keeps the user's edits). */
+function DesignTool(props: any) {
+  const { store } = useContext(HostCtx)
+  useRev(store)
+  const r = parse(props.result)
+  if (!r) return <Running what="Planning the slide" />
+  if (r.kind !== 'design_request') return <ErrorNote r={r} />
+  // a redesign without a metric keeps the slide's: the metric of the datasets its current design shows
+  const current = r.slide ? store.sidecar.designs?.[r.slide]?.design : undefined
+  const keptMetric = current && (() => { for (const o of current.objects) if (o.kind === 'viz' && o.role === 'primary') return store.project.datasets[o.viz.view.datasets[0]!]?.metric })()
+  const request: DesignRequest = { ...(r.request as DesignRequest), ...(!r.request.metric && keptMetric ? { metric: keptMetric } : {}) }
+  const plan = store.card(`${props.toolCallId}:plan:v${PLAN_VERSION}`, () => planSlide(store.project, request))
+  if (plan.error) return <div><Summary r={r} /><div className="bad small" data-tool-error>{plan.error}</div></div>
+  const slide = r.slide && slideIndex(store.deck, r.slide) >= 0 ? r.slide as string : undefined
+  const cmdOf = (c: DesignCandidate): Command => ({ kind: 'design.apply', design: c.design, ...(slide ? { slide } : {}) })
+  const qa = store.card(`${props.toolCallId}:qa:v${PLAN_VERSION}`, () => plan.candidates.map((c) => c.problems.length ? null
+    : store.preview(cmdOf(c), (o) => qaSlide(store, slideIndex(store.deck, o.slides[0]!), store.metrics)).value ?? null))
+  return (
+    <div data-design-request>
+      <Summary r={r} />
+      <details className="small" data-design-inputs><summary className="muted">Data and sources ({plan.inputs.length} verified series)</summary>
+        {plan.inputs.map((x) => <div key={x.dataset} className="muted">{x.entity} · {x.unit} · {x.source} <code>{x.dataset}</code></div>)}</details>
+      {plan.notes.map((n, i) => <div key={i} className="warn small">{n}</div>)}
+      {plan.candidates.map((c, i) => (
+        <Card key={i} pid={`${props.toolCallId}:${i}`} title={`Design ${i + 1}: ${c.label}`} cmd={c.problems.length ? null : cmdOf(c)} blocked={c.problems.length ? `Not valid: ${c.problems.join('; ')}` : null}>
+          <div className="p-summary" data-claim>{c.design.claim.text}</div>
+          <div className="muted small">{c.design.layout.family.replace('_', ' ')} · {c.design.density} density · {c.design.objects.length} objects{slide ? ' · redesigns this slide' : ' · new slide'}</div>
+          <QaList findings={qa[i]} />
+          <details className="small"><summary className="muted">How it was planned</summary><ol className="rationale">{c.design.rationale.map((x, k) => <li key={k}>{x}</li>)}</ol></details>
+        </Card>))}
+    </div>
+  )
+}
+
+function ProfileTool(props: any) {
+  const r = parse(props.result)
+  if (!r) return <Running what="Checking the style" />
+  if (r.kind !== 'profile_request') return <ErrorNote r={r} />
+  const pr = PROFILES[r.profile]
+  return <Card pid={props.toolCallId} title={`Style: ${pr?.name ?? r.profile}`} cmd={pr ? { kind: 'design.profile', profile: r.profile } : null} blocked={pr ? null : 'Unknown profile'}>
+    <Summary r={r} /><div className="muted small">{pr?.description}</div></Card>
+}
+
 const Fallback = (p: any) => <div className="muted small">tool {p.toolName}</div>
-const tools = { by_name: { compose_deck: DeckTool, add_comparison: SeriesTool, rewrite_text: RewriteTool, layout_suggestion: LayoutTool, start_research: ResearchTool, propose_visual: VisualTool, change_visual: ChangeVisualTool }, Fallback }
+const tools = { by_name: { compose_deck: DeckTool, add_comparison: SeriesTool, rewrite_text: RewriteTool, layout_suggestion: LayoutTool, start_research: ResearchTool, propose_visual: VisualTool, change_visual: ChangeVisualTool, design_slide: DesignTool, set_design_profile: ProfileTool }, Fallback }
 
 const UserMessage = () => <MessagePrimitive.Root className="msg-user"><MessagePrimitive.Parts components={{ Text }} /></MessagePrimitive.Root>
 function AssistantMessage() {

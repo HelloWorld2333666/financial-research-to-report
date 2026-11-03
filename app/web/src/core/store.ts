@@ -7,6 +7,8 @@ import { findEl, slideList } from './deck'
 import { migrateSidecar } from './sidecar'
 import { BUNDLE_SCHEMA, type Actor, type Bundle, type JournalEntry, type Project, type Sidecar } from './types'
 import { VizWarning } from './viz'
+import { setDesignMetrics } from './design/build'
+import type { Owned } from './design/spec'
 import type { Finding } from './constraints'
 
 interface Snapshot { slides: any; entries: Map<string, unknown>; size: any; project: Project; sidecar: Sidecar; proposalId?: string }
@@ -72,8 +74,10 @@ export class Store {
   /** Run one command as one undoable, journaled step. On any failure nothing changes. */
   exec(cmd: Command, meta: { actor: Actor; proposalId?: string } = { actor: 'user' }): ExecResult {
     const before = this.snap()
+    setDesignMetrics(this.metrics)
     try {
       const out = run({ deck: this.deck, project: this.project, sidecar: this.sidecar }, cmd)
+      if (meta.actor === 'user') markOwned(this.sidecar, cmd)
       this.undoStack.push({ ...before, proposalId: meta.proposalId }); this.redoStack = []
       this.log(cmd.kind, meta.actor, out.summary, out.slides, meta.proposalId)
       if (meta.proposalId) this.proposals[meta.proposalId] = 'applied'
@@ -89,6 +93,7 @@ export class Store {
   /** Apply a command, read the result, then restore: a dry run that never touches the live document. */
   preview<T>(cmd: Command, read: (out: Outcome) => T): { ok: boolean; value?: T; error?: string } {
     const before = this.snap()
+    setDesignMetrics(this.metrics)
     try { return { ok: true, value: read(run({ deck: this.deck, project: this.project, sidecar: this.sidecar }, cmd)) } }
     catch (e: any) { return { ok: false, error: String(e?.message ?? e) } }
     finally { this.restore(before) }
@@ -142,4 +147,16 @@ export class Store {
     const r = await fetch('/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ seed, title }) })
     return Store.fromBundle(await r.json())
   }
+}
+
+/**
+ * PD1: what a user's own command makes theirs. Moving or resizing an element owns its position; editing its text owns
+ * the wording; changing a chart's type or view owns the chart choice. AI redesigns keep owned properties.
+ */
+export function markOwned(sc: Sidecar, cmd: Command) {
+  const own = (id: string, k: keyof Owned) => { ((sc.owned ??= {})[id] ??= {})[k] = true }
+  if (cmd.kind === 'element.transform') own(cmd.id, 'box')
+  else if (cmd.kind === 'elements.transform') cmd.items.forEach((it) => own(it.id, 'box'))
+  else if (cmd.kind === 'text.set') own(cmd.id, 'text')
+  else if (cmd.kind === 'viz.change' || cmd.kind === 'viz.update') own(cmd.id, 'content')
 }

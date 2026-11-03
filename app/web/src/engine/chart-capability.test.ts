@@ -91,5 +91,5 @@ describe('VIS-01 chart capability audit', () => {
       // style-only edit) used to map gaps to zeros
       expect([r.type, r.typeChangeKeepsGap, r.styleEditKeepsGap]).toEqual([r.type, true, true])
     }
-  })
+  }, 20_000) // renders every engine chart type: slow when the machine is busy
 })

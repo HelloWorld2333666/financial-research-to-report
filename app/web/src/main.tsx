@@ -11,9 +11,17 @@ import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
 import { localTime } from './core/time'
+import { qaDeck, qaSlide } from './core/design/qa'
+import { planSlide } from './core/design/planner'
 import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
 // the chat (assistant-ui, AG-UI: about 0.7 MB) loads after the deck has drawn
 const ChatPanel = React.lazy(() => import('./chat').then((m) => ({ default: m.ChatPanel })))
+/** A thread the chat library cannot restore (e.g. a malformed saved message) must not take the editor down with it. */
+class ChatBoundary extends React.Component<{ children: React.ReactNode }, { error: string | null }> {
+  state = { error: null as string | null }
+  static getDerivedStateFromError(e: any) { return { error: String(e?.message ?? e) } }
+  render() { return this.state.error ? <p className="bad small" data-chat-error>The chat could not open this thread ({this.state.error}). The deck and its data are unaffected.</p> : this.props.children }
+}
 import { changeOptions, type Intent } from './core/recommend'
 import type { Command } from './core/commands'
 import type { Finding } from './core/constraints'
@@ -44,7 +52,8 @@ function Picker({ onOpen }: { onOpen: (s: Store) => void }) {
 
 function Workspace({ store }: { store: Store }) {
   useStore(store)
-  const [cur, setCur] = useState(0)
+  // ?slide=N opens slide N (1-based), e.g. for a screenshot of a given slide
+  const [cur, setCur] = useState(() => Math.max(0, Number(new URLSearchParams(location.search).get('slide') ?? 1) - 1) || 0)
   const [editing, setEditing] = useState<any>(null)
   const [entered, setEntered] = useState<string | null>(null)
   const [tab, setTab] = useState<'chat' | 'evidence' | 'data' | 'tasks' | 'journal' | 'integrity' | 'claims' | 'versions'>('chat')
@@ -73,6 +82,14 @@ function Workspace({ store }: { store: Store }) {
   const slides = store.slides()
   const index = Math.min(cur, slides.length - 1)
   const slide = useMemo(() => render(store.deck, index, fit, store.metrics), [store.revision, index, fit])
+  const probeSlide = useRef(slide); probeSlide.current = slide
+  useEffect(() => { // ?probe=1: the slide as drawn at this window size, for the headless screenshot test (16:9 at every width)
+    if (!new URLSearchParams(location.search).has('probe')) return
+    const t = setInterval(() => { const sl = probeSlide.current; let pre = document.getElementById('probe'); if (!pre) { pre = document.createElement('pre'); pre.id = 'probe'; pre.hidden = true; document.body.appendChild(pre) }
+      const c = [...document.querySelectorAll('.stage canvas')].map((x) => x.getBoundingClientRect()).sort((a, b) => b.width * b.height - a.width * a.height)[0]
+      pre.textContent = JSON.stringify({ slideW: sl.widthPx, slideH: sl.heightPx, viewport: innerWidth, stage: document.querySelector('.stage')?.clientWidth ?? 0, canvas: c ? [Math.round(c.width), Math.round(c.height)] : null, slides: store.slides().length }) }, 500)
+    return () => clearInterval(t)
+  }, [])
   const thumbs = useMemo(() => slides.map((s) => render(store.deck, s.index, 150, store.metrics)), [store.revision, slides.length])
   const ig = useMemo(() => integrity(store.deck, store.project, store.sidecar), [store.revision])
   const say = (m: string) => { setNotice(m); setTimeout(() => setNotice((n) => (n === m ? null : n)), 4000) }
@@ -171,7 +188,7 @@ function Workspace({ store }: { store: Store }) {
   const claims = useMemo(() => Object.entries(store.sidecar.bindings).filter(([, b]) => b.kind === 'text' && ['title', 'body'].includes((b as any).role) && b.slide === slides[index]?.id)
     .flatMap(([id]) => { const f = findEl(store.deck, id); return f ? checkText(textOf(f.el), store.project) : [] }), [store.revision, index])
   const enteredSource = entered ? sourceIdsFor(slide, [entered])[0] ?? null : null
-  ;(window as any).__ws = { store, setCur }
+  ;(window as any).__ws = { store, setCur, qaSlide, qaDeck, planSlide, findEl, textOf } // inspection hooks for the browser checks
 
   // change visual (VIS V2): recommended, also valid, allowed with a warning (asks first), and invalid ones with
   // the reason and, where one exists, a change of view that makes them valid
@@ -274,7 +291,7 @@ function Workspace({ store }: { store: Store }) {
           </nav>
           <div className="panel-body">
             {/* always mounted: a request in flight survives switching tabs */}
-            <React.Suspense fallback={tab === 'chat' ? <p className="muted small">Loading chat…</p> : null}><ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} /></React.Suspense>
+            <ChatBoundary><React.Suspense fallback={tab === 'chat' ? <p className="muted small">Loading chat…</p> : null}><ChatPanel store={store} slideId={slides[index]?.id} slideNo={index + 1} visible={tab === 'chat'} /></React.Suspense></ChatBoundary>
             {tab === 'evidence' && <EvidencePanel store={store} />}
             {tab === 'data' && <DataPanel store={store} exec={exec} />}
             {tab === 'tasks' && <TasksPanel store={store} />}

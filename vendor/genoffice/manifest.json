@@ -150,6 +150,8 @@
   "packages/i18n/package.json": "217d3ebab4384a63596b924af08952027e10960fe30a36ada76c85c8a2aab81c",
   "packages/i18n/src/font-names.ts": "fc4c54ddac45dbd22b8dd11afbdba8b5b6c1fdc848016ee78bdbc8a30ea199b3",
   "packages/i18n/src/index.ts": "1a0102a125dcfbae73b36b2bcd2ee5e64fdaff8b310dc5cf375698a0bcdc84a1",
+  "packages/pipelines/package.json": "2278f05cbcae9abc007e655d3c1f9cb7e26b523acd9a136fe8b51d0999f8ba1a",
+  "packages/pipelines/src/slides/layout-audit.ts": "ffb6575d6a226ab28b933982659e3134e012d00c473b13523c5c4dbd51648dfe",
   "packages/pptx-engine/package.json": "2ed9e2280344cef8d25eaf7182500e7201f80527df2653cbe582b9666092b70a",
   "packages/pptx-engine/src/align.ts": "7cb048ec0139a0117eec21dd20efc8a2f2db7f391751fed88081282fecd7606f",
   "packages/pptx-engine/src/animation.ts": "44bcacd3e71007578ab787ec27ab1e2c1be2f072cfe0260ce786c264446e3eaa",

@@ -9,7 +9,11 @@ import { groupName, groupXml, layout, readGroup } from './composite'
 import { headingFor, isGeneratedSubtitle, kickerFor, legacyKicker, recommend, subtitleFor } from './recommend'
 import { findEl, slideIndex, textOf, walk, type Found } from './deck'
 import { chartKindRefusal } from './vocabulary'
-import type { Binding, Dataset, NumberRef, Project, Sidecar, TableSpec } from './types'
+import type { Binding, Dataset, ElementStyle, NumberRef, Project, Sidecar, TableSpec } from './types'
+import { chartStylePatch } from './design/style'
+import { applyDesign } from './design/build'
+import { dnaFor, PROFILES } from './design/profiles'
+import type { SlideDesign } from './design/spec'
 
 export const EMU = 9525 // EMU per slide px; slides are 1280 x 720 px
 /** Built-in table style driven by the theme's accent1 (Design DNA navy) instead of PowerPoint's default orange. */
@@ -47,6 +51,12 @@ export type Command =
   | { kind: 'placeholder.fill'; id: string; evidence: any[]; title?: string; subtitle?: string; source_note: string }
   | { kind: 'viz.update'; id: string; spec: VizSpec; accept?: string[] }
   | { kind: 'viz.change'; id: string; family: Family; subtype?: Subtype; transform?: Transform; at?: string; between?: [string, string]; from?: string; to?: string; accept?: string[] }
+  /** PD1: apply a slide design to a new slide, or redesign `slide` (keeping what the user owns) */
+  | { kind: 'design.apply'; design: SlideDesign; slide?: string }
+  /** PD1: change the project's design profile; designed slides are restyled, data untouched */
+  | { kind: 'design.profile'; profile: string }
+  /** remove a slide with its bindings, design record and ownership entries */
+  | { kind: 'slide.delete'; slide: string }
 
 export interface Ctx { deck: OpenedPptx; project: Project; sidecar: Sidecar }
 export interface Outcome { summary: string; slides: string[]; created?: string[] }
@@ -62,12 +72,12 @@ const sid = (ctx: Ctx, index: number) => slideDurableId(ctx.deck.deck.slides[ind
 const must = (ctx: Ctx, id: string) => { const f = findEl(ctx.deck, id); if (!f) throw new Error(`element ${id} not found`); return f }
 
 // ------------------------------------------------------------------ projections of bound elements
-export function tableFill(ctx: Ctx, el: string, index: number, t: TableSpec): Op[] {
+export function tableFill(ctx: Ctx, el: string, index: number, t: TableSpec, pt = 9): Op[] {
   const tg = { slide: index, el }, ops: Op[] = []
-  ;['', ...t.dates].forEach((h, c) => ops.push({ op: 'setTableCell', target: tg, row: 0, col: c, paragraphs: [{ runs: [{ text: h, bold: true, fontSize: 9 }] }] }))
+  ;['', ...t.dates].forEach((h, c) => ops.push({ op: 'setTableCell', target: tg, row: 0, col: c, paragraphs: [{ runs: [{ text: h, bold: true, fontSize: pt }], ...(c ? { align: 'right' } : {}) }] }))
   t.datasets.forEach((d, r) => {
-    ops.push({ op: 'setTableCell', target: tg, row: r + 1, col: 0, paragraphs: [{ runs: [{ text: ctx.project.datasets[d]?.entity ?? d, bold: true, fontSize: 9 }] }] })
-    t.dates.forEach((x, c) => ops.push({ op: 'setTableCell', target: tg, row: r + 1, col: c + 1, paragraphs: [{ runs: [{ text: cellText(ctx.project, d, x), fontSize: 9 }], align: 'right' }] }))
+    ops.push({ op: 'setTableCell', target: tg, row: r + 1, col: 0, paragraphs: [{ runs: [{ text: ctx.project.datasets[d]?.entity ?? d, bold: true, fontSize: pt }] }] })
+    t.dates.forEach((x, c) => ops.push({ op: 'setTableCell', target: tg, row: r + 1, col: c + 1, paragraphs: [{ runs: [{ text: cellText(ctx.project, d, x), fontSize: pt }], align: 'right' }] }))
   })
   return ops
 }
@@ -79,7 +89,7 @@ export function reproject(ctx: Ctx, dsIds: Set<string>, only?: string, everythin
     if (only && durable !== only) continue
     const f = findEl(ctx.deck, durable); if (!f) continue
     if (b.kind === 'viz' && (everything || vizDatasets(b.spec).some((d) => dsIds.has(d)))) { realizeAt(ctx, f, b.spec); touched.add(f.index) }
-    if (b.kind === 'table' && b.table.datasets.some((d) => dsIds.has(d))) { txn(ctx, tableFill(ctx, f.el.id, f.index, b.table)); touched.add(f.index) }
+    if (b.kind === 'table' && b.table.datasets.some((d) => dsIds.has(d))) { txn(ctx, tableFill(ctx, f.el.id, f.index, b.table, b.style?.pt)); touched.add(f.index) }
   }
   touched.forEach((i) => materializeSlide(ctx.deck, i))
   return [...touched].map((i) => sid(ctx, i))
@@ -100,9 +110,9 @@ const keptNote = (before: VizSpec | undefined, after: VizSpec) => {
 }
 
 /** setChart that rebuilds the chart from the spec: type, direction and the FULL data (never old values). */
-export function realizeOp(ctx: Ctx, index: number, el: string, spec: VizSpec): Op {
+export function realizeOp(ctx: Ctx, index: number, el: string, spec: VizSpec, style?: ElementStyle): Op {
   const r = realize(ctx.project, spec)
-  return { op: 'setChart', target: { slide: index, el }, patch: { kind: r.kind, ...(r.barDir ? { barDir: r.barDir } : {}), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme } }
+  return { op: 'setChart', target: { slide: index, el }, patch: { kind: r.kind, ...(r.barDir ? { barDir: r.barDir } : {}), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme, ...chartStylePatch(ctx.project, r, style) } }
 }
 const CREATION_ID_RE = /(<a16:creationId[^>]*\bid=")\{?([0-9A-Fa-f-]{36})\}?(")/
 /** The element's own creationId GUID (the first cNvPr is the element's; a group embeds its children's after it). */
@@ -127,22 +137,24 @@ function settle(ctx: Ctx, index: number, idx: number, guid: string | null) {
  * element is replaced by the new realization (composite group <-> chart, or a rebuilt group), keeping its
  * creationId, so the durable id (binding key, selection, chat references) and its z-order and placement stay.
  */
-export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec) {
+export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec, designSize?: { w: number; h: number }) {
   const native = !isComposite(spec.family)
-  if (native && f.el.type === 'chart') { txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec)]); return }
+  const durable = (f as any).durable as string | undefined, style = durable ? (ctx.sidecar.bindings[durable] as any)?.style as ElementStyle | undefined : undefined
+  if (native && f.el.type === 'chart') { txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec, style)]); return }
   const slide = ctx.deck.deck.slides[f.index]! as any, idx = slide.elements.indexOf(f.el), guid = guidOf(f.el), o = f.el.transform.offset
   if (idx < 0) throw new Error('a visual inside a group cannot be rebuilt; ungroup it first')
   let xml: string | null = null
   if (!native) {
     const pr = check(ctx.project, spec)
     // a rebuilt group keeps its design space (the user may have resized it); a chart turned composite lays out at its own size
-    const size = (f.el.type === 'group' && readGroup(f.el).size) || { w: Math.round(o.cx / EMU), h: Math.round(o.cy / EMU) }
+    const size = designSize || (f.el.type === 'group' && readGroup(f.el).size) || { w: Math.round(o.cx / EMU), h: Math.round(o.cy / EMU) }
     xml = groupXml(layout(ctx.project, spec, pr, size), { guid: guid ?? crypto.randomUUID().toUpperCase(), id: nextShapeId(slide), name: groupName(spec.id), place: o, size, font: ctx.project.design_dna.font })
   }
   txn(ctx, [{ op: 'deleteElement', target: { slide: f.index, el: f.el.id } }])
   if (xml) { if (!appendRawElements(ctx.deck, f.index, [xml])) throw new Error('the visual could not be drawn') }
   else { const r = realize(ctx.project, spec); txn(ctx, [{ op: 'addChart', target: { slide: f.index }, kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: o, title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme }]) }
   settle(ctx, f.index, idx, guid)
+  if (!xml && style && durable) { const g = findEl(ctx.deck, durable); if (g?.el.type === 'chart') txn(ctx, [{ op: 'setChart', target: { slide: g.index, el: g.el.id }, patch: chartStylePatch(ctx.project, realize(ctx.project, spec), style) }]) }
 }
 
 /**
@@ -245,6 +257,26 @@ const GROUPABLE = new Set(['text', 'shape', 'picture'])
 export function run(ctx: Ctx, cmd: Command): Outcome {
   switch (cmd.kind) {
     case 'slide.compose': return composeSlide(ctx, cmd.proposal, cmd.accept)
+    case 'design.apply': return applyDesign(ctx, cmd.design, cmd.slide)
+    case 'slide.delete': {
+      const si = slideIndex(ctx.deck, cmd.slide)
+      if (si < 0) throw new Error('that slide is no longer in the deck')
+      if (ctx.deck.deck.slides.length < 2) throw new Error('a deck keeps at least one slide')
+      for (const [id, b] of Object.entries(ctx.sidecar.bindings)) if (b.slide === cmd.slide) { delete ctx.sidecar.bindings[id]; delete ctx.sidecar.owned?.[id] }
+      delete ctx.sidecar.designs?.[cmd.slide]
+      txn(ctx, [{ op: 'deleteSlide', target: { slide: si } }])
+      return { summary: `Delete slide ${si + 1}`, slides: [] }
+    }
+    case 'design.profile': {
+      const pr = PROFILES[cmd.profile]
+      if (!pr) throw new Error(`unknown design profile "${cmd.profile}"`)
+      ;(ctx.project as any).design_profile = pr.id
+      ctx.project.design_dna = dnaFor(pr)
+      txn(ctx, themeOps(ctx.project.design_dna))
+      const touched = reproject(ctx, new Set(), undefined, true) // chart colours follow the profile; values are unchanged
+      const outs = Object.entries(ctx.sidecar.designs ?? {}).filter(([s]) => slideIndex(ctx.deck, s) >= 0).map(([s, a]) => applyDesign(ctx, { ...a.design, profile: pr.id }, s))
+      return { summary: `Design profile: ${pr.name} (${outs.length} designed slide${outs.length === 1 ? '' : 's'} restyled; data unchanged)`, slides: [...new Set([...touched, ...outs.flatMap((o) => o.slides)])] }
+    }
     case 'element.transform': {
       const f = must(ctx, cmd.id), slide = sid(ctx, f.index)
       if (f.group) {

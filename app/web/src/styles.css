@@ -212,3 +212,7 @@ select { padding: 4px 6px; }
 .slide-text-editor > div[data-bullet-img]::after { content: ''; position: absolute; left: var(--bullet-x); top: var(--bullet-y); width: var(--bullet-img-w); height: var(--bullet-h); background: var(--bullet-img) center / contain no-repeat; user-select: none; pointer-events: none; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+/* PD1 design cards */
+.warn { color: var(--warn); }
+.rationale { margin: 4px 0 0; padding-left: 18px; color: var(--muted, #5b6b7f); } .rationale li { margin: 2px 0; }
+[data-design-inputs] code { font-size: 10.5px; opacity: .75; }

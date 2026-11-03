@@ -28,6 +28,9 @@
    "@genoffice/pptx-render": [
     "../../vendor/genoffice/src/packages/pptx-render/src/index.ts"
    ],
+   "@genoffice/pipelines/slides/layout-audit": [
+    "../../vendor/genoffice/src/packages/pipelines/src/slides/layout-audit.ts"
+   ],
    "@genoffice-slides/*": [
     "../../vendor/genoffice/src/apps/slides/src/*"
    ]

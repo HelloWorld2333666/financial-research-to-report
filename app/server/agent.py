@@ -349,7 +349,10 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "distribution (spread across many countries), curve (euro-area yield curve), maturity (debt by remaining maturity), sensitivity (debt under "
                 "assumed interest and growth rates) — "
                 "the metric and the countries; the app picks the chart type from the data); "
-                "change_visual (turn the selected chart into another type, e.g. a dumbbell, slope, lollipop, waterfall bridge, small multiples or step line).\n"
+                "change_visual (turn the selected chart into another type, e.g. a dumbbell, slope, lollipop, waterfall bridge, small multiples or step line); "
+                "design_slide (plan and design a whole slide from verified data: purpose trend, comparison or risk, the countries, your one-sentence message, "
+                "density, and optionally a preferred layout; redesign=true redesigns the current slide and keeps what the user edited); "
+                "set_design_profile (change the visual style of the deck: institutional or editorial; data never changes).\n"
                 "If a request does not make the intent clear (e.g. 'compare France with the PIIGS' could mean the trend, the current ranking or the change "
                 "since a year), ask ONE short question offering those options instead of guessing.")
 
@@ -543,6 +546,51 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
         return {"kind": "visual_request", **req, "missing": missing, "slide": ctx.deps.state.slide,
                 "summary": f"Requested a {intent} visual of {m} for {who}" + (f" (no verified data for {', '.join(missing)})" if missing else "")
                            + ". The app recommends a chart type from the data under fixed rules; preview and apply. Nothing has changed yet."}
+
+    @agent.tool
+    def design_slide(ctx: RunContext[Deps], purpose: Literal["trend", "comparison", "risk"], focus: str = "FR", peers: Optional[list[str]] = None,
+                     metric: str = "", message: str = "", objective: str = "", density: Literal["low", "medium", "high"] = "medium",
+                     audience: Literal["executive", "analyst", "committee"] = "executive",
+                     layout: Optional[Literal["analytical_hero", "comparative", "executive_insight"]] = None, redesign: bool = False) -> dict:
+        """Plan a slide before drawing it (PD1). purpose is the DATA QUESTION: trend (one metric over time for a focus country and peers),
+        comparison (one metric across many countries at ONE period, ranked) or risk (an executive summary of verified credit pressures).
+        layout is the ARRANGEMENT: analytical_hero (one big chart), comparative (chart beside a table or a second chart), executive_insight
+        (claim and KPIs). "Show the trend with a table of start and end values" is purpose trend with layout comparative.
+        When redesigning, leave metric empty to keep the slide's metric.
+        focus: ISO-2 country the slide is about; peers: ISO-2 comparison countries (default: all with the metric); metric: debt, deficit,
+        interest, growth or yield. message: your one-sentence wording of the main takeaway; any figure in it must be one the evidence holds,
+        otherwise the app keeps its own wording. layout: a preferred layout family (alternatives are still offered). redesign: redesign the
+        current slide instead of adding one; elements the user moved or rewrote are kept. The app builds two or three designs from the
+        verified data, validates every figure and shows previews with layout checks; the user applies one."""
+        project = project_of(ctx)
+        dsets = project["datasets"]
+        f = (focus or "FR").upper()[:2]
+        m = (metric or ("" if redesign else {"trend": "debt", "comparison": "deficit", "risk": ""}[purpose])).lower().strip()
+        geos = research_scope(peers, "FR", None)[0] if peers else []
+        if purpose in ("trend", "comparison") and m:
+            have = [g for g in sorted({d["geo"] for d in dsets.values() if d["metric"] == m})]
+            if f"ds.{f.lower()}.{m}" not in dsets and purpose == "trend":
+                return {"kind": "error", "message": f"The project has no verified {m} data for {NAMES.get(f, f)}. Start research first (start_research)."}
+            pool = [g for g in geos if f"ds.{g.lower()}.{m}" in dsets] if geos else have
+            if purpose == "comparison" and len(set(pool) | {f}) < 3:
+                return {"kind": "error", "message": f"A comparison needs {m} data for at least three countries; the project has {', '.join(have) or 'none'}. "
+                                                    "Start research for more countries first (start_research with countries and metrics)."}
+        req = {"purpose": purpose, "focus": f, **({"peers": [g.upper()[:2] for g in geos if g.upper()[:2] != f]} if geos else {}), **({"metric": m} if m else {}),
+               **({"claim": message.strip()} if message.strip() else {}), **({"objective": objective.strip()} if objective.strip() else {}),
+               "density": density, "audience": audience, **({"family": layout} if layout else {})}
+        target = ctx.deps.state.slide if redesign else None
+        return {"kind": "design_request", "request": req, "slide": target,
+                "summary": f"{'Redesign this slide' if target else 'Plan a new slide'}: {purpose} for {NAMES.get(f, f)}"
+                           + (f" (message proposed: \"{message.strip()}\")" if message.strip() else "")
+                           + ". The app builds designs from verified data and checks each one; preview and apply. Nothing has changed yet."}
+
+    @agent.tool
+    def set_design_profile(ctx: RunContext[Deps], profile: Literal["institutional", "editorial"]) -> dict:
+        """Change the deck's visual style: institutional (navy structure, gold accents, ivory background) or editorial (white, black type,
+        one red accent). Designed slides are restyled; no data, chart meaning or user edit changes."""
+        project_of(ctx)
+        return {"kind": "profile_request", "profile": profile,
+                "summary": f"Restyle the deck with the {profile} profile. Data and evidence stay as they are; preview and apply. Nothing has changed yet."}
 
     @agent.tool
     def change_visual(ctx: RunContext[Deps], family: Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", "combo",
