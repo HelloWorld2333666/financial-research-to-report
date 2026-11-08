@@ -1,0 +1,23 @@
+{
+ "kind": "candidate",
+ "brief": "risk",
+ "cand": 0,
+ "label": "Three figure bands, debt leading",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "bands",
+   "params": {
+    "emphasis": "first"
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "error:text_overflow: Text overflow: e_d2db6e0b\"Debt, deficit and …\" content exceeds the box height by 18px (make the box taller or reduce the font size)",
+  "error:small_text: \"Source:\" is 7.5 pt; the minimum is 8 pt",
+  "warning:small_primary_visual: the main visual uses 10% of the content area; the slide reads as mostly empty",
+  "warning:unused_space: an empty region covers 34% of the content area (35% unused overall)"
+ ]
+}

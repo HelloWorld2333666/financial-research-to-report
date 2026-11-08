@@ -18,6 +18,8 @@ Family = Literal["column", "bar", "line", "area", "pie", "doughnut", "scatter", 
                  "dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi", "rating_timeline",
                  "yield_curve", "histogram", "box", "range", "heatmap"]
 # drawn as shape groups by the client's composite adapter (VIS V3); data marks are named "frr-mark s c v"
+# families the design engine can draw as shapes when a binding style asks for it (web core/design/charts.ts DESIGNED)
+DESIGNED = {"line", "bar", "dumbbell"}
 COMPOSITE = {"dumbbell", "slope", "dot", "lollipop", "waterfall", "step", "multiples", "kpi", "rating_timeline", "yield_curve", "histogram", "box", "range", "heatmap"}
 
 # Long-term rating scales on one ordinal notch index (mirrors app/web/src/core/ratings.ts)

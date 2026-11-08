@@ -11,6 +11,7 @@ import { findEl, slideIndex, textOf, walk, type Found } from './deck'
 import { chartKindRefusal } from './vocabulary'
 import type { Binding, Dataset, ElementStyle, NumberRef, Project, Sidecar, TableSpec } from './types'
 import { chartStylePatch } from './design/style'
+import { drawsDesigned } from './design/charts'
 import { applyDesign } from './design/build'
 import { dnaFor, PROFILES } from './design/profiles'
 import type { SlideDesign } from './design/spec'
@@ -138,8 +139,8 @@ function settle(ctx: Ctx, index: number, idx: number, guid: string | null) {
  * creationId, so the durable id (binding key, selection, chat references) and its z-order and placement stay.
  */
 export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec, designSize?: { w: number; h: number }) {
-  const native = !isComposite(spec.family)
   const durable = (f as any).durable as string | undefined, style = durable ? (ctx.sidecar.bindings[durable] as any)?.style as ElementStyle | undefined : undefined
+  const native = !isComposite(spec.family) && !drawsDesigned(spec, style)
   if (native && f.el.type === 'chart') { txn(ctx, [realizeOp(ctx, f.index, f.el.id, spec, style)]); return }
   const slide = ctx.deck.deck.slides[f.index]! as any, idx = slide.elements.indexOf(f.el), guid = guidOf(f.el), o = f.el.transform.offset
   if (idx < 0) throw new Error('a visual inside a group cannot be rebuilt; ungroup it first')
@@ -148,7 +149,7 @@ export function realizeAt(ctx: Ctx, f: Found, spec: VizSpec, designSize?: { w: n
     const pr = check(ctx.project, spec)
     // a rebuilt group keeps its design space (the user may have resized it); a chart turned composite lays out at its own size
     const size = designSize || (f.el.type === 'group' && readGroup(f.el).size) || { w: Math.round(o.cx / EMU), h: Math.round(o.cy / EMU) }
-    xml = groupXml(layout(ctx.project, spec, pr, size), { guid: guid ?? crypto.randomUUID().toUpperCase(), id: nextShapeId(slide), name: groupName(spec.id), place: o, size, font: ctx.project.design_dna.font })
+    xml = groupXml(layout(ctx.project, spec, pr, size, style), { guid: guid ?? crypto.randomUUID().toUpperCase(), id: nextShapeId(slide), name: groupName(spec.id), place: o, size, font: ctx.project.design_dna.font })
   }
   txn(ctx, [{ op: 'deleteElement', target: { slide: f.index, el: f.el.id } }])
   if (xml) { if (!appendRawElements(ctx.deck, f.index, [xml])) throw new Error('the visual could not be drawn') }

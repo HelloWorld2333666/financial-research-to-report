@@ -10,6 +10,9 @@ import { findEl, slideIndex } from '../deck'
 import { isComposite, realize } from '../viz'
 import type { Binding, ElementStyle } from '../types'
 import { chartStylePatch, profileColors } from './style'
+import { drawsDesigned } from './charts'
+import { composeLayout, type ComposedLaid } from './compose'
+import { runFor, type Language } from './language'
 import { layoutDesign, type Box, type Laid } from './layout'
 import { PROFILES, type DesignProfile } from './profiles'
 import { validateDesign, type AppliedDesign, type DesignObject, type DesignText, type SlideDesign } from './spec'
@@ -85,7 +88,7 @@ function planElements(ctx: Ctx, d: SlideDesign, pr: DesignProfile, L: Laid): ElP
     } else if (o.kind === 'viz') {
       const spec = o.viz, native = !isComposite(spec.family)
       const style: ElementStyle = { gridlines: true, gapWidthPct: 70, ...(native ? { colors: profileColors(ctx.project, spec, realize(ctx.project, spec), pr) } : {}), ...(o.emphasis ? { emphasis: o.emphasis, peer: c.peer } : {}) }
-      if (isComposite(spec.family)) out.push({ key: o.id, kind: 'composite', box: b, obj: o, create: { op: 'addElement', kind: 'rect', offset: off(b) }, bind: (slide) => ({ kind: 'viz', slide, spec, style }) })
+      if (isComposite(spec.family) || drawsDesigned(spec, style)) out.push({ key: o.id, kind: 'composite', box: b, obj: o, create: { op: 'addElement', kind: 'rect', offset: off(b) }, bind: (slide) => ({ kind: 'viz', slide, spec, style }) })
       else {
         const r = realize(ctx.project, spec)
         out.push({ key: o.id, kind: 'chart', box: b, obj: o, bind: (slide) => ({ kind: 'viz', slide, spec, style }),
@@ -98,6 +101,64 @@ function planElements(ctx: Ctx, d: SlideDesign, pr: DesignProfile, L: Laid): ElP
         create: { op: 'addTable', rows: t.datasets.length + 1, cols: t.dates.length + 1, offset: off(b) },
         fill: (el, i) => [{ op: 'setTableStyle', target: { slide: i, el }, ...TABLE_STYLE }, ...tableFill(ctx, el, i, t, pr.type.label)] })
     }
+  }
+  return out
+}
+
+/** PD2: elements for a composed design, every role set in the visual language's typography. */
+function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
+  const V = L.language, c = V.color, out: ElPlan[] = []
+  const textBind = (role: string, ts: DesignText[]) => (slide: string): Binding => {
+    const numbers = ts.flatMap((t) => t.numbers ?? [])
+    return { kind: 'text', slide, role, ...(numbers.length ? { numbers: structuredClone(numbers) } : {}) }
+  }
+  const tr = (role: keyof Language['type']) => V.type[role]
+  const runs = (t: DesignText, role: keyof Language['type'], o: { color?: string; figColor?: string; figBold?: boolean } = {}) => {
+    const r = tr(role), base = runFor(V, role, '', { color: o.color })
+    const figure = { ...base, color: o.figColor ?? o.color ?? r.color, bold: o.figBold ?? true }
+    return richRuns(t, base.fontSize, base.color, base.fontFamily, figure.color, base.bold).map((x: any) => ({ ...x, ...(base.letterSpacing ? { letterSpacing: base.letterSpacing } : {}), ...(x.color === figure.color && t.numbers?.some((n) => n.text === x.text) ? { bold: figure.bold } : {}), ...(r.caps ? { text: x.text.toUpperCase() } : {}) }))
+  }
+  const para = (rs: any[], role: keyof Language['type'], extra: Record<string, unknown> = {}) => ({ runs: rs, ...(tr(role).lineSpacing ? { lineSpacingPct: tr(role).lineSpacing } : {}), ...extra })
+  const box = (b: Box) => off(b)
+  // rules and hairlines first (painted beneath), then shapes, charts, text
+  for (const x of L.decor) out.push({ key: `decor:${x.id}`, kind: 'decor', box: x.box, create: { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }, bind: (slide) => ({ kind: 'decor', slide }) })
+  for (const o of d.objects) if (o.kind === 'shape' && L.boxes[o.id]) {
+    const fill = o.role === 'panel' ? c.navyDeep : o.role === 'masthead' ? c.navy : c.gold
+    out.push({ key: o.id, kind: 'decor', box: L.boxes[o.id]!, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(L.boxes[o.id]!), fill }, bind: (slide) => ({ kind: 'decor', slide }) })
+  }
+  for (const o of d.objects) {
+    const b = L.boxes[o.id]
+    if (!b || o.kind === 'shape') continue
+    if (o.kind === 'viz') {
+      const spec = o.viz, style: ElementStyle = { render: 'designed', lang: V.id, ...(o.emphasis ? { emphasis: o.emphasis } : {}), ...(o.draw?.annotate ? { annotate: o.draw.annotate } : {}), ...(o.draw?.mini ? { mini: true } : {}), ...(o.draw?.reference ? { reference: o.draw.reference } : {}) }
+      const shapes = isComposite(spec.family) || drawsDesigned(spec, style)
+      if (shapes) out.push({ key: o.id, kind: 'composite', box: b, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(b) }, bind: (slide) => ({ kind: 'viz', slide, spec, style }) })
+      else {
+        const r = realize(ctx.project, spec), st: ElementStyle = { gridlines: true, gapWidthPct: 70, colors: r.colorScheme, ...(o.emphasis ? { emphasis: o.emphasis, peer: c.peer } : {}) }
+        out.push({ key: o.id, kind: 'chart', box: b, obj: o, bind: (slide) => ({ kind: 'viz', slide, spec, style: st }),
+          create: { op: 'addChart', kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: box(b), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme },
+          fill: (el, i) => [{ op: 'setChart', target: { slide: i, el }, patch: chartStylePatch(ctx.project, r, st) }] })
+      }
+      continue
+    }
+    if (o.kind === 'kpi') {
+      const role = (L.roles[o.id] ?? 'heroSmall') as keyof Language['type'], dark = o.tone === 'onDark'
+      const paragraphs = [para(runs(o.value, role, { color: dark ? c.onDark : undefined, figColor: dark ? c.onDark : tr(role).color, figBold: false }), role),
+        para([runFor(V, 'caption', o.label, { color: dark ? c.onDarkMuted : undefined })], 'caption', { spaceBeforePt: 2 }),
+        ...(o.context ? [para(runs(o.context, 'bodySmall', { color: dark ? c.onDarkMuted : c.muted, figColor: dark ? c.goldSoft : c.gold }), 'bodySmall', { spaceBeforePt: 4 })] : [])]
+      out.push({ key: o.id, kind: 'text', box: b, obj: o, paragraphs,
+        create: { op: 'addElement', kind: 'textbox', offset: box(b), paragraphs, bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } },
+        bind: textBind('kpi', [o.value, ...(o.context ? [o.context] : [])]) })
+      continue
+    }
+    if (o.kind !== 'text') continue
+    const role = (L.roles[o.id] ?? 'body') as keyof Language['type'], dark = o.tone === 'onDark', items = o.items?.length ? o.items : [o.text]
+    const color = dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
+    const multi = o.role === 'note' || o.role === 'body' || o.role === 'narrative' || o.role === 'observations'
+    const paragraphs = items.map((t, i) => para(runs(t, role, { color, figColor: dark ? c.onDark : role === 'standfirst' ? c.ink : c.navy }), role, multi && i < items.length - 1 ? { spaceAfterPt: 7 } : {}))
+    out.push({ key: o.id, kind: 'text', box: b, obj: o, paragraphs,
+      create: { op: 'addElement', kind: 'textbox', offset: box(b), paragraphs, bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } },
+      bind: textBind(o.role === 'headline' ? 'title' : o.role === 'standfirst' ? 'subtitle' : o.role, items) })
   }
   return out
 }
@@ -129,7 +190,9 @@ export function applyDesign(ctx: Ctx, design: SlideDesign, slide?: string): Outc
   const problems = validateDesign(ctx.project, design)
   if (problems.length) throw new Error('design not valid: ' + problems.join('; '))
   const pr = PROFILES[design.profile]!
-  const L = layoutDesign(design, pr, METRICS ?? (() => { throw new Error('design metrics not set') })())
+  const metrics = METRICS ?? (() => { throw new Error('design metrics not set') })()
+  const composed = design.layout.family === 'composed'
+  const L: Laid = composed ? composeLayout(design, metrics) : layoutDesign(design, pr, metrics)
   for (const x of design.derivations ?? []) if (!ctx.project.derivations?.[x.id]) (ctx.project.derivations ??= {})[x.id] = structuredClone(x)
   let si: number
   if (slide) { si = slideIndex(ctx.deck, slide); if (si < 0) throw new Error('that slide is no longer in the deck') }
@@ -141,10 +204,10 @@ export function applyDesign(ctx: Ctx, design: SlideDesign, slide?: string): Outc
   const prev = (ctx.sidecar.designs ??= {})[sId]
   const elements: Record<string, string> = prev ? { ...prev.elements } : slide ? adoptLegacy(ctx, sId) : {}
   const owned = (ctx.sidecar.owned ??= {})
-  const plans = planElements(ctx, design, pr, L)
+  const plans = composed ? planComposed(ctx, design, L as ComposedLaid) : planElements(ctx, design, pr, L)
   const diff: string[] = [], keep: Record<string, string> = {}, redrawn = new Set<string>()
   const live = (id?: string) => (id ? findEl(ctx.deck, id) : null)
-  txn(ctx, [{ op: 'setBackground', target: { slide: si }, kind: 'solid', color: pr.color.background }])
+  txn(ctx, [{ op: 'setBackground', target: { slide: si }, kind: 'solid', color: composed ? (L as ComposedLaid).language.color.paper : pr.color.background }])
   // 1. existing elements: keep what the user owns, update in place what is compatible, remove the rest
   const toCreate: ElPlan[] = []
   for (const p of plans) {
@@ -160,7 +223,7 @@ export function applyDesign(ctx: Ctx, design: SlideDesign, slide?: string): Outc
         ;(bound as any).style = (p.bind(sId) as any).style
         if (!mine.box) txn(ctx, [{ op: 'setTransform', target: { slide: si, el: f.el.id }, box: off(p.box) }])
         const g = findEl(ctx.deck, id)!
-        realizeAt(ctx, g, bound.spec, !mine.box && isComposite(bound.spec.family) ? { w: Math.round(p.box.w), h: Math.round(p.box.h) } : undefined)
+        realizeAt(ctx, g, bound.spec, !mine.box && (isComposite(bound.spec.family) || drawsDesigned(bound.spec, (bound as any).style)) ? { w: Math.round(p.box.w), h: Math.round(p.box.h) } : undefined)
         diff.push(`${p.key}: ${userChart ? 'your chart choice kept' : 'chart redrawn'}${mine.box ? ', your position kept' : ''}`)
         keep[p.key] = id; continue
       }

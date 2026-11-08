@@ -1,0 +1,16 @@
+{
+ "kind": "candidate",
+ "brief": "pd1-balance",
+ "cand": 0,
+ "label": "Ranked bars with a table of the last two years",
+ "composition": {
+  "family": "comparative",
+  "params": {
+   "arrangement": "chart_table",
+   "split": 0.58,
+   "takeaway": "none"
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

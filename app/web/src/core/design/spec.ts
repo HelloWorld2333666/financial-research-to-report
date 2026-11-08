@@ -9,8 +9,12 @@ import { figures, textNumbers } from '../evidence'
 import { PROFILES } from './profiles'
 
 export const DESIGN_SCHEMA = 'frr-design/1'
-export type LayoutFamily = 'analytical_hero' | 'comparative' | 'executive_insight'
-export const FAMILIES: LayoutFamily[] = ['analytical_hero', 'comparative', 'executive_insight']
+export type LayoutFamily = 'analytical_hero' | 'comparative' | 'executive_insight' | 'composed'
+export const FAMILIES: LayoutFamily[] = ['analytical_hero', 'comparative', 'executive_insight', 'composed']
+
+/** PD2: a composition arranges the slide's semantic objects in a visual language (compose.ts). */
+export type CompositionKind = 'rail' | 'statement' | 'wide' | 'bands' | 'lead_panel'
+export interface Composition { kind: CompositionKind; params?: { side?: 'left' | 'right'; chartCols?: number; emphasis?: 'first' | 'even' } }
 export type Density = 'low' | 'medium' | 'high'
 export type Audience = 'executive' | 'analyst' | 'committee'
 
@@ -34,13 +38,17 @@ export interface LayoutParams {
 export interface DesignText { text: string; numbers?: NumberRef[] }
 
 export type TextRole = 'kicker' | 'title' | 'subtitle' | 'takeaway' | 'observations' | 'narrative' | 'caption' | 'source'
+  // PD2 roles, styled by the visual language
+  | 'section' | 'headline' | 'standfirst' | 'label' | 'note' | 'body'
 export type DesignObject =
-  | { id: string; kind: 'text'; role: TextRole; text: DesignText; items?: DesignText[] }
+  | { id: string; kind: 'text'; role: TextRole; text: DesignText; items?: DesignText[]; group?: string; tone?: 'onDark' }
   /** a chart; `viz` is a frr-viz/1 spec (the visual's meaning); `emphasis` is styling only (the dataset drawn in the focus colour) */
-  | { id: string; kind: 'viz'; role: 'primary' | 'secondary'; viz: VizSpec; emphasis?: string }
+  | { id: string; kind: 'viz'; role: 'primary' | 'secondary'; viz: VizSpec; emphasis?: string; group?: string; draw?: { annotate?: 'change' | 'gap'; mini?: boolean; reference?: string } }
   | { id: string; kind: 'table'; role: 'primary' | 'secondary'; table: TableSpec }
   /** a KPI callout: one bound figure, what it measures (with its unit), and optional bound context */
-  | { id: string; kind: 'kpi'; role: 'kpi'; value: DesignText; label: string; context?: DesignText }
+  | { id: string; kind: 'kpi'; role: 'kpi'; value: DesignText; label: string; context?: DesignText; variant?: 'hero' | 'stat' | 'band'; group?: string; tone?: 'onDark' }
+  /** PD2: structural shapes of a composition (masthead band, dark panel, rules); native shapes, not data */
+  | { id: string; kind: 'shape'; role: 'masthead' | 'panel' | 'rule' }
 
 export interface SlideDesign {
   schema: typeof DESIGN_SCHEMA
@@ -51,7 +59,9 @@ export interface SlideDesign {
   claim: DesignText
   audience: Audience
   density: Density
-  layout: { family: LayoutFamily; params: LayoutParams }
+  layout: { family: LayoutFamily; params: LayoutParams; composition?: Composition }
+  /** PD2: the visual language (language.ts); compositions require one */
+  language?: string
   /** design profile id (project-level style) */
   profile: string
   objects: DesignObject[]
@@ -119,6 +129,11 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
   if (d.layout?.family === 'analytical_hero' && !(d.objects ?? []).some((o) => o.kind === 'viz' && o.role === 'primary')) errs.push('an analytical hero needs one primary chart')
   if (d.layout?.family === 'comparative' && visuals.length < 2) errs.push('a comparative layout needs two visual objects (charts or a chart and a table)')
   if (d.layout?.family === 'executive_insight' && (kpis.length < 2 || kpis.length > 4)) errs.push('an executive insight needs 2 to 4 KPIs')
+  if (d.layout?.family === 'composed') {
+    if (!d.layout.composition) errs.push('a composed slide needs a composition')
+    if (!(d.objects ?? []).some((o) => o.kind === 'text' && o.role === 'headline')) errs.push('a composed slide needs a headline')
+    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band'))) errs.push('a composed slide needs a focal point: a hero figure, a primary chart or figure bands')
+  }
   for (const o of d.objects ?? []) {
     if (o.kind === 'viz') {
       for (const ds of vizDatasets(o.viz)) if (!p.datasets[ds]) errs.push(`${o.id}: dataset ${ds} is not in the project`)

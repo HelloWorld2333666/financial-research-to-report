@@ -1,0 +1,15 @@
+{
+ "kind": "candidate",
+ "brief": "pd1-risk",
+ "cand": 0,
+ "label": "Claim, KPI row, explanation and evidence chart",
+ "composition": {
+  "family": "executive_insight",
+  "params": {
+   "kpiPlacement": "row",
+   "takeaway": "top"
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

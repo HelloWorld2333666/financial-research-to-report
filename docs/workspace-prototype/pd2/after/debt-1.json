@@ -1,0 +1,18 @@
+{
+ "kind": "candidate",
+ "brief": "debt",
+ "cand": 1,
+ "label": "Statement column with the gap bracketed",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "statement",
+   "params": {
+    "side": "left"
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

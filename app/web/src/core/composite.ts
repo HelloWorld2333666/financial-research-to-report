@@ -10,14 +10,15 @@ import { HeuristicMetrics } from '@genoffice/pptx-render'
 import { decimalsOf } from './evidence'
 import { NOTCHES } from './ratings'
 import type { Cell, CompositeFamily, Projected, VizSpec } from './viz'
-import type { Project } from './types'
+import type { ElementStyle, Project } from './types'
+import { designedLayout } from './design/charts'
 
 export interface Box { x: number; y: number; w: number; h: number }
 type Pt = [number, number]
 export type Mark =
-  | { name: string; kind: 'rect' | 'ellipse'; box: Box; fill: string; stroke?: string; descr?: string }
+  | { name: string; kind: 'rect' | 'ellipse'; box: Box; fill: string; stroke?: string; strokeW?: number; descr?: string }
   | { name: string; kind: 'path'; paths: Pt[][]; box: Box; stroke: string; width: number; dash?: boolean; descr?: string }
-  | { name: string; kind: 'text'; box: Box; text: string; size: number; color: string; bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string }
+  | { name: string; kind: 'text'; box: Box; text: string; size: number; color: string; bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string; font?: string; track?: number }
 
 /** Bumped whenever a layout changes, so integrity can tell a stale drawing from wrong data (see integrity.ts). */
 export const LAYOUT_VERSION = 3 // 2: V4 (distribution titles without counts); 3: label widths measured, single-period box
@@ -30,7 +31,7 @@ export interface Size { w: number; h: number }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 // text width in px as the app's renderer measures it (the same per-character metrics it lays text out with)
 const METRICS = new HeuristicMetrics()
-const tw = (t: string, pt: number) => Math.ceil(METRICS.measure(t, { fontFamily: 'Inter', fontSizePx: (pt * 96) / 72, bold: false, italic: false })) + 4
+export const tw = (t: string, pt: number) => Math.ceil(METRICS.measure(t, { fontFamily: 'Inter', fontSizePx: (pt * 96) / 72, bold: false, italic: false })) + 4
 const decimalsFor = (p: Project, cell: Cell) => {
   if (!cell) return 1
   const ds = 'derived' in cell ? Object.values(cell.derived.inputs)[0]?.dataset : cell.dataset
@@ -40,15 +41,15 @@ const decimalsFor = (p: Project, cell: Cell) => {
 export const fmt = (p: Project, v: number | null, cell: Cell, signed = false) => (v == null ? 'n/a' : `${signed && v > 0 ? '+' : ''}${v.toFixed(decimalsFor(p, cell))}`.replace('-', '−'))
 const deltaUnit = (unit: string) => (/%/.test(unit) ? 'pp' : unit)
 
-function niceTicks(lo: number, hi: number, n = 4): number[] {
+export function niceTicks(lo: number, hi: number, n = 4): number[] {
   if (hi === lo) { hi = lo + 1; lo = lo - 1 }
   const raw = (hi - lo) / n, mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw)!
   const out: number[] = []
   for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(10)))
   return out
 }
-const scale = (d0: number, d1: number, r0: number, r1: number) => (v: number) => r0 + ((v - d0) / (d1 - d0 || 1)) * (r1 - r0)
-const domain = (vals: (number | null)[], zero: boolean, pad = 0.08): [number, number] => {
+export const scale = (d0: number, d1: number, r0: number, r1: number) => (v: number) => r0 + ((v - d0) / (d1 - d0 || 1)) * (r1 - r0)
+export const domain = (vals: (number | null)[], zero: boolean, pad = 0.08): [number, number] => {
   const v = vals.filter((x): x is number => x != null)
   let lo = Math.min(...v, ...(zero ? [0] : [])), hi = Math.max(...v, ...(zero ? [0] : []))
   if (!v.length) { lo = 0; hi = 1 }
@@ -60,11 +61,11 @@ const bboxOf = (paths: Pt[][]): Box => {
   const x = Math.min(...xs), y = Math.min(...ys)
   return { x, y, w: Math.max(1, Math.max(...xs) - x), h: Math.max(1, Math.max(...ys) - y) }
 }
-const path = (name: string, paths: Pt[][], stroke: string, width: number, dash = false, descr?: string): Mark => ({ name, kind: 'path', paths, box: bboxOf(paths), stroke, width, dash, ...(descr ? { descr } : {}) })
-const text = (name: string, box: Box, t: string, size: number, color: string, o: { bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string } = {}): Mark => ({ name, kind: 'text', box, text: t, size, color, ...o })
-const dot = (name: string, cx: number, cy: number, r: number, fill: string, descr?: string): Mark => ({ name, kind: 'ellipse', box: { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r }, fill, ...(descr ? { descr } : {}) })
-const rect = (name: string, box: Box, fill: string, descr?: string): Mark => ({ name, kind: 'rect', box, fill, ...(descr ? { descr } : {}) })
-const markName = (s: number, c: number, v: number) => `frr-mark ${s} ${c} ${v}`
+export const path = (name: string, paths: Pt[][], stroke: string, width: number, dash = false, descr?: string): Mark => ({ name, kind: 'path', paths, box: bboxOf(paths), stroke, width, dash, ...(descr ? { descr } : {}) })
+export const text = (name: string, box: Box, t: string, size: number, color: string, o: { bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string; font?: string; track?: number } = {}): Mark => ({ name, kind: 'text', box, text: t, size, color, ...o })
+export const dot = (name: string, cx: number, cy: number, r: number, fill: string, descr?: string): Mark => ({ name, kind: 'ellipse', box: { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r }, fill, ...(descr ? { descr } : {}) })
+export const rect = (name: string, box: Box, fill: string, descr?: string): Mark => ({ name, kind: 'rect', box, fill, ...(descr ? { descr } : {}) })
+export const markName = (s: number, c: number, v: number) => `frr-mark ${s} ${c} ${v}`
 
 /** The title a composite carries (same rule as native charts: a view's own label and unit, or the spec's title over time). */
 export function compositeTitle(spec: VizSpec, pr: Projected) {
@@ -152,7 +153,7 @@ function dumbbell(g: Ctx): Mark[] {
 }
 
 /** Labels at desired y positions, pushed apart so they don't overlap. */
-function spread(ys: number[], gap: number, lo: number, hi: number): number[] {
+export function spread(ys: number[], gap: number, lo: number, hi: number): number[] {
   const idx = ys.map((y, i) => [y, i] as const).sort((a, b) => a[0] - b[0]), out = new Array<number>(ys.length)
   let prev = -Infinity
   for (const [y, i] of idx) { const v = Math.max(y, prev + gap); out[i] = v; prev = v }
@@ -468,7 +469,10 @@ const LAYOUTS: Record<CompositeFamily, (g: Ctx) => Mark[]> = {
 }
 
 /** Every shape of the composite, in design-space px. */
-export function layout(p: Project, spec: VizSpec, pr: Projected, size: Size): Mark[] {
+export function layout(p: Project, spec: VizSpec, pr: Projected, size: Size, style?: ElementStyle): Mark[] {
+  // PD2: a binding style can ask the design engine to draw the chart (charts.ts); the spec and its data are unchanged
+  const designed = style ? designedLayout(p, spec, pr, size, style) : null
+  if (designed) return designed
   const g: Ctx = { p, spec, pr, W: size.w, H: size.h, c: palette(p) }
   const title = text('frr-title', { x: 0, y: 0, w: size.w, h: 22 }, compositeTitle(spec, pr), 12, g.c.ink, { bold: true })
   const round = (b: Box): Box => ({ x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10, w: Math.round(b.w * 10) / 10, h: Math.round(b.h * 10) / 10 })
@@ -488,7 +492,7 @@ function shapeXml(m: Mark, id: number, font: string): string {
     const algn = m.align ?? 'l'
     return `<p:sp>${nv}<p:spPr>${xfrm(m.box)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr>` +
       `<p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"><a:noAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="${algn}"/>` +
-      `<a:r><a:rPr lang="en-US" sz="${Math.round(m.size * 100)}"${m.bold ? ' b="1"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${hex(m.color)}"/></a:solidFill><a:latin typeface="${esc(font)}"/></a:rPr><a:t>${esc(m.text)}</a:t></a:r></a:p></p:txBody></p:sp>`
+      `<a:r><a:rPr lang="en-US" sz="${Math.round(m.size * 100)}"${m.bold ? ' b="1"' : ''}${m.track ? ` spc="${Math.round(m.track * 100)}"` : ''} dirty="0"><a:solidFill><a:srgbClr val="${hex(m.color)}"/></a:solidFill><a:latin typeface="${esc(m.font ?? font)}"/></a:rPr><a:t>${esc(m.text)}</a:t></a:r></a:p></p:txBody></p:sp>`
   }
   if (m.kind === 'path') {
     const b = m.box, rel = (q: Pt) => `<a:pt x="${E(q[0] - b.x)}" y="${E(q[1] - b.y)}"/>`
@@ -496,8 +500,8 @@ function shapeXml(m: Mark, id: number, font: string): string {
     return `<p:sp>${nv}<p:spPr>${xfrm(b)}<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="${Math.max(1, E(b.w))}" h="${Math.max(1, E(b.h))}" fill="none">${cmds}</a:path></a:pathLst></a:custGeom>` +
       `<a:noFill/><a:ln w="${Math.round(m.width * 12700 * 0.75)}" cap="rnd"><a:solidFill><a:srgbClr val="${hex(m.stroke)}"/></a:solidFill>${m.dash ? '<a:prstDash val="dash"/>' : ''}<a:round/></a:ln></p:spPr></p:sp>`
   }
-  return `<p:sp>${nv}<p:spPr>${xfrm(m.box)}<a:prstGeom prst="${m.kind === 'ellipse' ? 'ellipse' : 'rect'}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${hex(m.fill)}"/></a:solidFill>` +
-    `${m.stroke ? `<a:ln w="9525"><a:solidFill><a:srgbClr val="${hex(m.stroke)}"/></a:solidFill></a:ln>` : '<a:ln><a:noFill/></a:ln>'}</p:spPr></p:sp>`
+  return `<p:sp>${nv}<p:spPr>${xfrm(m.box)}<a:prstGeom prst="${m.kind === 'ellipse' ? 'ellipse' : 'rect'}"><a:avLst/></a:prstGeom>${m.fill === 'none' ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${hex(m.fill)}"/></a:solidFill>`}` +
+    `${m.stroke ? `<a:ln w="${Math.round((m.strokeW ?? 0.75) * 12700)}"><a:solidFill><a:srgbClr val="${hex(m.stroke)}"/></a:solidFill></a:ln>` : '<a:ln><a:noFill/></a:ln>'}</p:spPr></p:sp>`
 }
 
 /** The group: placed at `place` (EMU) with its children in a size.w x size.h design space (chOff 0, chExt = size). */

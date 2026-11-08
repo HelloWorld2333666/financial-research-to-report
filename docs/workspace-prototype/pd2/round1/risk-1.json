@@ -1,0 +1,20 @@
+{
+ "kind": "candidate",
+ "brief": "risk",
+ "cand": 1,
+ "label": "Lead message with a dark supporting panel",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "lead_panel"
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "error:text_overflow: Text overflow: e_26f23ae6\"France's debt reac…\" content exceeds the box height by 18px (make the box taller or reduce the font size)",
+  "error:small_text: \"Source:\" is 7.5 pt; the minimum is 8 pt",
+  "error:small_text: \"the\" is 7.5 pt; the minimum is 8 pt",
+  "warning:unused_space: an empty region covers 29% of the content area (29% unused overall)"
+ ]
+}

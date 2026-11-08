@@ -13,7 +13,7 @@ export interface Laid {
   sizes: Record<string, number>
   zones: { header: Box; content: Box; footer: Box }
   /** the takeaway band/line and header rule, drawn as decoration */
-  decor: { id: string; box: Box; kind: 'rule' | 'band' | 'card' }[]
+  decor: { id: string; box: Box; kind: 'rule' | 'band' | 'card'; fill?: string }[]
   notes: string[]
 }
 

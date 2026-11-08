@@ -1,0 +1,22 @@
+{
+ "kind": "candidate",
+ "brief": "debt",
+ "cand": 0,
+ "label": "Hero chart with an evidence rail",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "rail",
+   "params": {
+    "side": "right",
+    "chartCols": 8
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "error:text_overflow: Text overflow: e_1beea852\"France's debt kept…\" content exceeds the box height by 8px (make the box taller or reduce the font size)",
+  "error:small_text: \"Source:\" is 7.5 pt; the minimum is 8 pt"
+ ]
+}

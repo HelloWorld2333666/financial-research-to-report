@@ -36,7 +36,11 @@ export interface NumberRef { text: string; evidence?: string; derivation?: strin
 
 /** Design-layer styling of a bound chart or table (PD1): presentation only, never the data or the visual's meaning.
  *  Kept beside the spec so a data refresh redraws the element with the same styling. */
-export interface ElementStyle { legend?: 'b' | 'r' | 'none'; gridlines?: boolean; gapWidthPct?: number; emphasis?: string; colors?: string[]; peer?: string; pt?: number; axisTitle?: string }
+export interface ElementStyle {
+  legend?: 'b' | 'r' | 'none'; gridlines?: boolean; gapWidthPct?: number; emphasis?: string; colors?: string[]; peer?: string; pt?: number; axisTitle?: string
+  /** PD2: draw the chart with the design engine (core/design/charts.ts) in a visual language, instead of the native chart */
+  render?: 'designed'; lang?: string; annotate?: 'change' | 'gap'; mini?: boolean; reference?: string
+}
 
 export const SIDECAR_SCHEMA = 'frr-sidecar/1'
 export interface Sidecar {

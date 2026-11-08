@@ -282,8 +282,11 @@ def check(deck: bytes | None, project: dict, sidecar: dict) -> dict:
             except viz.VizError as exc:
                 res["mismatch"].append({"element": durable, "detail": f"visual “{b['spec'].get('title')}”: {exc}"})
                 continue
-            if b["spec"]["family"] in viz.COMPOSITE:
-                _composite(res, durable, el, want, b["spec"])
+            # PD2: a chart the design engine draws itself is a group of marks too (its spec is unchanged)
+            designed = (b.get("style") or {}).get("render") == "designed" and b["spec"]["family"] in viz.DESIGNED
+            if b["spec"]["family"] in viz.COMPOSITE or designed:
+                # shapes are drawn in the projection's own order (a native horizontal bar is stored bottom-up)
+                _composite(res, durable, el, viz.project_view(project, b["spec"]) if designed else want, b["spec"])
                 continue
             got = (el.get("chart") or {}).get("series", [])
             for si, s in enumerate(want["series"]):

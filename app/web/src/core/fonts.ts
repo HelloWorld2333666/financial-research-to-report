@@ -9,6 +9,10 @@ const FACES = [
   ['Inter', 'Inter', '400', 'italic', 'Italic'], ['Inter', 'Inter', '700', 'italic', 'BoldItalic'],
   ['Liberation Sans', 'LiberationSans', '400', 'normal', 'Regular'], ['Liberation Sans', 'LiberationSans', '700', 'normal', 'Bold'],
   ['Liberation Sans', 'LiberationSans', '400', 'italic', 'Italic'], ['Liberation Sans', 'LiberationSans', '700', 'italic', 'BoldItalic'],
+  // report serif for titles and figures (design profiles); Semibold is its own family name, as PowerPoint lists it
+  ['Source Serif 4', 'SourceSerif4', '400', 'normal', 'Regular'], ['Source Serif 4', 'SourceSerif4', '700', 'normal', 'Bold'],
+  ['Source Serif 4', 'SourceSerif4', '400', 'italic', 'It'], ['Source Serif 4', 'SourceSerif4', '700', 'italic', 'Bold'],
+  ['Source Serif 4 Semibold', 'SourceSerif4', '400', 'normal', 'Semibold'], ['Source Serif 4 Semibold', 'SourceSerif4', '700', 'normal', 'Semibold'],
 ] as const
 
 // Families we measure with Liberation Sans (metric-compatible with Arial/Helvetica) when a deck names them
@@ -47,7 +51,7 @@ export function loadFonts(base = '/fonts/'): Promise<FontMetricsProvider> {
       ;(document as any).fonts.add(face)
     }))
     const pick = (s: RunStyle) => {
-      const family = /^inter$/i.test(s.fontFamily) ? 'Inter' : LIBERATION.test(s.fontFamily) ? 'Liberation Sans' : null
+      const family = /^inter$/i.test(s.fontFamily) ? 'Inter' : LIBERATION.test(s.fontFamily) ? 'Liberation Sans' : /^source serif 4( semibold)?$/i.test(s.fontFamily) ? (/semibold/i.test(s.fontFamily) ? 'Source Serif 4 Semibold' : 'Source Serif 4') : null
       return family ? parsed.get(`${family}|${s.bold ? '700' : '400'}|${s.italic ? 'italic' : 'normal'}`) : undefined
     }
     return new OpentypeMetrics(pick, new HeuristicMetrics())

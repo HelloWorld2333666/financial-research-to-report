@@ -5,8 +5,9 @@ import type { OpenedPptx } from '@genoffice/pptx-engine'
 import { cellText, ratingCells, textNumbers, unverifiedEdits } from './evidence'
 import { check, isComposite, realize, type VizSpec } from './viz'
 import { LAYOUT_VERSION, layout, readGroup } from './composite'
+import { drawsDesigned } from './design/charts'
 import { findEl, textOf } from './deck'
-import type { Project, Sidecar } from './types'
+import type { Project, Sidecar, ElementStyle } from './types'
 
 export interface Integrity { ok: boolean; bindings: number; resolved: number; points: number; cells: number; figures: number; sourced: number; unsourced: number; unverified: number; mismatch: string[]
   /** composites drawn by an earlier layout: their values are checked; positions and labels wait for Re-project */
@@ -19,7 +20,7 @@ export function integrity(deck: OpenedPptx, project: Project, sidecar: Sidecar):
     const f = findEl(deck, durable)
     if (!f) { out.mismatch.push(`binding ${durable} does not resolve`); continue }
     out.resolved++
-    if (b.kind === 'viz' && isComposite(b.spec.family)) compositeCheck(out, f.el, project, b.spec)
+    if (b.kind === 'viz' && (isComposite(b.spec.family) || drawsDesigned(b.spec, b.style))) compositeCheck(out, f.el, project, b.spec, b.style)
     else if (b.kind === 'viz') {
       // the chart on the slide must equal the spec's realization from current data (VIS V1)
       let want
@@ -59,12 +60,12 @@ export function integrity(deck: OpenedPptx, project: Project, sidecar: Sidecar):
 
 /** A composite on the slide must equal a fresh layout of its spec from current data (VIS V3): every data mark's
  *  value, every mark and value label where the layout puts it, and every label's text. */
-function compositeCheck(out: Integrity, el: any, project: Project, spec: VizSpec) {
+function compositeCheck(out: Integrity, el: any, project: Project, spec: VizSpec, style?: ElementStyle) {
   const t = spec.title || spec.family
   if (el.type !== 'group') { out.mismatch.push(`visual “${t}”: expected a ${spec.family} (shapes), found a ${el.type}`); return }
   let want
   const got = readGroup(el)
-  try { want = layout(project, spec, check(project, spec), got.size ?? { w: 1200, h: 400 }) } catch (e: any) { out.mismatch.push(`visual “${t}”: ${e.message}`); return }
+  try { want = layout(project, spec, check(project, spec), got.size ?? { w: 1200, h: 400 }, style) } catch (e: any) { out.mismatch.push(`visual “${t}”: ${e.message}`); return }
   // drawn by an earlier layout: the data values (mark names) must still match; positions and label texts follow the
   // current layout code, so they are compared only once Re-project has redrawn the visual
   const current = got.version === LAYOUT_VERSION

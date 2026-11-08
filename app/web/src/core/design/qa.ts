@@ -82,13 +82,16 @@ export function qaSlide(ctx: Ctx, index: number, metrics: FontMetricsProvider): 
   // 4. composition: the primary visual's share of the content area, and large empty regions
   const zone: R = contentZone(top, roleOf)
   // an executive insight leads with its claim and KPIs; its chart is supporting evidence, so its size is not judged here
-  const visuals = applied?.design.layout.family === 'executive_insight' ? [] : top.filter((n) => n.type === 'chart' || n.type === 'table' || roleOf(n) === 'viz')
+  // PD2: likewise a composed slide without a primary chart (figure bands): its small charts are evidence for figures
+  const noPrimary = applied?.design.layout.family === 'composed' && !applied.design.objects.some((o) => o.kind === 'viz' && o.role === 'primary')
+  const visuals = applied?.design.layout.family === 'executive_insight' || noPrimary ? [] : top.filter((n) => n.type === 'chart' || n.type === 'table' || roleOf(n) === 'viz')
   if (visuals.length) {
     const biggest = Math.max(...visuals.map((v) => inter(v.box, zone)))
     const share = biggest / area(zone)
     if (share < 0.3) out.push({ code: 'small_primary_visual', level: 'warning', message: `the main visual uses ${Math.round(share * 100)}% of the content area; the slide reads as mostly empty` })
   }
-  const empty = emptiness(top.filter((n) => roleOf(n) !== 'decor').map(inkBox), zone)
+  // filled shapes (a dark panel, a masthead) are deliberate composition, not empty space; thin rules count too
+  const empty = emptiness(top.map(inkBox), zone)
   if (empty.largest > 0.2) out.push({ code: 'unused_space', level: 'warning', message: `an empty region covers ${Math.round(empty.largest * 100)}% of the content area (${Math.round(empty.empty * 100)}% unused overall)` })
   // 5. alignment: edges that almost line up (2 to 10 px apart) read as mistakes
   const edges = top.filter((n) => roleOf(n) !== 'decor').map((n) => ({ id: idOf(n.sourceId), l: n.box.x, r: n.box.x + n.box.w, t: n.box.y }))

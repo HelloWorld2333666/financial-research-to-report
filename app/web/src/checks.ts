@@ -9,6 +9,7 @@ import { effectiveObs, evidenceValue, textNumbers } from './core/evidence'
 import ratingFixture from './core/fixtures/rating-evidence.json'
 import { loadFonts } from './core/fonts'
 import { planSlide } from './core/design/planner'
+import { balanceRank, debtTrend, riskNarrative } from './core/design/editorial'
 import { qaDeck, qaSlide } from './core/design/qa'
 
 export async function runChecks() {
@@ -214,7 +215,7 @@ export async function runChecks() {
   await safe('pd1_designs_editable_and_clean', async () => {
     const res: string[] = []
     for (const purpose of ['trend', 'risk'] as const) {
-      const plan = planSlide(s.project, { purpose })
+      const plan = planSlide(s.project, { standard: true, purpose })
       const c = plan.candidates[0]!, r2 = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
       const i = s.slides().length - 1, sid = s.slides()[i]!.id
       if (purpose === 'trend') trendSlide = sid
@@ -232,12 +233,25 @@ export async function runChecks() {
     const o = findEl(s.deck, chart)!.el.transform.offset, bx = { x: o.x / 9525 + 12, y: o.y / 9525, w: o.cx / 9525 - 60, h: o.cy / 9525 }
     s.exec({ kind: 'element.transform', id: chart, box: bx }); s.exec({ kind: 'text.set', id: title, text: 'Debt: my own title' })
     const before = JSON.stringify(findEl(s.deck, chart)!.el.transform.offset)
-    const other = planSlide(s.project, { purpose: 'trend' }).candidates.find((x) => x.design.layout.family === 'comparative')!
+    const other = planSlide(s.project, { standard: true, purpose: 'trend' }).candidates.find((x) => x.design.layout.family === 'comparative')!
     const r2 = s.exec({ kind: 'design.apply', design: other.design, slide: trendSlide }, { actor: 'ai' })
     await s.save()
     const back = await Store.open(s.project.id), f = findEl(back.deck, chart), t = findEl(back.deck, title)
     check('pd1_redesign_keeps_user_edits', r2.ok && JSON.stringify(f?.el.transform.offset) === before && textOf(t?.el) === 'Debt: my own title' && !!back.sidecar.designs?.[trendSlide]?.elements.secondary
       && integrity(back.deck, back.project, back.sidecar).ok, `${r2.summary ?? r2.error}`)
+  })
+  // ---------------------------------------------------------------- PD2: composed slides with designed charts, verified on both sides
+  await safe('pd2_composed_slides_server_agrees', async () => {
+    const made: string[] = []
+    for (const make of [debtTrend, balanceRank, riskNarrative]) for (const c of make(s.project)) {
+      const r2 = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
+      const i = s.slides().length - 1, errs = qaSlide(s, i, s.metrics).filter((f) => f.level === 'error')
+      made.push(`${c.design.layout.composition!.kind}:${r2.ok ? 'ok' : r2.error}:${errs.length}`)
+      if (!r2.ok || errs.length) throw new Error(made.join('; ') + ' ' + errs.map((e) => e.message).join('; '))
+    }
+    await s.save()
+    const srv = (await api('GET', '/integrity')).j, c = ig()
+    check('pd2_composed_slides_server_agrees', c.ok && srv.ok && srv.points === c.points && srv.figures === c.figures && srv.sourced === c.sourced, `${made.join(', ')}; server ${srv.ok} ${srv.points} points ${srv.sourced}/${srv.figures}, client ${c.points} points ${c.sourced}/${c.figures}`)
   })
   check('pd1_project', true, s.project.id)
   const fin = ig()

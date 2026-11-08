@@ -1,0 +1,17 @@
+{
+ "kind": "candidate",
+ "brief": "risk",
+ "cand": 1,
+ "label": "Lead message with a dark supporting panel",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "lead_panel"
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "warning:unused_space: an empty region covers 27% of the content area (27% unused overall)"
+ ]
+}

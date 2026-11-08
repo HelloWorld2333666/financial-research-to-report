@@ -9,6 +9,7 @@ import { recommend, subtitleFor, type Intent } from '../recommend'
 import type { VizSpec } from '../viz'
 import { commonLatest, entityOf, firstCommon, ranked, sourceLine, value, Writer } from './insight'
 import { profileOf } from './profiles'
+import { balanceRank, debtTrend, riskNarrative } from './editorial'
 import { designTexts, DESIGN_SCHEMA, newDesignId, validateDesign, type Audience, type Density, type DesignObject, type DesignText, type LayoutFamily, type LayoutParams, type SlideDesign } from './spec'
 
 export type Purpose = 'trend' | 'comparison' | 'risk'
@@ -26,6 +27,8 @@ export interface DesignRequest {
   family?: LayoutFamily
   /** wording proposed by the model for the main message; kept only if every figure in it is in the evidence */
   claim?: string
+  /** use the PD1 standard layouts only (no editorial compositions) */
+  standard?: boolean
 }
 export interface DesignCandidate { label: string; design: SlideDesign; problems: string[] }
 /** Bumped when planning rules change, so saved chat cards re-plan instead of showing a plan made under older rules. */
@@ -222,11 +225,28 @@ function planRisk(p: Project, req: DesignRequest, notes: string[]): DesignCandid
   return out
 }
 
+function editorial(p: Project, req: DesignRequest, notes: string[]): DesignCandidate[] {
+  const focus = (req.focus ?? 'FR').toUpperCase(), peers = (req.peers ?? []).map((g) => g.toUpperCase()).filter((g) => g !== focus)
+  try {
+    const c = req.purpose === 'trend' && (req.metric ?? 'debt') === 'debt' ? debtTrend(p, focus, peers.length ? peers : undefined)
+      : req.purpose === 'comparison' && (req.metric ?? 'deficit') === 'deficit' && !req.peers?.length ? balanceRank(p, focus)
+      : req.purpose === 'risk' ? riskNarrative(p, focus, peers[0] ?? 'DE') : []
+    if (c.length && req.claim?.trim()) notes.push(`The proposed wording "${req.claim.trim()}" was not used: these compositions state only directions, ranks and figures computed from the data.`)
+    return c.filter((x) => !x.problems.length).length ? c : []
+  } catch (e: any) {
+    notes.push(`Editorial layouts not used (${String(e?.message ?? e)}); the standard layouts follow.`)
+    return []
+  }
+}
+
 /** Plan a slide: candidates in the order offered (a preferred family first), each with its validation problems. */
 export function planSlide(p: Project, req: DesignRequest): PlanResult {
   const notes: string[] = []
   try {
-    let c = req.purpose === 'trend' ? planTrend(p, req, notes) : req.purpose === 'comparison' ? planComparison(p, req, notes) : planRisk(p, req, notes)
+    // PD2: the editorial compositions in the visual language come first; the PD1 layouts remain the fallback when
+    // the data don't fit an editorial brief (another metric, a comparison with surpluses, missing peers)
+    let c: DesignCandidate[] = req.standard ? [] : editorial(p, req, notes)
+    if (!c.length) c = req.purpose === 'trend' ? planTrend(p, req, notes) : req.purpose === 'comparison' ? planComparison(p, req, notes) : planRisk(p, req, notes)
     if (req.family) c = [...c.filter((x) => x.design.layout.family === req.family), ...c.filter((x) => x.design.layout.family !== req.family)]
     // every dataset the slide shows (charts, tables) or cites (figures in its text, through evidence and derivations)
     const idx = evidenceIndex(p), dss = new Set(c.flatMap((x) => x.design.objects.flatMap((o) => (o.kind === 'viz' ? o.viz.view.datasets : o.kind === 'table' ? o.table.datasets : []))))

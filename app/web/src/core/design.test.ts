@@ -29,7 +29,7 @@ function withSevenCountries(p: Project) {
 
 describe('PD1 planner and validator', () => {
   it('plans a debt trend as genuinely different, valid designs with every figure bound to evidence', () => {
-    const p = P(), r = planSlide(p, { purpose: 'trend', metric: 'debt', focus: 'FR' })
+    const p = P(), r = planSlide(p, { standard: true,  purpose: 'trend', metric: 'debt', focus: 'FR' })
     expect(r.error).toBeUndefined()
     expect(r.candidates.length).toBeGreaterThanOrEqual(2)
     for (const c of r.candidates) expect(c.problems).toEqual([])
@@ -43,39 +43,39 @@ describe('PD1 planner and validator', () => {
     expect(r.inputs.map((x) => x.dataset).sort()).toEqual(['ds.de.debt', 'ds.fr.debt'])
   })
   it('refuses unsupported figures, copied data and a KPI with two figures', () => {
-    const p = P(), d = planSlide(p, { purpose: 'trend' }).candidates[0]!.design
+    const p = P(), d = planSlide(p, { standard: true,  purpose: 'trend' }).candidates[0]!.design
     const bad: SlideDesign = structuredClone(d)
     bad.claim = { text: 'France debt reached 130% of GDP' }
     expect(validateDesign(p, bad).join(' ')).toMatch(/"130" has no evidence/)
     const copy: any = structuredClone(d); copy.objects.push({ id: 'x', kind: 'text', role: 'caption', text: { text: 'x' }, values: [1, 2] })
     expect(validateDesign(p, copy).join(' ')).toMatch(/referenced, not copied/)
-    const risk = planSlide(p, { purpose: 'risk' }).candidates[0]!.design, kpi: any = risk.objects.find((o) => o.kind === 'kpi')
+    const risk = planSlide(p, { standard: true,  purpose: 'risk' }).candidates[0]!.design, kpi: any = risk.objects.find((o) => o.kind === 'kpi')
     kpi.value = { text: '115.7% and 62.8%', numbers: kpi.value.numbers }
     expect(validateDesign(p, risk).join(' ')).toMatch(/exactly one figure/)
   })
   it('keeps the model\'s wording only when its figures come from the evidence', () => {
     const p = P()
-    const ok = planSlide(p, { purpose: 'trend', claim: 'France\'s debt climbed to 115.7% of GDP' }).candidates[0]!.design
+    const ok = planSlide(p, { standard: true,  purpose: 'trend', claim: 'France\'s debt climbed to 115.7% of GDP' }).candidates[0]!.design
     expect(ok.objects.find((o) => o.id === 'title')!.kind === 'text' && (ok.objects.find((o) => o.id === 'title') as any).text.text).toBe('France\'s debt climbed to 115.7% of GDP')
     // a qualitative statement the data contradict (France's gap to Germany widened), with no figure to check: not used
-    const qual = planSlide(p, { purpose: 'trend', claim: 'France has steadily closed the distance to Germany, while Italy remains the highest debtor.' })
+    const qual = planSlide(p, { standard: true,  purpose: 'trend', claim: 'France has steadily closed the distance to Germany, while Italy remains the highest debtor.' })
     expect(qual.notes.join(' ')).toMatch(/states something without a figure/)
     expect((qual.candidates[0]!.design.objects.find((o) => o.id === 'title') as any).text.text).toMatch(/^France's government debt rose from 111.4%/)
     // a figure in the wrong direction: contradicted by the claim checker
-    const dir = planSlide(p, { purpose: 'trend', claim: "France's debt fell from 111.4% in 2022 to 115.7% of GDP in 2025" })
+    const dir = planSlide(p, { standard: true,  purpose: 'trend', claim: "France's debt fell from 111.4% in 2022 to 115.7% of GDP in 2025" })
     expect(dir.notes.join(' ')).toMatch(/contradict/)
-    const r = planSlide(p, { purpose: 'trend', claim: 'France\'s debt climbed to 120% of GDP' })
+    const r = planSlide(p, { standard: true,  purpose: 'trend', claim: 'France\'s debt climbed to 120% of GDP' })
     expect(r.notes.join(' ')).toMatch(/120 is not a figure from the evidence/)
     expect((r.candidates[0]!.design.objects.find((o) => o.id === 'title') as any).text.text).not.toContain('120')
   })
   it('plans an executive risk summary from verified measures only, and a seven-country comparison', () => {
-    const p = P(), risk = planSlide(p, { purpose: 'risk' })
+    const p = P(), risk = planSlide(p, { standard: true,  purpose: 'risk' })
     expect(risk.candidates.map((c) => c.problems)).toEqual([[], []])
     const d = risk.candidates[0]!.design
     expect(d.objects.filter((o) => o.kind === 'kpi').length).toBeGreaterThanOrEqual(3)
     expect(d.claim.text).toMatch(/^Three pressures in the verified data: debt at 115.7% of GDP, a deficit of 5.1% and a 76 bp spread over Germany$/)
-    expect(planSlide(p, { purpose: 'comparison' }).error).toMatch(/at least three countries/)
-    const seven = withSevenCountries(P()), cmp = planSlide(seven, { purpose: 'comparison', metric: 'deficit' })
+    expect(planSlide(p, { standard: true,  purpose: 'comparison' }).error).toMatch(/at least three countries/)
+    const seven = withSevenCountries(P()), cmp = planSlide(seven, { standard: true,  purpose: 'comparison', metric: 'deficit' })
     expect(cmp.candidates.length).toBe(2)
     for (const c of cmp.candidates) expect(c.problems).toEqual([])
     expect(cmp.candidates[0]!.design.claim.text).toMatch(/France's 2025 government balance of −5.1% of GDP was the (\w+ )?weakest of the six countries/)
@@ -85,12 +85,12 @@ describe('PD1 planner and validator', () => {
 describe('PD1 layout', () => {
   it('lays out every family inside the slide, with the hero chart filling the content area', () => {
     const p = P(), pr = PROFILES.institutional!, m = new HeuristicMetrics()
-    for (const c of [...planSlide(p, { purpose: 'trend' }).candidates, ...planSlide(p, { purpose: 'risk' }).candidates]) {
+    for (const c of [...planSlide(p, { standard: true,  purpose: 'trend' }).candidates, ...planSlide(p, { standard: true,  purpose: 'risk' }).candidates]) {
       const L = layoutDesign(c.design, pr, m)
       for (const [id, b] of Object.entries(L.boxes)) { expect(b.x, id).toBeGreaterThanOrEqual(0); expect(b.y + b.h, id).toBeLessThanOrEqual(H); expect(b.x + b.w, id).toBeLessThanOrEqual(W) }
       expect(L.notes).toEqual([])
     }
-    const hero = planSlide(p, { purpose: 'trend' }).candidates[0]!.design, L = layoutDesign(hero, pr, m)
+    const hero = planSlide(p, { standard: true,  purpose: 'trend' }).candidates[0]!.design, L = layoutDesign(hero, pr, m)
     const c = L.zones.content, b = L.boxes.primary!
     expect((b.w * b.h) / (c.w * c.h)).toBeGreaterThan(0.55) // the earlier France slide gave its chart about 45% of a larger, mostly empty slide
   })
@@ -98,7 +98,7 @@ describe('PD1 layout', () => {
 
 describe('PD1 editable slides, ownership and persistence', () => {
   it('applies a design as native editable elements, passes integrity and QA, keeps manual edits through a redesign and a data change', async () => {
-    const s = await fresh(), plan = planSlide(s.project, { purpose: 'trend' })
+    const s = await fresh(), plan = planSlide(s.project, { standard: true,  purpose: 'trend' })
     const r = s.exec({ kind: 'design.apply', design: plan.candidates[0]!.design }, { actor: 'ai' })
     expect(r.ok, r.error).toBe(true)
     const el = elementsOf(s), chart = el.primary!, title = el.title!
@@ -142,7 +142,7 @@ describe('PD1 editable slides, ownership and persistence', () => {
   })
   it('changes the profile without changing a value, and the deck check sees one consistent style', async () => {
     const s = await fresh()
-    for (const purpose of ['trend', 'risk'] as const) expect(s.exec({ kind: 'design.apply', design: planSlide(s.project, { purpose }).candidates[0]!.design }, { actor: 'ai' }).ok).toBe(true)
+    for (const purpose of ['trend', 'risk'] as const) expect(s.exec({ kind: 'design.apply', design: planSlide(s.project, { standard: true,  purpose }).candidates[0]!.design }, { actor: 'ai' }).ok).toBe(true)
     const values = () => JSON.stringify(Object.values(s.project.datasets).map((d) => effectiveObs(d).map((o) => o.value)))
     const before = values()
     expect(qaDeck(s, s.metrics)).toEqual([])

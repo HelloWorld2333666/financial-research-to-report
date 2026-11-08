@@ -6,6 +6,7 @@ import { decimalsOf, effectiveObs } from '../evidence'
 import type { DesignText } from './spec'
 
 const MINUS = '−'
+const o = (x: { long?: boolean }) => ({ long: x.long })
 export const entityOf = (p: Project, ds: string) => p.datasets[ds]?.entity ?? ds
 export const geoOf = (p: Project, ds: string) => (p.datasets[ds]?.geo ?? ds.split('.')[1] ?? '').toUpperCase()
 
@@ -67,6 +68,14 @@ export class Writer {
     if (a == null || b == null || !ea || !eb) throw new Error(`no verified values for ${ds} ${start}–${end}`)
     const d = this.p.datasets[ds]!, dec = decimalsOf(d), unit = d.unit.includes('%') ? 'pp' : d.unit
     return this.derived(`der.${geoOf(this.p, ds).toLowerCase()}.${d.metric}.change.${start}-${end}`, `change in ${d.title}, ${start}–${end}`, 'end - start', { start: ea, end: eb }, b - a, unit, dec, { signed: true })
+  }
+  /** own − peer at one period, in percentage points for percentages (the gap between two countries). */
+  gap(own: string, peer: string, date: string, opts: { long?: boolean } = {}): string {
+    const a = value(this.p, own, date), b = value(this.p, peer, date), ea = evidenceAt(this.p, own, date), eb = evidenceAt(this.p, peer, date)
+    if (a == null || b == null || !ea || !eb) throw new Error(`no verified values for ${own}/${peer} ${date}`)
+    const d = this.p.datasets[own]!, dec = decimalsOf(d), unit = d.unit.includes('%') ? 'pp' : d.unit
+    const id = `der.${geoOf(this.p, own).toLowerCase()}${geoOf(this.p, peer).toLowerCase()}.${d.metric}.gap.${date}`
+    return this.derived(id, `${entityOf(this.p, own)} − ${entityOf(this.p, peer)} ${d.title}, ${date}`, 'own - peer', { own: ea, peer: eb }, a - b, unit, dec, o(opts))
   }
   /** (own − peer) × 100 in basis points, for yields in percent. */
   spread(own: string, peer: string, date: string): string {

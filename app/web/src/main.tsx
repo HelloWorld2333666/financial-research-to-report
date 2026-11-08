@@ -11,6 +11,7 @@ import { integrity } from './core/integrity'
 import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
 import { localTime } from './core/time'
+import { RenderView } from './render'
 import { qaDeck, qaSlide } from './core/design/qa'
 import { planSlide } from './core/design/planner'
 import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
@@ -329,6 +330,7 @@ function App() {
   const [store, setStore] = useState<Store | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
+    if (params.has('render')) return
     if (params.has('checks')) { import('./checks').then((m) => m.runChecks()).then((r) => { const pre = document.createElement('pre'); pre.id = 'checks'; pre.hidden = true; pre.textContent = JSON.stringify(r); document.body.appendChild(pre) }); return }
     const id = params.get('project')
     if (id) Promise.all([Store.open(id), loadFonts()]).then(([s, m]) => { s.metrics = m; setStore(s) }).catch((e) => setError(String(e)))
@@ -338,6 +340,7 @@ function App() {
     Promise.all([fetch('/api/health').then((r) => r.json()), Store.fromBundle({ schema: 'frr-bundle/1', project: { schema: 'frr-project/1', id: 'selftest', title: 'Self test', datasets: {}, evidence: {}, gaps: [], design_dna: {} as any }, sidecar: { schema: 'frr-sidecar/1', bindings: {} }, journal: [], threads: {}, deck: null })])
       .then(([h, s]) => { const r = render(s.deck, 0, FIT, s.metrics); const pre = document.createElement('pre'); pre.id = 'selftest'; pre.hidden = true; pre.textContent = JSON.stringify({ booted: true, api: h, slides: s.slides().map((x) => x.id), width: r.widthPx, canvas: true }); document.body.appendChild(pre) })
   }, [])
+  if (params.has('render')) return <RenderView />
   if (params.has('checks')) return <div className="picker"><h1>Running checks…</h1></div>
   if (error) return <div className="picker"><h1>Could not open the project</h1><p>{error}</p><a href="./">Back to projects</a></div>
   return <TooltipProvider>{store ? <Workspace store={store} /> : <Picker onOpen={(s) => loadFonts().then((m) => { s.metrics = m; setStore(s) })} />}</TooltipProvider>
