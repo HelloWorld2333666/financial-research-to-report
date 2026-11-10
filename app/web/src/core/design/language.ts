@@ -23,10 +23,12 @@ export interface Language {
     peer: string // non-focus series and bars
     peerSoft: string // second peer tone
     surface: string // tinted band behind a focus row or note
+    surfaceDeep: string // a focus row on a tinted panel
     onDark: string // text on navy
     onDarkMuted: string
   }
-  type: Record<'section' | 'kicker' | 'headline' | 'headlineSmall' | 'standfirst' | 'label' | 'body' | 'bodySmall' | 'hero' | 'heroMid' | 'heroSmall' | 'caption' | 'footnote' | 'axis' | 'dataLabel' | 'chartHeading', TypeRole>
+  type: Record<'section' | 'kicker' | 'headline' | 'headlineSmall' | 'standfirst' | 'label' | 'body' | 'bodySmall' | 'hero' | 'heroMid' | 'heroSmall' | 'caption' | 'footnote' | 'axis' | 'dataLabel' | 'chartHeading'
+    | 'navNumber' | 'navItem', TypeRole>
   /** slide frame */
   frame: { margin: number; top: number; bottom: number; masthead: { height: number; rule: number } | null }
   chart: { focusWidth: number; peerWidth: number; gridWidth: number; focusDot: number; peerDot: number; barHeight: number; legend: 'direct' | 'legend' }
@@ -39,7 +41,7 @@ export const LANGUAGES: Record<string, Language> = {
     name: 'Institutional report',
     fonts: { display: 'Source Serif 4', displayStrong: 'Source Serif 4 Semibold', text: 'Inter' },
     color: { paper: '#FBF8F1', ink: '#1E2533', navy, navyDeep: '#0F1F3B', gold, goldSoft: '#CDB37A', muted: '#5F6675', hair: '#D9D0BC',
-      grid: '#E7E0CF', peer: '#9AA3B2', peerSoft: '#C3B48F', surface: '#F2ECDF', onDark: '#F5F0E4', onDarkMuted: '#B9C2D3' },
+      grid: '#E7E0CF', peer: '#9AA3B2', peerSoft: '#C3B48F', surface: '#F2ECDF', surfaceDeep: '#E6DCC6', onDark: '#F5F0E4', onDarkMuted: '#B9C2D3' },
     type: {
       section: { font: 'Inter', pt: 8, color: '#E9DDBF', bold: true, caps: true, tracking: 160 },
       kicker: { font: 'Inter', pt: 8.5, color: gold, bold: true, caps: true, tracking: 140 },
@@ -57,6 +59,8 @@ export const LANGUAGES: Record<string, Language> = {
       axis: { font: 'Inter', pt: 8.5, color: '#7A8190' },
       dataLabel: { font: 'Inter', pt: 9.5, color: '#1E2533', bold: true },
       chartHeading: { font: 'Inter', pt: 9, color: '#5F6675', bold: true, caps: true, tracking: 110 },
+      navNumber: { font: 'Source Serif 4 Semibold', pt: 28, color: '#CDB37A', lineSpacing: 90 },
+      navItem: { font: 'Inter', pt: 15, color: '#F5F0E4', lineSpacing: 115 },
     },
     frame: { margin: 64, top: 0, bottom: 28, masthead: { height: 40, rule: 2 } },
     chart: { focusWidth: 3, peerWidth: 1.6, gridWidth: 0.75, focusDot: 4, peerDot: 2.5, barHeight: 0.58, legend: 'direct' },

@@ -40,6 +40,8 @@ export interface ElementStyle {
   legend?: 'b' | 'r' | 'none'; gridlines?: boolean; gapWidthPct?: number; emphasis?: string; colors?: string[]; peer?: string; pt?: number; axisTitle?: string
   /** PD2: draw the chart with the design engine (core/design/charts.ts) in a visual language, instead of the native chart */
   render?: 'designed'; lang?: string; annotate?: 'change' | 'gap'; mini?: boolean; reference?: string
+  /** Gate C recipes: R2 panel and rank numerals on ranked bars; R3 a shaded period and one callout on a trend */
+  panel?: boolean; ranks?: boolean; band?: { from: string; to: string }; callout?: 'max' | 'min'
 }
 
 export const SIDECAR_SCHEMA = 'frr-sidecar/1'

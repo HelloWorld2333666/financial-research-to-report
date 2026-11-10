@@ -1,0 +1,21 @@
+{
+ "kind": "candidate",
+ "brief": "balance-trend",
+ "cand": 0,
+ "label": "Annotated trend with a shaded period (R3)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "rail",
+   "params": {
+    "side": "right",
+    "chartCols": 8,
+    "rail": "tinted"
+   },
+   "recipe": "trend-annotated"
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

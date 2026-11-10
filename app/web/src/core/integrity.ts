@@ -47,7 +47,8 @@ export function integrity(deck: OpenedPptx, project: Project, sidecar: Sidecar):
       if (!project.evidence[id]) out.mismatch.push(`rating row ${id}: evidence missing`)
       else if (got !== want) out.mismatch.push(`rating ${id} column ${c + 1}: evidence "${want}", table "${got}"`)
     }))
-    if (b.kind === 'text' && b.role !== 'source') for (const n of textNumbers(textOf(f.el), b.numbers, project)) {
+    // a navigation numeral ("01", "02") is a position in the deck, not a figure; any other text is checked
+    if (b.kind === 'text' && b.role !== 'source' && !(b.role === 'nav' && /^\s*\d{1,2}\s*$/.test(textOf(f.el)))) for (const n of textNumbers(textOf(f.el), b.numbers, project)) {
       out.figures++
       if (n.status === 'ok') out.sourced++
       else if (n.status === 'unsourced') out.unsourced++

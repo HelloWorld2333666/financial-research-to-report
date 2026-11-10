@@ -14,7 +14,21 @@ export const FAMILIES: LayoutFamily[] = ['analytical_hero', 'comparative', 'exec
 
 /** PD2: a composition arranges the slide's semantic objects in a visual language (compose.ts). */
 export type CompositionKind = 'rail' | 'statement' | 'wide' | 'bands' | 'lead_panel'
-export interface Composition { kind: CompositionKind; params?: { side?: 'left' | 'right'; chartCols?: number; emphasis?: 'first' | 'even' } }
+  // Gate C (recipe R9): deck navigation, no evidence
+  | 'agenda' | 'divider'
+export const NAVIGATION: CompositionKind[] = ['agenda', 'divider']
+export interface Composition {
+  kind: CompositionKind
+  params?: {
+    side?: 'left' | 'right'; chartCols?: number; emphasis?: 'first' | 'even'
+    /** rail (recipe R1): plain hairline, tinted full-height panel, or dark full-height panel (its objects onDark) */
+    rail?: 'plain' | 'tinted' | 'dark'
+    /** agenda/divider: the 0-based section being opened */
+    current?: number
+  }
+  /** the recipe (recipes.json) this composition was built from, for the rationale and for retrieval feedback */
+  recipe?: string
+}
 export type Density = 'low' | 'medium' | 'high'
 export type Audience = 'executive' | 'analyst' | 'committee'
 
@@ -41,14 +55,23 @@ export type TextRole = 'kicker' | 'title' | 'subtitle' | 'takeaway' | 'observati
   // PD2 roles, styled by the visual language
   | 'section' | 'headline' | 'standfirst' | 'label' | 'note' | 'body'
 export type DesignObject =
-  | { id: string; kind: 'text'; role: TextRole; text: DesignText; items?: DesignText[]; group?: string; tone?: 'onDark' }
+  | { id: string; kind: 'text'; role: TextRole; text: DesignText; items?: DesignText[]; group?: string; tone?: 'onDark'; accent?: 'gold' | 'muted' }
   /** a chart; `viz` is a frr-viz/1 spec (the visual's meaning); `emphasis` is styling only (the dataset drawn in the focus colour) */
-  | { id: string; kind: 'viz'; role: 'primary' | 'secondary'; viz: VizSpec; emphasis?: string; group?: string; draw?: { annotate?: 'change' | 'gap'; mini?: boolean; reference?: string } }
+  | { id: string; kind: 'viz'; role: 'primary' | 'secondary'; viz: VizSpec; emphasis?: string; group?: string; draw?: ChartDraw }
   | { id: string; kind: 'table'; role: 'primary' | 'secondary'; table: TableSpec }
   /** a KPI callout: one bound figure, what it measures (with its unit), and optional bound context */
   | { id: string; kind: 'kpi'; role: 'kpi'; value: DesignText; label: string; context?: DesignText; variant?: 'hero' | 'stat' | 'band'; group?: string; tone?: 'onDark' }
   /** PD2: structural shapes of a composition (masthead band, dark panel, rules); native shapes, not data */
   | { id: string; kind: 'shape'; role: 'masthead' | 'panel' | 'rule' }
+
+/** How a designed chart is drawn (presentation only; the spec is the meaning). Recipes R2 and R3 add the last four. */
+export interface ChartDraw {
+  annotate?: 'change' | 'gap'; mini?: boolean; reference?: string
+  /** R2: a light panel behind the bars; rank numerals at the left */
+  panel?: boolean; ranks?: boolean
+  /** R3: a shaded band over a period (categories, inclusive), labelled with the period; one callout on the focus series */
+  band?: { from: string; to: string }; callout?: 'max' | 'min'
+}
 
 export interface SlideDesign {
   schema: typeof DESIGN_SCHEMA
@@ -91,11 +114,14 @@ export function designDatasets(d: SlideDesign): string[] {
   return [...out]
 }
 
+/** A section numeral on an agenda or divider: one or two digits and nothing else. Bound with role "nav". */
+export const navNumeral = (d: SlideDesign, o: DesignObject) => o.kind === 'text' && o.role === 'label' && NAVIGATION.includes(d.layout?.composition?.kind as CompositionKind) && /^\s*\d{1,2}\s*$/.test(o.text.text)
+
 export function designTexts(d: SlideDesign): { where: string; t: DesignText }[] {
   const out: { where: string; t: DesignText }[] = [{ where: 'claim', t: d.claim }]
   for (const o of d.objects) {
-    // source notes cite dataset codes and retrieval dates, not figures (integrity skips them too)
-    if (o.kind === 'text' && o.role !== 'source') { out.push({ where: o.id, t: o.text }); (o.items ?? []).forEach((t, i) => out.push({ where: `${o.id}[${i}]`, t })) }
+    // source notes cite dataset codes and retrieval dates, not figures (integrity skips them too); so are navigation numerals
+    if (o.kind === 'text' && o.role !== 'source' && !navNumeral(d, o)) { out.push({ where: o.id, t: o.text }); (o.items ?? []).forEach((t, i) => out.push({ where: `${o.id}[${i}]`, t })) }
     if (o.kind === 'kpi') { out.push({ where: o.id, t: o.value }); if (o.context) out.push({ where: `${o.id}.context`, t: o.context }) }
   }
   return out
@@ -129,7 +155,11 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
   if (d.layout?.family === 'analytical_hero' && !(d.objects ?? []).some((o) => o.kind === 'viz' && o.role === 'primary')) errs.push('an analytical hero needs one primary chart')
   if (d.layout?.family === 'comparative' && visuals.length < 2) errs.push('a comparative layout needs two visual objects (charts or a chart and a table)')
   if (d.layout?.family === 'executive_insight' && (kpis.length < 2 || kpis.length > 4)) errs.push('an executive insight needs 2 to 4 KPIs')
-  if (d.layout?.family === 'composed') {
+  const nav = d.layout?.family === 'composed' && NAVIGATION.includes(d.layout.composition?.kind as CompositionKind)
+  if (nav) {
+    if (!(d.objects ?? []).some((o) => o.kind === 'text' && o.role === 'headline')) errs.push('a navigation slide needs a title')
+    if ((d.objects ?? []).some((o) => o.kind === 'viz' || o.kind === 'table' || o.kind === 'kpi')) errs.push('navigation slides carry no charts, tables or figures')
+  } else if (d.layout?.family === 'composed') {
     if (!d.layout.composition) errs.push('a composed slide needs a composition')
     if (!(d.objects ?? []).some((o) => o.kind === 'text' && o.role === 'headline')) errs.push('a composed slide needs a headline')
     if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band'))) errs.push('a composed slide needs a focal point: a hero figure, a primary chart or figure bands')

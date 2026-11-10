@@ -15,7 +15,7 @@ import { composeLayout, type ComposedLaid } from './compose'
 import { runFor, type Language } from './language'
 import { layoutDesign, type Box, type Laid } from './layout'
 import { PROFILES, type DesignProfile } from './profiles'
-import { validateDesign, type AppliedDesign, type DesignObject, type DesignText, type SlideDesign } from './spec'
+import { navNumeral, validateDesign, type AppliedDesign, type DesignObject, type DesignText, type SlideDesign } from './spec'
 
 const off = (b: Box) => ({ x: Math.round(b.x * EMU), y: Math.round(b.y * EMU), cx: Math.round(b.w * EMU), cy: Math.round(b.h * EMU) })
 const ins = (px: number) => ({ l: px * EMU, t: px * EMU, r: px * EMU, b: px * EMU })
@@ -130,7 +130,7 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
     const b = L.boxes[o.id]
     if (!b || o.kind === 'shape') continue
     if (o.kind === 'viz') {
-      const spec = o.viz, style: ElementStyle = { render: 'designed', lang: V.id, ...(o.emphasis ? { emphasis: o.emphasis } : {}), ...(o.draw?.annotate ? { annotate: o.draw.annotate } : {}), ...(o.draw?.mini ? { mini: true } : {}), ...(o.draw?.reference ? { reference: o.draw.reference } : {}) }
+      const spec = o.viz, style: ElementStyle = { render: 'designed', lang: V.id, ...(o.emphasis ? { emphasis: o.emphasis } : {}), ...structuredClone(o.draw ?? {}) }
       const shapes = isComposite(spec.family) || drawsDesigned(spec, style)
       if (shapes) out.push({ key: o.id, kind: 'composite', box: b, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(b) }, bind: (slide) => ({ kind: 'viz', slide, spec, style }) })
       else {
@@ -153,12 +153,12 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
     }
     if (o.kind !== 'text') continue
     const role = (L.roles[o.id] ?? 'body') as keyof Language['type'], dark = o.tone === 'onDark', items = o.items?.length ? o.items : [o.text]
-    const color = dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
+    const color = o.accent === 'gold' ? c.gold : o.accent === 'muted' ? (dark ? c.onDarkMuted : c.muted) : dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
     const multi = o.role === 'note' || o.role === 'body' || o.role === 'narrative' || o.role === 'observations'
     const paragraphs = items.map((t, i) => para(runs(t, role, { color, figColor: dark ? c.onDark : role === 'standfirst' ? c.ink : c.navy }), role, multi && i < items.length - 1 ? { spaceAfterPt: 7 } : {}))
     out.push({ key: o.id, kind: 'text', box: b, obj: o, paragraphs,
       create: { op: 'addElement', kind: 'textbox', offset: box(b), paragraphs, bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } },
-      bind: textBind(o.role === 'headline' ? 'title' : o.role === 'standfirst' ? 'subtitle' : o.role, items) })
+      bind: textBind(navNumeral(d, o) ? 'nav' : o.role === 'headline' ? 'title' : o.role === 'standfirst' ? 'subtitle' : o.role, items) })
   }
   return out
 }
@@ -207,7 +207,7 @@ export function applyDesign(ctx: Ctx, design: SlideDesign, slide?: string): Outc
   const plans = composed ? planComposed(ctx, design, L as ComposedLaid) : planElements(ctx, design, pr, L)
   const diff: string[] = [], keep: Record<string, string> = {}, redrawn = new Set<string>()
   const live = (id?: string) => (id ? findEl(ctx.deck, id) : null)
-  txn(ctx, [{ op: 'setBackground', target: { slide: si }, kind: 'solid', color: composed ? (L as ComposedLaid).language.color.paper : pr.color.background }])
+  txn(ctx, [{ op: 'setBackground', target: { slide: si }, kind: 'solid', color: composed ? ((L as ComposedLaid).background ?? (L as ComposedLaid).language.color.paper) : pr.color.background }])
   // 1. existing elements: keep what the user owns, update in place what is compatible, remove the rest
   const toCreate: ElPlan[] = []
   for (const p of plans) {

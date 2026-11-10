@@ -29,9 +29,9 @@ describe('PD2 editorial candidates', () => {
   it('offers two materially different, valid compositions per brief, every figure bound to evidence', () => {
     for (const [name, make] of BRIEFS) {
       const p = seven(P()), c = make(p)
-      expect(c.length, name).toBe(2)
+      expect(c.length, name).toBeGreaterThanOrEqual(2) // Gate C adds recipe variants after the two PD2 compositions
       for (const x of c) expect(x.problems, `${name}: ${x.label}`).toEqual([])
-      expect(new Set(c.map((x) => x.design.layout.composition!.kind)).size, name).toBe(2) // two different arrangements
+      expect(new Set(c.slice(0, 2).map((x) => x.design.layout.composition!.kind)).size, name).toBe(2) // two different arrangements
       for (const x of c) for (const { where, t } of designTexts(x.design)) expect(figures(t.text).length, `${name} ${where}: ${t.text}`).toBeLessThanOrEqual((t.numbers ?? []).length)
     }
   })

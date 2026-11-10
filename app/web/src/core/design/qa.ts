@@ -3,6 +3,7 @@
 // its box and overlapping objects; the checks below add what made the earlier France slides weak: small charts in
 // large empty slides, tiny type, near-miss alignment, crowded or colliding chart labels, legends over data, a broken
 // hierarchy, and styles that drift between slides. A finding is evidence for a person or the model, not a score.
+import { NAVIGATION, type CompositionKind } from './spec'
 import { auditSlideFindings } from '@genoffice/pipelines/slides/layout-audit'
 import type { FontMetricsProvider, RenderNode, RenderSlide } from '@genoffice/pptx-render'
 import type { OpenedPptx } from '@genoffice/pptx-engine'
@@ -92,7 +93,9 @@ export function qaSlide(ctx: Ctx, index: number, metrics: FontMetricsProvider): 
   }
   // filled shapes (a dark panel, a masthead) are deliberate composition, not empty space; thin rules count too
   const empty = emptiness(top.map(inkBox), zone)
-  if (empty.largest > 0.2) out.push({ code: 'unused_space', level: 'warning', message: `an empty region covers ${Math.round(empty.largest * 100)}% of the content area (${Math.round(empty.empty * 100)}% unused overall)` })
+  // a divider or an agenda is deliberately sparse: open space is its design, not a gap
+  const nav = applied?.design.layout.family === 'composed' && NAVIGATION.includes(applied.design.layout.composition?.kind as CompositionKind)
+  if (empty.largest > 0.2 && !nav) out.push({ code: 'unused_space', level: 'warning', message: `an empty region covers ${Math.round(empty.largest * 100)}% of the content area (${Math.round(empty.empty * 100)}% unused overall)` })
   // 5. alignment: edges that almost line up (2 to 10 px apart) read as mistakes
   const edges = top.filter((n) => roleOf(n) !== 'decor').map((n) => ({ id: idOf(n.sourceId), l: n.box.x, r: n.box.x + n.box.w, t: n.box.y }))
   const near: string[] = []
@@ -104,7 +107,7 @@ export function qaSlide(ctx: Ctx, index: number, metrics: FontMetricsProvider): 
   // 6. hierarchy: title above takeaway and body, source smallest
   const size: Record<string, number> = {}
   for (const n of top) { const r = roleOf(n), t = (n as any).text; if (!r || !t) continue; for (const l of t.lines) for (const g of l.runs) if (g.text.trim()) size[r] = Math.max(size[r] ?? 0, g.fontSizePx * (t.fontScale ?? 1)) }
-  if (size.title && Object.entries(size).some(([r, s]) => !['title', 'kpi'].includes(r) && s > size.title! + 0.5)) out.push({ code: 'hierarchy', level: 'warning', message: 'some text is larger than the title' })
+  if (size.title && Object.entries(size).some(([r, s]) => !['title', 'kpi', 'nav'].includes(r) && s > size.title! + 0.5)) out.push({ code: 'hierarchy', level: 'warning', message: 'some text is larger than the title' })
   if (size.source && Object.entries(size).some(([r, s]) => r !== 'source' && s < size.source! - 0.5)) out.push({ code: 'hierarchy', level: 'warning', message: 'some text is smaller than the source note' })
   return out
 }

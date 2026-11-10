@@ -137,9 +137,9 @@ def tag(r: dict, objs: list[dict], st: dict | None) -> dict:
     sc = r["shape_chart"]
     top = [o for o in objs if o.get("depth", 0) == 0]
     np_ = panels(top)
-    chart = bool(sc["kind"] or r["native_charts"])
-    tables = [t for t in r["tables"]]
-    big_table = any(int(t.split("x")[0]) >= 5 for t in tables)
+    chart = chart_ = bool(sc["kind"] or r["native_charts"])
+    tables = [t for t in r["tables"]] + (["drawn"] if r.get("drawn_table") and not chart_ else [])
+    big_table = any(t == "drawn" or int(t.split("x")[0]) >= 5 for t in tables)
     purpose, structure = set(), []
     if r["kind"] in ("divider", "agenda", "cover"):
         purpose.add("section")
@@ -151,7 +151,7 @@ def tag(r: dict, objs: list[dict], st: dict | None) -> dict:
         purpose.add("about")
     if P_SURVEY.search(title + " " + text[:400]) and pcts >= 4:
         purpose.add("survey")
-    if chart and (len(years) >= 3 or sc.get("kind") == "columns") and sc["kind"] not in ("bars", "drawn_col"):
+    if chart and (len(years) >= 3 or sc.get("kind") in ("columns", "line")) and sc["kind"] not in ("bars", "drawn_col", "donut"):
         purpose.add("trend")
     if sc["kind"] in ("bars", "drawn_col") or P_COMPARE.search(title):
         purpose.add("comparison")
@@ -198,7 +198,7 @@ def tag(r: dict, objs: list[dict], st: dict | None) -> dict:
     if st:
         bg = st.get("bg") or "#ffffff"
         bgl = (0.2126 * int(bg[1:3], 16) + 0.7152 * int(bg[3:5], 16) + 0.0722 * int(bg[5:7], 16)) / 255
-        tone = "dark" if st["dark"] >= 0.45 or (bgl < 0.3 and st["dark"] >= 0.3) else "light"
+        tone = "dark" if st["dark"] >= 0.45 or st["lum"] < 0.5 or (bgl < 0.3 and st["dark"] >= 0.3) else "light"
     tp = r["title_pt"] or 0
     design = {
         "tone": tone,

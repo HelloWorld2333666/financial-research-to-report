@@ -9,7 +9,7 @@ import { effectiveObs, evidenceValue, textNumbers } from './core/evidence'
 import ratingFixture from './core/fixtures/rating-evidence.json'
 import { loadFonts } from './core/fonts'
 import { planSlide } from './core/design/planner'
-import { balanceRank, debtTrend, riskNarrative } from './core/design/editorial'
+import { balanceRank, balanceTrend, debtTrend, navigation, riskNarrative } from './core/design/editorial'
 import { qaDeck, qaSlide } from './core/design/qa'
 
 export async function runChecks() {
@@ -252,6 +252,21 @@ export async function runChecks() {
     await s.save()
     const srv = (await api('GET', '/integrity')).j, c = ig()
     check('pd2_composed_slides_server_agrees', c.ok && srv.ok && srv.points === c.points && srv.figures === c.figures && srv.sourced === c.sourced, `${made.join(', ')}; server ${srv.ok} ${srv.points} points ${srv.sourced}/${srv.figures}, client ${c.points} points ${c.sourced}/${c.figures}`)
+  })
+  // ---------------------------------------------------------------- Gate C: recipe slides (R3 trend, R9 navigation), verified on both sides
+  await safe('gatec_recipe_slides_server_agree', async () => {
+    const made: string[] = []
+    const cands = [...balanceTrend(s.project), ...navigation(s.project, 'agenda', 1), ...navigation(s.project, 'divider', 1)]
+    for (const c of cands) {
+      const r2 = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
+      const i = s.slides().length - 1, f = qaSlide(s, i, s.metrics)
+      made.push(`${c.design.layout.composition!.recipe}:${r2.ok ? 'ok' : r2.error}:${f.length}`)
+      if (!r2.ok || f.some((x) => x.level === 'error')) throw new Error(made.join('; ') + ' ' + f.map((e) => e.message).join('; '))
+    }
+    await s.save()
+    const srv = (await api('GET', '/integrity')).j, c = ig()
+    check('gatec_recipe_slides_server_agree', c.ok && srv.ok && srv.points === c.points && srv.figures === c.figures && srv.sourced === c.sourced && (srv.unsourced?.length ?? 0) === 0,
+      `${made.join(', ')}; server ${srv.ok} ${srv.points} points ${srv.sourced}/${srv.figures} unsourced ${srv.unsourced?.length}, client ${c.points} points ${c.sourced}/${c.figures}`)
   })
   check('pd1_project', true, s.project.id)
   const fin = ig()

@@ -16,6 +16,8 @@ export interface ComposedLaid extends Laid {
   /** the type role each text object is set in (build.ts styles it from the language) */
   roles: Record<string, keyof Language['type']>
   language: Language
+  /** the slide background when the composition sets one (a divider is navy); otherwise the language's paper */
+  background?: string
 }
 
 export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedLaid {
@@ -103,13 +105,60 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
   }
 
   const k = c.kind
-  if (k === 'rail') {
+  let background: string | undefined
+  const railLabel = one((o) => o.kind === 'text' && o.role === 'label' && (o as any).group === 'rail')
+  if (k === 'rail' && (P.rail === 'tinted' || P.rail === 'dark')) {
+    // R1: a full-height rail panel bleeding to the slide edge; the headline, chart and footnote keep to the chart columns
+    const side = P.side ?? 'right', cc = P.chartCols ?? 8, chartW = cols(cc), top = mh + (L.frame.masthead?.rule ?? 0)
+    const chartX = side === 'right' ? M : W - M - chartW
+    const panel = side === 'right' ? { x: M + chartW + G, y: top, w: W - (M + chartW + G), h: H - top } : { x: 0, y: top, w: W - M - chartW - G, h: H - top }
+    decor.push({ id: 'rail-panel', kind: 'rule', box: panel, fill: P.rail === 'dark' ? L.color.navyDeep : L.color.surface })
+    if (source) {
+      const h = height(textOf(source), L.type.footnote, chartW)
+      boxes[source.id] = { x: chartX, y: H - 18 - h, w: chartW, h }
+      const fl = decor.find((x) => x.id === 'foot-line'); if (fl) fl.box = { x: chartX, y: H - 18 - h - 10, w: chartW, h: 0.75 }
+      footTop = H - 18 - h - 10
+    }
+    const y0 = header(chartX, top0, chartW, 2) + 30
+    if (primary) placeChart(primary, { x: chartX, y: y0, w: chartW, h: footTop - 18 - y0 })
+    const inset = 32, rx = panel.x + inset, rw = panel.w - inset - (side === 'right' ? Math.max(inset, M - 16) : inset)
+    let ry = top0 + 4
+    if (railLabel) ry = setText(railLabel, 'label', rx, ry, rw) + 22
+    rail(rx, ry, rw, H - 40)
+  } else if (k === 'rail') {
     const side = P.side ?? 'right', cc = P.chartCols ?? 8
     const y0 = header(M, top0, cols(11), 2, cols(9)) + 30
     const chartW = cols(cc), railW = cols(12 - cc) - 8, chartX = side === 'right' ? M : M + railW + G + 8, railX = side === 'right' ? M + chartW + G + 8 : M
     if (primary) placeChart(primary, { x: chartX, y: y0, w: chartW, h: footTop - 18 - y0 })
     if (side === 'right') rule('rail-divider', { x: railX - G / 2 - 4, y: y0 + 4, w: 0.75, h: footTop - 22 - y0 }, L.color.hair)
-    rail(railX, y0 + 2, railW, footTop - 18)
+    let ry = y0 + 2
+    if (railLabel) ry = setText(railLabel, 'label', railX, ry, railW) + 16
+    rail(railX, ry, railW, footTop - 18)
+  } else if (k === 'agenda') {
+    // R9: a paper column with "Contents" in the display face; the sections on a navy panel, the current one in gold
+    const lw = cols(4), panelX = M + lw + G
+    decor.push({ id: 'agenda-panel', kind: 'rule', box: { x: panelX, y: 0, w: W - panelX, h: H }, fill: L.color.navyDeep })
+    let y = setText(headline, 'headline', M, 300, lw - 12)
+    if (stand) y = setText(stand, 'standfirst', M, y + 10, lw - 12)
+    rule('agenda-rule', { x: M, y: 300 - 22, w: 44, h: 2 }, L.color.gold)
+    const groups = [...new Set(d.objects.map((o) => (o as any).group).filter((g) => typeof g === 'string' && /^s\d+$/.test(g)))] as string[]
+    const step = Math.min(84, (H - 160) / Math.max(1, groups.length)), y0 = (H - step * groups.length) / 2, nx = panelX + 88
+    groups.forEach((g, i) => {
+      const num = one((o) => o.kind === 'text' && o.role === 'label' && (o as any).group === g), name = one((o) => o.kind === 'text' && o.role !== 'label' && (o as any).group === g)
+      const yy = y0 + i * step
+      if (num) setText(num, 'navNumber', nx, yy, 64)
+      if (name) setText(name, 'navItem', nx + 84, yy + 8, W - nx - 84 - M)
+      if (i === (P.current ?? -1)) rule(`agenda-mark-${g}`, { x: panelX, y: yy + 4, w: 6, h: 34 }, L.color.gold)
+    })
+  } else if (k === 'divider') {
+    // R9: a full navy slide; the section numeral in gold, its title in the display face, one line on what it answers
+    background = L.color.navyDeep
+    const num = one((o) => o.kind === 'text' && o.role === 'label' && !(o as any).group)
+    let y = 236
+    if (num) y = setText(num, 'hero', M, y, cols(3)) + 14
+    rule('divider-rule', { x: M, y, w: 56, h: 2 }, L.color.gold)
+    y = setText(headline, 'headline', M, y + 26, cols(8))
+    if (stand) setText(stand, 'standfirst', M, y + 12, cols(7))
   } else if (k === 'statement') {
     // the message carries the slide: a tall headline column, the chart beside it at full height
     const tc = 5, textW = cols(tc), chartX = M + textW + G + 24, chartW = W - M - chartX
@@ -171,5 +220,5 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
   }
   for (const o of d.objects) if (!boxes[o.id]) notes.push(`${o.id} has no place in a ${k} composition`)
   const content: Box = { x: M, y: top0, w: W - 2 * M, h: footTop - top0 }
-  return { boxes, sizes, roles, language: L, decor, notes, zones: { header: { x: 0, y: 0, w: W, h: top0 }, content, footer: { x: M, y: footTop, w: W - 2 * M, h: H - footTop } } }
+  return { boxes, sizes, roles, language: L, decor, notes, ...(background ? { background } : {}), zones: { header: { x: 0, y: 0, w: W, h: top0 }, content, footer: { x: M, y: footTop, w: W - 2 * M, h: H - footTop } } }
 }

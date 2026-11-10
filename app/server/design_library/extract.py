@@ -31,7 +31,7 @@ NS = {
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
 }
-EXTRACTOR_VERSION = 2  # 2: picture fills on shapes (fill "picture"), e.g. full-slide photo backgrounds
+EXTRACTOR_VERSION = 3  # 2: picture fills on shapes; 3: freeform path statistics (charts drawn as paths)
 CHART_KINDS = ["barChart", "bar3DChart", "lineChart", "line3DChart", "pieChart", "pie3DChart", "doughnutChart", "areaChart", "area3DChart",
                "scatterChart", "bubbleChart", "radarChart", "stockChart", "surfaceChart", "ofPieChart"]
 
@@ -112,6 +112,30 @@ def box_of(xfrm, sw: int, sh: int, parent=None) -> dict | None:
     return {"x": round(x / sw, 4), "y": round(y / sh, 4), "w": round(w / sw, 4), "h": round(h / sh, 4), "rot": round(int(xfrm.get("rot", 0)) / 60000, 1)}
 
 
+def path_stats(cg) -> dict | None:
+    """What a freeform path is made of: points, curve segments, subpaths, whether it closes, whether it is filled.
+    Charts in PDF-converted decks are freeforms: a line series is an open, unfilled polyline with many points; a donut
+    or pie segment is closed and curved."""
+    if cg is None:
+        return None
+    pts = curves = subpaths = closes = 0
+    nofill = False
+    for pth in cg.iter(q("a:path")):
+        if pth.get("fill") == "none":
+            nofill = True
+        for el in pth:
+            t = el.tag.split("}")[1]
+            if t == "moveTo":
+                subpaths += 1; pts += 1
+            elif t == "lnTo":
+                pts += 1
+            elif t in ("cubicBezTo", "quadBezTo", "arcTo"):
+                curves += 1; pts += 1
+            elif t == "close":
+                closes += 1
+    return {"pts": pts, "curves": curves, "subpaths": subpaths, "closed": closes, "nofill": nofill}
+
+
 def text_info(txbody, default_pt: float | None) -> dict:
     if txbody is None:
         return {}
@@ -178,6 +202,7 @@ def walk(z, slide_part, node, sw, sh, defaults, slide_rels, parent=None, depth=0
             sppr = el.find(q("p:spPr"))
             geom = sppr.find(q("a:prstGeom")) if sppr is not None else None
             custom = sppr is not None and sppr.find(q("a:custGeom")) is not None
+            pstat = path_stats(sppr.find(q("a:custGeom"))) if custom else None
             default = defaults.get("title") if role in ("title", "ctrTitle") else defaults.get("body") if role else defaults.get("other")
             ti = text_info(el.find(q("p:txBody")), default)
             fill = color_of(sppr.find(q("a:solidFill"))) if sppr is not None else None
@@ -186,7 +211,8 @@ def walk(z, slide_part, node, sw, sh, defaults, slide_rels, parent=None, depth=0
             line = sppr.find(q("a:ln")) if sppr is not None else None
             out.append({"kind": "text" if ti.get("chars") else "shape", "ph": role, "name": (nv.find(q("p:cNvPr")).get("name") if nv is not None else None),
                         "geom": geom.get("prst") if geom is not None else ("custom" if custom else None), "box": box_of(sppr.find(q("a:xfrm")) if sppr is not None else None, sw, sh, parent),
-                        "fill": fill, "line": color_of(line.find(q("a:solidFill"))) if line is not None else None, "depth": depth, **({"text": ti} if ti.get("chars") else {})})
+                        "fill": fill, "line": color_of(line.find(q("a:solidFill"))) if line is not None else None, "depth": depth, **({"text": ti} if ti.get("chars") else {}),
+                        **({"path": pstat} if pstat else {})})
         elif tag == "pic":
             sppr = el.find(q("p:spPr"))
             blip = el.find(".//" + q("a:blip"))

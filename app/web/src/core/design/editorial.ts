@@ -27,6 +27,15 @@ function design(p: Project, objective: string, claim: DesignText, composition: C
   return { schema: DESIGN_SCHEMA, id: newDesignId(), objective, claim, audience: 'executive', density: 'medium', layout: { family: 'composed', params: {}, composition },
     profile: 'institutional', language: 'institutional', objects, rationale, ...(w.derivations.length ? { derivations: [...w.derivations] } : {}) }
 }
+/** A recipe variant of a candidate: the same evidence and wording, another composition and chart treatment (recipes.json). */
+function variant(c: DesignCandidate, p: Project, label: string, composition: Composition, change: (objs: DesignObject[]) => DesignObject[], why: string[]): DesignCandidate {
+  const d: SlideDesign = { ...structuredClone(c.design), id: newDesignId(), layout: { family: 'composed', params: {}, composition } }
+  d.objects = change(d.objects)
+  d.rationale = [...why, ...d.rationale.filter((r) => !/^Composition:/.test(r))]
+  return { label, design: d, problems: validateDesign(p, d) }
+}
+const railLabel = (text: string, dark = false): DesignObject => ({ id: 'rail-label', kind: 'text', role: 'label', text: { text }, group: 'rail', ...(dark ? { tone: 'onDark' } : {}) }) as DesignObject
+
 const frame = (section: string): DesignObject[] => [{ id: 'masthead', kind: 'shape', role: 'masthead' }, { id: 'section', kind: 'text', role: 'section', text: { text: section } }]
 const T = (id: string, role: any, t: DesignText, extra: Partial<DesignObject> = {}) => ({ id, kind: 'text', role, text: t, ...extra }) as DesignObject
 
@@ -71,6 +80,10 @@ export function debtTrend(p: Project, focus = 'FR', peers = ['DE', 'IT']): Desig
       ['Focal point: a tall serif statement of the widening gap, the message read before the chart', 'Evidence: France against Germany only, the gap bracketed and labelled at the start and the end (gold where it is widest)',
         'Supporting figures: the three changes, stacked as a ledger with hairlines', 'Composition: 5-column statement, 7-column chart at full height'], w))
   }
+  // recipe R1: the evidence rail as a full-height tinted panel with a heading
+  if (out[0]) out.push(variant(out[0], p, 'Chart with a tinted figures rail (R1)', { kind: 'rail', params: { side: 'right', chartCols: 8, rail: 'tinted' }, recipe: 'chart-rail' },
+    (objs) => [...objs, railLabel(`Where ${fe} stands`)],
+    ['Recipe R1: the rail is a full-height tinted panel beside the chart, headed by what its figures say; headline and footnote keep to the chart columns']))
   return out
 }
 
@@ -115,6 +128,10 @@ export function balanceRank(p: Project, focus = 'FR'): DesignCandidate[] {
       ['Focal point: France\'s row, the only one in navy, moving from its ' + prev + ' ring to its ' + at + ' dot', 'One chart carries both rank and change; the standfirst names who widened and who narrowed (computed)',
         'The hero figure sits beside the headline, not in a card', 'Composition: headline and figure above, full-width chart below'], w))
   }
+  if (out[0]) out.push(variant(out[0], p, 'Ranked bars on a panel with rank numerals (R2)', { kind: 'rail', params: { side: 'right', chartCols: 8, rail: 'plain' }, recipe: 'ranked-bars' },
+    // the ranking runs in the message's direction: largest deficit first, so the numeral says what the headline says
+    (objs) => [...objs.map((o) => (o.kind === 'viz' && o.role === 'primary' ? { ...o, viz: { ...o.viz, view: { ...o.viz.view, order: 'asc' as const } }, draw: { ...(o.draw ?? {}), panel: true, ranks: true } } : o)), railLabel(`${fe} in the ranking`)],
+    ['Recipe R2: the ranking as one exhibit on a light panel, rank numerals at the left, values at the bar ends']))
   return out
 }
 
@@ -165,4 +182,59 @@ export function riskNarrative(p: Project, focus = 'FR', peer = 'DE'): DesignCand
         'The chart annotates France\'s change; Germany is the quiet reference', 'Composition: 7-column lead, full-height panel to the right'], w))
   }
   return out
+}
+
+// ------------------------------------------------------------------ 4. deficit trend (recipe R3): a shaded period and one callout
+export function balanceTrend(p: Project, focus = 'FR', peers = ['DE']): DesignCandidate[] {
+  const F = ds(focus, 'deficit'), P = peers.map((g) => ds(g, 'deficit')).filter((d) => p.datasets[d]), all = [F, ...P]
+  if (!p.datasets[F] || !P.length) throw new Error('the deficit trend needs the focus country and a peer')
+  const fe = entityOf(p, F), ref = P[0]!, pe = entityOf(p, ref), a = firstCommon(p, all)!, b = commonLatest(p, all)!
+  const years = p.datasets[F]!.observations.filter((o) => o.value != null && o.date >= a && o.date <= b).map((o) => o.date).sort()
+  // the year the deficit was narrowest (the balance highest), and whether it stayed wider after it
+  const best = years.reduce((x, y) => (value(p, F, y)! > value(p, F, x)! ? y : x))
+  const after = years.filter((y) => y > best), stopped = after.length > 0 && after.every((y) => value(p, F, y)! < value(p, F, best)!)
+  const widerEvery = years.every((y) => value(p, F, y)! < value(p, ref, y)!)
+  if (!stopped) throw new Error('this brief is written for a deficit that stopped narrowing')
+  const w = new Writer(p)
+  const headline = `${poss(fe)} deficit stopped narrowing after ${best}${widerEvery ? ` and stayed wider than ${poss(pe)} every year` : ''}`
+  const line = spec(p, 'trend', 'line', all, { title: 'Government balance, % of GDP' })
+  const stand = w.text(`General government balance, % of GDP, ${a}–${b}. The shaded years are those since ${poss(fe)} narrowest deficit; a lower line is a larger deficit.`)
+  const objs: DesignObject[] = [...frame(`${fe} · Fiscal position`), T('headline', 'headline', { text: headline }), T('standfirst', 'standfirst', stand),
+    T('chart-label', 'label', { text: 'Government balance, % of GDP' }, { group: 'chart' } as any),
+    { id: 'primary', kind: 'viz', role: 'primary', viz: line, emphasis: F, group: 'chart', draw: { band: { from: best, to: b }, callout: 'min' } },
+    railLabel(`Where ${fe} stands`),
+    { id: 'hero', kind: 'kpi', role: 'kpi', variant: 'hero', value: w.text(w.num(F, b)), label: `${fe} · government balance, ${b}, % of GDP` },
+    { id: 'since', kind: 'kpi', role: 'kpi', variant: 'stat', value: w.text(w.change(F, best, b)), label: `Change since ${best}`, context: w.text(`from ${w.num(F, best)} in ${best}`) },
+    { id: 'gap', kind: 'kpi', role: 'kpi', variant: 'stat', value: w.text(w.gap(F, ref, b)), label: `Gap to ${pe}, ${b}` },
+    T('note', 'note', { text: `The gap is ${poss(fe)} balance minus ${poss(pe)}, in percentage points of GDP; a negative gap is a larger deficit.` }),
+    T('source', 'source', { text: sourceLine(p, all) })]
+  const d = design(p, `Show how ${poss(fe)} deficit developed against ${pe}`, { text: headline }, { kind: 'rail', params: { side: 'right', chartCols: 8, rail: 'tinted' }, recipe: 'trend-annotated' }, objs,
+    ['Recipe R3: the years since the narrowest deficit shaded and labelled with the period; one callout on the largest deficit, computed from the data',
+      'Focal point: the France line, heavy navy; the peer quiet, both labelled at their ends', 'Rail: the latest level, the change since the narrowest year and the gap to the peer, each bound to evidence'], w)
+  return [{ label: 'Annotated trend with a shaded period (R3)', design: d, problems: validateDesign(p, d) }]
+}
+
+// ------------------------------------------------------------------ 5. deck navigation (recipe R9): agenda and divider, no evidence
+export const FRANCE_SECTIONS = [
+  { title: 'Sovereign debt', line: 'How the debt ratio developed against the peers' },
+  { title: 'Fiscal position', line: 'Where the deficit stands and how it moved' },
+  { title: 'Credit risk', line: 'The pressures on the credit and how they compare' },
+]
+export function navigation(p: Project, kind: 'agenda' | 'divider', current = 0, sections = FRANCE_SECTIONS, deckTitle = 'France: sovereign credit review'): DesignCandidate[] {
+  if (!sections.length || current < 0 || current >= sections.length) throw new Error('navigation needs sections and a current section within them')
+  const two = (i: number) => String(i + 1).padStart(2, '0'), cur = sections[current]!
+  const base = (objective: string, claim: string, composition: Composition, objects: DesignObject[], why: string[]): SlideDesign => ({
+    schema: DESIGN_SCHEMA, id: newDesignId(), objective, claim: { text: claim }, audience: 'executive', density: 'low', layout: { family: 'composed', params: {}, composition },
+    profile: 'institutional', language: 'institutional', objects, rationale: why })
+  const d = kind === 'agenda'
+    ? base('Show the deck\'s sections and which one follows', 'Contents', { kind: 'agenda', params: { current }, recipe: 'agenda' }, [
+        T('headline', 'headline', { text: 'Contents' }), T('standfirst', 'standfirst', { text: deckTitle }),
+        ...sections.flatMap((x, i) => [T(`s${i}-num`, 'label', { text: two(i) }, { group: `s${i}`, tone: 'onDark', ...(i === current ? { accent: 'gold' } : {}) } as any),
+          T(`s${i}-name`, 'body', { text: x.title }, { group: `s${i}`, tone: 'onDark', ...(i === current ? {} : { accent: 'muted' }) } as any)])],
+      ['Recipe R9: the sections in order on navy, the one that follows in gold with a gold marker', 'The word Contents in the display face on the paper column', 'No figures on a navigation slide'])
+    : base(`Open the section "${cur.title}"`, cur.title, { kind: 'divider', params: { current }, recipe: 'divider' }, [
+        T('number', 'label', { text: two(current) }, { accent: 'gold' } as any), T('headline', 'headline', { text: cur.title }, { tone: 'onDark' } as any),
+        T('standfirst', 'standfirst', { text: cur.line }, { tone: 'onDark', accent: 'muted' } as any)],
+      ['Recipe R9: a full navy divider; the section numeral in gold, its title in the display face, one line on what it answers', 'No photograph: none is licensed for this deck'])
+  return [{ label: kind === 'agenda' ? 'Agenda with the current section marked (R9)' : 'Section divider (R9)', design: d, problems: validateDesign(p, d) }]
 }

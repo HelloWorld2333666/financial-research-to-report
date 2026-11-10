@@ -38,6 +38,7 @@ from pydantic_ai.ui import StateDeps
 
 import integrity
 from composer import compose
+from design_library.retrieve import recipes, suggest
 from evidence import CURVES, EU27, GROUPS, MATURITY, METRICS, NAMES, measure_for
 from projects import ProjectStore
 
@@ -548,10 +549,11 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                            + ". The app recommends a chart type from the data under fixed rules; preview and apply. Nothing has changed yet."}
 
     @agent.tool
-    def design_slide(ctx: RunContext[Deps], purpose: Literal["trend", "comparison", "risk"], focus: str = "FR", peers: Optional[list[str]] = None,
+    def design_slide(ctx: RunContext[Deps], purpose: Literal["trend", "comparison", "risk", "agenda", "divider"], focus: str = "FR", peers: Optional[list[str]] = None,
                      metric: str = "", message: str = "", objective: str = "", density: Literal["low", "medium", "high"] = "medium",
                      audience: Literal["executive", "analyst", "committee"] = "executive",
-                     layout: Optional[Literal["analytical_hero", "comparative", "executive_insight"]] = None, redesign: bool = False) -> dict:
+                     layout: Optional[Literal["analytical_hero", "comparative", "executive_insight"]] = None, redesign: bool = False,
+                     recipe: Optional[str] = None, section: int = 0) -> dict:
         """Plan a slide before drawing it (PD1). purpose is the DATA QUESTION: trend (one metric over time for a focus country and peers),
         comparison (one metric across many countries at ONE period, ranked) or risk (an executive summary of verified credit pressures).
         layout is the ARRANGEMENT: analytical_hero (one big chart), comparative (chart beside a table or a second chart), executive_insight
@@ -561,8 +563,17 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
         interest, growth or yield. message: your one-sentence wording of the main takeaway; any figure in it must be one the evidence holds,
         otherwise the app keeps its own wording. layout: a preferred layout family (alternatives are still offered). redesign: redesign the
         current slide instead of adding one; elements the user moved or rewrote are kept. The app builds two or three designs from the
-        verified data, validates every figure and shows previews with layout checks; the user applies one."""
+        verified data, validates every figure and shows previews with layout checks; the user applies one.
+        agenda / divider: a contents slide with section `section` (0-based) marked, or the divider opening it; no data.
+        recipe: a recipe id from find_layout_references whose design is offered first."""
         project = project_of(ctx)
+        known = {r["id"] for r in recipes()}
+        if recipe and recipe not in known:
+            return {"kind": "error", "message": f"Unknown recipe {recipe}; known: {', '.join(sorted(known))}."}
+        if purpose in ("agenda", "divider"):
+            req = {"purpose": purpose, "section": max(0, int(section)), **({"recipe": recipe} if recipe else {})}
+            return {"kind": "design_request", "request": req, "slide": None,
+                    "summary": f"Plan a {purpose} slide (section {int(section) + 1}). Navigation slides carry no figures. Preview and apply. Nothing has changed yet."}
         dsets = project["datasets"]
         f = (focus or "FR").upper()[:2]
         m = (metric or ("" if redesign else {"trend": "debt", "comparison": "deficit", "risk": ""}[purpose])).lower().strip()
@@ -577,12 +588,27 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                                                     "Start research for more countries first (start_research with countries and metrics)."}
         req = {"purpose": purpose, "focus": f, **({"peers": [g.upper()[:2] for g in geos if g.upper()[:2] != f]} if geos else {}), **({"metric": m} if m else {}),
                **({"claim": message.strip()} if message.strip() else {}), **({"objective": objective.strip()} if objective.strip() else {}),
-               "density": density, "audience": audience, **({"family": layout} if layout else {})}
+               "density": density, "audience": audience, **({"family": layout} if layout else {}), **({"recipe": recipe} if recipe else {})}
         target = ctx.deps.state.slide if redesign else None
         return {"kind": "design_request", "request": req, "slide": target,
                 "summary": f"{'Redesign this slide' if target else 'Plan a new slide'}: {purpose} for {NAMES.get(f, f)}"
                            + (f" (message proposed: \"{message.strip()}\")" if message.strip() else "")
                            + ". The app builds designs from verified data and checks each one; preview and apply. Nothing has changed yet."}
+
+    @agent.tool_plain
+    def find_layout_references(purpose: list[Literal["summary", "trend", "comparison", "kpi", "survey", "framework", "process", "matrix", "case",
+                                                      "recommendation", "detail_table", "statement", "section"]],
+                               chart: bool = False, table: bool = False, kpis: int = 0, panels: int = 0, chars: Optional[int] = None,
+                               kind: Literal["content", "agenda", "divider"] = "content") -> dict:
+        """Find design recipes (and, when the private design library is configured, reference layouts) for a slide before
+        design_slide. purpose: what the slide argues; chart/table: what it carries; kpis: headline figures; panels: parallel
+        blocks; chars: body text it must hold. Returns up to three recipes (id, when to use it) and up to three references
+        (archetype, why, slot counts; no reference text). Pass the chosen recipe id to design_slide."""
+        q = {"purpose": purpose, "chart": chart, "table": table, "kpis": kpis, "panels": panels, "kind": kind, **({"chars": chars} if chars is not None else {})}
+        r = suggest(q, os.environ.get("FRR_DESIGN_LIBRARY"))
+        return {"kind": "layout_references", **r,
+                "summary": f"{len(r['recipes'])} recipe(s)" + (f" and {len(r['references'])} reference layout(s) from the private library" if r["library"] else " (no private library configured)")
+                           + ". Choose one and call design_slide with its recipe id."}
 
     @agent.tool
     def set_design_profile(ctx: RunContext[Deps], profile: Literal["institutional", "editorial"]) -> dict:

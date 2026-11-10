@@ -9,10 +9,10 @@ import { recommend, subtitleFor, type Intent } from '../recommend'
 import type { VizSpec } from '../viz'
 import { commonLatest, entityOf, firstCommon, ranked, sourceLine, value, Writer } from './insight'
 import { profileOf } from './profiles'
-import { balanceRank, debtTrend, riskNarrative } from './editorial'
+import { balanceRank, balanceTrend, debtTrend, FRANCE_SECTIONS, navigation, riskNarrative } from './editorial'
 import { designTexts, DESIGN_SCHEMA, newDesignId, validateDesign, type Audience, type Density, type DesignObject, type DesignText, type LayoutFamily, type LayoutParams, type SlideDesign } from './spec'
 
-export type Purpose = 'trend' | 'comparison' | 'risk'
+export type Purpose = 'trend' | 'comparison' | 'risk' | 'agenda' | 'divider'
 export interface DesignRequest {
   purpose: Purpose
   objective?: string
@@ -29,10 +29,15 @@ export interface DesignRequest {
   claim?: string
   /** use the PD1 standard layouts only (no editorial compositions) */
   standard?: boolean
+  /** Gate C: a recipe id (recipes.json) whose candidates are offered first */
+  recipe?: string
+  /** agenda/divider: the 0-based section being opened, and the deck's section titles (default: the France review) */
+  section?: number
+  sections?: string[]
 }
 export interface DesignCandidate { label: string; design: SlideDesign; problems: string[] }
 /** Bumped when planning rules change, so saved chat cards re-plan instead of showing a plan made under older rules. */
-export const PLAN_VERSION = 2
+export const PLAN_VERSION = 3
 export interface PlanResult { candidates: DesignCandidate[]; inputs: { dataset: string; entity: string; unit: string; source: string }[]; notes: string[]; error?: string }
 
 const NOUN: Record<string, string> = { debt: 'government debt', deficit: 'government balance', interest: 'interest spending', yield: '10-year bond yield', growth: 'real GDP growth' }
@@ -228,7 +233,10 @@ function planRisk(p: Project, req: DesignRequest, notes: string[]): DesignCandid
 function editorial(p: Project, req: DesignRequest, notes: string[]): DesignCandidate[] {
   const focus = (req.focus ?? 'FR').toUpperCase(), peers = (req.peers ?? []).map((g) => g.toUpperCase()).filter((g) => g !== focus)
   try {
-    const c = req.purpose === 'trend' && (req.metric ?? 'debt') === 'debt' ? debtTrend(p, focus, peers.length ? peers : undefined)
+    const sections = req.sections?.length ? req.sections.map((title) => ({ title, line: FRANCE_SECTIONS.find((x) => x.title === title)?.line ?? '' })) : FRANCE_SECTIONS
+    const c = req.purpose === 'agenda' || req.purpose === 'divider' ? navigation(p, req.purpose, req.section ?? 0, sections)
+      : req.purpose === 'trend' && (req.metric ?? 'debt') === 'debt' ? debtTrend(p, focus, peers.length ? peers : undefined)
+      : req.purpose === 'trend' && req.metric === 'deficit' ? balanceTrend(p, focus, peers.length ? peers : undefined)
       : req.purpose === 'comparison' && (req.metric ?? 'deficit') === 'deficit' && !req.peers?.length ? balanceRank(p, focus)
       : req.purpose === 'risk' ? riskNarrative(p, focus, peers[0] ?? 'DE') : []
     if (c.length && req.claim?.trim()) notes.push(`The proposed wording "${req.claim.trim()}" was not used: these compositions state only directions, ranks and figures computed from the data.`)
@@ -246,6 +254,8 @@ export function planSlide(p: Project, req: DesignRequest): PlanResult {
     // PD2: the editorial compositions in the visual language come first; the PD1 layouts remain the fallback when
     // the data don't fit an editorial brief (another metric, a comparison with surpluses, missing peers)
     let c: DesignCandidate[] = req.standard ? [] : editorial(p, req, notes)
+    if (!c.length && (req.purpose === 'agenda' || req.purpose === 'divider')) return { candidates: [], inputs: [], notes, error: notes[0] ?? 'navigation slides need sections' }
+    if (req.recipe) c = [...c.filter((x) => x.design.layout.composition?.recipe === req.recipe), ...c.filter((x) => x.design.layout.composition?.recipe !== req.recipe)]
     if (!c.length) c = req.purpose === 'trend' ? planTrend(p, req, notes) : req.purpose === 'comparison' ? planComparison(p, req, notes) : planRisk(p, req, notes)
     if (req.family) c = [...c.filter((x) => x.design.layout.family === req.family), ...c.filter((x) => x.design.layout.family !== req.family)]
     // every dataset the slide shows (charts, tables) or cites (figures in its text, through evidence and derivations)

@@ -1,0 +1,86 @@
+{
+  "schema": "frr-recipes/1",
+  "note": "Layout recipes written for this project. They abstract recurring patterns seen in professional research decks into parameters of our own compositions and charts; no reference deck's text, artwork, marks or exact composition is reproduced. The design library (private) links its layout archetypes to these ids; the planner (TypeScript) and the agent tools (Python) both read this file.",
+  "recipes": [
+    {
+      "id": "chart-rail",
+      "pattern": "R1",
+      "name": "Chart with a figures rail",
+      "when": "One chart carries the message; one hero figure, at most two supporting figures and one short note say what it means.",
+      "archetypes": ["chart_led/single", "chart_led/two", "kpi_row/single", "kpi_row/two"],
+      "purpose": ["trend", "comparison", "kpi"],
+      "composition": { "kind": "rail", "params": { "side": "right", "chartCols": 8, "rail": "tinted" } },
+      "variants": {
+        "plain": { "rail": "plain" },
+        "tinted": { "rail": "tinted" },
+        "dark": { "rail": "dark" }
+      },
+      "rules": [
+        "Action title: the conclusion in one sentence of 16 words or fewer, over the chart columns only.",
+        "The rail runs the full height beside the chart, tinted or dark, with a short heading naming what the figures mean.",
+        "One hero figure, then at most two supporting figures, each with a label that says what it measures and when.",
+        "Rail figures add a level, a change or a gap; the hero may restate the latest level as the focal figure, nothing else is repeated.",
+        "Footnote on the paper side, 8 pt, sources and definitions only."
+      ]
+    },
+    {
+      "id": "ranked-bars",
+      "pattern": "R2",
+      "name": "Ranked bars with end values",
+      "when": "One metric across many entities at one period, where the focus entity's rank is the message.",
+      "archetypes": ["chart_led/single", "chart_led/two"],
+      "purpose": ["comparison"],
+      "composition": { "kind": "rail", "params": { "side": "right", "chartCols": 8, "rail": "plain" } },
+      "draw": { "panel": true, "ranks": true },
+      "rules": [
+        "Bars sorted by value; the focus bar in the structure colour on a tinted row, every other bar one quiet grey.",
+        "Values written at the bar ends; no axis, gridlines or legend.",
+        "Rank numerals at the left edge when the rank is the message.",
+        "A light panel behind the bars groups them as one exhibit."
+      ]
+    },
+    {
+      "id": "trend-annotated",
+      "pattern": "R3",
+      "name": "Annotated trend with a shaded period",
+      "when": "A metric over time for a focus entity against peers, where one period or one extreme carries the message.",
+      "archetypes": ["chart_led/single", "chart_led/two", "chart_led/many"],
+      "purpose": ["trend"],
+      "composition": { "kind": "rail", "params": { "side": "right", "chartCols": 8, "rail": "tinted" } },
+      "draw": { "band": "window", "callout": "extreme" },
+      "rules": [
+        "Series labelled at their ends with name and latest value; no legend.",
+        "The focus series heavy with every point marked; peers thin and quiet.",
+        "A light band marks the period the headline is about, labelled with the period only.",
+        "One callout at most, on the focus series' extreme, computed from the data."
+      ]
+    },
+    {
+      "id": "agenda",
+      "pattern": "R9",
+      "name": "Agenda with the current section marked",
+      "when": "Opening a deck or a section: the sections in order, the one that follows highlighted.",
+      "archetypes": ["agenda"],
+      "purpose": ["section"],
+      "composition": { "kind": "agenda", "params": { "current": 0 } },
+      "rules": [
+        "A paper column with the word Contents in the display face; the sections on navy.",
+        "Two-digit numerals in the display face; the current section in gold and bold, the others muted.",
+        "Section names of five words or fewer; no figures on navigation slides."
+      ]
+    },
+    {
+      "id": "divider",
+      "pattern": "R9",
+      "name": "Section divider",
+      "when": "Between sections of a deck of eight slides or more.",
+      "archetypes": ["divider"],
+      "purpose": ["section"],
+      "composition": { "kind": "divider", "params": { "current": 0 } },
+      "rules": [
+        "Full navy slide; the section numeral in gold, the section title in the display face, one line saying what the section answers.",
+        "No photographs unless licensed for this deck; no figures."
+      ]
+    }
+  ]
+}

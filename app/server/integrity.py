@@ -329,7 +329,9 @@ def check(deck: bytes | None, project: dict, sidecar: dict) -> dict:
                     got = rows[r + 1][c] if r + 1 < len(rows) and c < len(rows[r + 1]) else None
                     if ev is None or got != want:
                         res["mismatch"].append({"element": durable, "detail": f"rating {eid} column {c + 1}: evidence \"{want}\", table \"{got}\""})
-        if b["kind"] == "text" and b.get("role") not in ("source",):
+        # a navigation numeral ("01", "02") is a position in the deck, not a figure; any other text is checked
+        nav_numeral = b.get("role") == "nav" and re.fullmatch(r"\s*\d{1,2}\s*", el.get("text", "") or "") is not None
+        if b["kind"] == "text" and b.get("role") not in ("source",) and not nav_numeral:
             for n in text_numbers(el.get("text", ""), b.get("numbers") or [], project, index):
                 res["figures"] += 1
                 if n["status"] == "ok":

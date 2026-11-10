@@ -36,6 +36,7 @@ All steps are deterministic, run once per deck, and are skipped when nothing has
 6. **Retrieve:**
    - `python -m design_library.retrieve --lib <lib> search '<request json>'` returns a shortlist of 3;
    - `python -m design_library.retrieve --lib <lib> load <id>` returns one layout in detail.
+   - `python -m design_library.retrieve suggest '<request json>'` returns the recipes that fit (from `app/web/src/core/design/recipes.json`), plus references when a library is configured. The Skill (`.claude/skills/financial-slide-design/`) and the app agent's `find_layout_references` both use it.
 
 ## What may enter the public repository
 

@@ -5,6 +5,8 @@ imports search()/load()). Results are compact so a shortlist costs a few hundred
 
     python -m design_library.retrieve --lib <private root> search '{"purpose":["trend"],"chart":true,"kpis":1,"chars":400}'
     python -m design_library.retrieve --lib <private root> load <layout id>
+    python -m design_library.retrieve suggest '{"purpose":["trend"],"chart":true}'      recipes (+ references when --lib or
+                                                                                         FRR_DESIGN_LIBRARY is set)
 
 A request (every field optional):
     purpose   list of: summary trend comparison kpi survey framework process matrix case recommendation detail_table
@@ -20,11 +22,33 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 from functools import lru_cache
 from pathlib import Path
 
 DENSITY_CHARS = {"light": (0, 450), "medium": (450, 1100), "dense": (1100, 10**6)}
+# the recipe table the planner (TypeScript) also reads: one source for both
+RECIPES = Path(__file__).resolve().parents[2] / "web" / "src" / "core" / "design" / "recipes.json"
+
+
+@lru_cache(maxsize=1)
+def recipes() -> tuple[dict, ...]:
+    return tuple(json.loads(RECIPES.read_text())["recipes"])
+
+
+def recipe_score(r: dict, q: dict) -> float:
+    kind = q.get("kind", "content")
+    if kind != "content":
+        return 5.0 if r["composition"]["kind"] == kind else -5.0
+    if r["composition"]["kind"] in ("agenda", "divider"):
+        return -5.0
+    s = 3.0 * len(set(q.get("purpose") or []) & set(r["purpose"]))
+    if q.get("chart"):
+        s += 1.0 if any(a.startswith("chart_led") for a in r["archetypes"]) else -1.0
+    if q.get("kpis"):
+        s += 0.5 if "kpi" in r["purpose"] else 0.0
+    return s
 
 
 @lru_cache(maxsize=4)
@@ -72,19 +96,32 @@ def search(lib: str, q: dict, k: int = 3) -> list[dict]:
     pool = [L for L in _layouts(lib) if L["compat"] == "rebuild" and L["kind"] == kind]
     ranked = sorted(((score(L, q), L) for L in pool), key=lambda x: (-x[0][0], x[1]["id"]))
     out, seen = [], set()
-    for (s, why), L in ranked:  # diversity: one layout per primary structure in the shortlist
+    best = ranked[0][0][0] if ranked else 0
+    for (s, why), L in ranked:  # diversity: one layout per primary structure, among layouts close to the best match
         key = L["structure"][0]
         if key in seen:
             continue
+        if s < best - 4:
+            break
         seen.add(key)
         slots = {}
         for sl in L["slots"]:
             slots[sl["role"]] = slots.get(sl["role"], 0) + 1
-        out.append({"id": L["id"], "score": s, "why": why, "structure": L["structure"], "purpose": L["purpose"], "tone": L["design"]["tone"],
+        out.append({"id": L["id"], "archetype": L.get("archetype"), "recipes": [r["id"] for r in recipes() if L.get("archetype") in r["archetypes"]], "score": s, "why": why, "structure": L["structure"], "purpose": L["purpose"], "tone": L["design"]["tone"],
                     "density": L["design"]["density"], "slots": slots, "preview": L["preview"], "members": L["size"]})
         if len(out) == k:
             break
     return out
+
+
+def suggest(q: dict, lib: str | None = None, k: int = 3) -> dict:
+    """What the Skill and the app agent call: the recipes that fit the request (always available, public), and, when the
+    private library is configured, a shortlist of reference layouts with the recipes their archetype maps to."""
+    ranked = sorted(recipes(), key=lambda r: (-recipe_score(r, q), r["id"]))
+    rs = [{"id": r["id"], "pattern": r["pattern"], "name": r["name"], "when": r["when"], "composition": r["composition"]}
+          for r in ranked if recipe_score(r, q) > 0][:k]
+    refs = search(lib, q, k) if lib and (Path(lib) / "catalog" / "layouts.jsonl").exists() else []
+    return {"recipes": rs, "references": refs, "library": bool(refs)}
 
 
 def load(lib: str, layout_id: str) -> dict:
@@ -97,12 +134,12 @@ def load(lib: str, layout_id: str) -> dict:
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lib", required=True)
-    ap.add_argument("cmd", choices=["search", "load"])
+    ap.add_argument("--lib", default=os.environ.get("FRR_DESIGN_LIBRARY"))
+    ap.add_argument("cmd", choices=["search", "load", "suggest"])
     ap.add_argument("arg")
     ap.add_argument("-k", type=int, default=3)
     a = ap.parse_args(argv)
-    r = search(a.lib, json.loads(a.arg), a.k) if a.cmd == "search" else load(a.lib, a.arg)
+    r = search(a.lib, json.loads(a.arg), a.k) if a.cmd == "search" else suggest(json.loads(a.arg), a.lib, a.k) if a.cmd == "suggest" else load(a.lib, a.arg)
     json.dump(r, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     print()
 

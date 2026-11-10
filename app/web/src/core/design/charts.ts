@@ -38,6 +38,14 @@ function line(g: G): Mark[] {
   const d = domain(pr.series.flatMap((s) => s.values), false, mini ? 0.18 : 0.1)
   const ticks = niceTicks(d[0], d[1], mini ? 2 : 4), lo = Math.min(d[0], ticks[0]!), hi = Math.max(d[1], ticks[ticks.length - 1]!)
   const sy = scale(lo, hi, y1, y0), sx = (i: number) => (n === 1 ? (x0 + x1) / 2 : x0 + (i * (x1 - x0)) / (n - 1))
+  // R3: a light band over the period the slide is about, labelled with the period only
+  const bi = style.band ? [pr.categories.indexOf(style.band.from), pr.categories.indexOf(style.band.to)] : null
+  if (bi && bi[0]! >= 0 && bi[1]! >= bi[0]! && !mini) {
+    const half = n > 1 ? (x1 - x0) / (n - 1) / 2 : 20, bx0 = Math.max(x0, sx(bi[0]!) - half), bx1 = Math.min(x1, sx(bi[1]!) + half)
+    out.push(rect('frr-band period', { x: bx0, y: y0, w: bx1 - bx0, h: y1 - y0 }, L.color.surface))
+    const t = style.band!.from === style.band!.to ? style.band!.from : `${style.band!.from}–${style.band!.to}`
+    out.push(text('frr-band label', { x: bx0 + 6, y: y0 + 2, w: Math.max(40, bx1 - bx0 - 12), h: 14 }, t, L.type.axis.pt, L.color.muted, { font: L.type.axis.font, bold: true }))
+  }
   if (!mini) {
     for (const t of ticks) {
       out.push(path(`frr-grid y${t}`, [[[x0, sy(t)], [x1, sy(t)]]], L.color.grid, L.chart.gridWidth))
@@ -64,6 +72,19 @@ function line(g: G): Mark[] {
     const t = endText(si), isF = si === focus
     out.push(text(`frr-label ${si} ${i}`, { x: x1 + 10, y: ys[si]! - 8, w: lw(t, lp, isF) + 4, h: 16 }, t, lp, isF ? L.color.navy : L.color.muted, { bold: isF, font: L.type.dataLabel.font }))
   })
+  // R3: one callout on the focus series' highest or lowest value, when that isn't its last point (the end label shows it)
+  if (style.callout && !mini) {
+    const s = pr.series[focus]!, idx = s.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0)
+    const i = idx.reduce((a, b) => ((style.callout === 'max' ? s.values[b]! > s.values[a]! : s.values[b]! < s.values[a]!) ? b : a), idx[0] ?? -1)
+    if (i >= 0 && i !== ends[focus]) {
+      const v = s.values[i]!, t = `${style.callout === 'max' ? 'High' : 'Low'} ${pr.categories[i]}: ${fmt(p, v, s.cells[i]!)}${unitShort(pr.unit)}`, w = lw(t, L.type.caption.pt, true) + 4
+      // beside the point with a short horizontal leader: to the right unless that runs past the plot
+      const right = sx(i) + 26 + w <= x1, yc = Math.min(Math.max(sy(v), y0 + 8), y1 - 8)
+      const lx0 = right ? sx(i) + 7 : sx(i) - 7, lx1 = right ? sx(i) + 20 : sx(i) - 20
+      out.push(path('frr-callout leader', [[[lx0, yc], [lx1, yc]]], L.color.gold, 1))
+      out.push(text(`frr-label callout`, { x: right ? lx1 + 4 : lx1 - 4 - w, y: yc - 7, w, h: 14 }, t, L.type.caption.pt, L.color.navy, { bold: true, font: L.type.caption.font, align: right ? 'l' : 'r' }))
+    }
+  }
   // annotation: the focus series' start value, and its change over the period
   if (style.annotate === 'change' && !mini) {
     const s = pr.series[focus]!, i0 = s.values.findIndex((v) => v != null), i1 = ends[focus]!
@@ -98,18 +119,20 @@ function line(g: G): Mark[] {
 function rankBar(g: G): Mark[] {
   const { pr, p, W, H, L, style } = g, out: Mark[] = [], s = pr.series[0]!, n = pr.categories.length
   const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined
-  const np = 10.5, vp = L.type.dataLabel.pt
-  const nameW = Math.max(...pr.categories.map((c) => lw(c, np, c === focusName))) + 18
+  const np = 10.5, vp = L.type.dataLabel.pt, pad = style.panel ? 18 : 0, rankW = style.ranks ? 30 : 0
+  if (style.panel) out.push(rect('frr-panel', { x: 0, y: 0, w: W, h: H }, L.color.surface))
+  const nameW = pad + rankW + Math.max(...pr.categories.map((c) => lw(c, np, c === focusName))) + 18
   const vals = s.values.map((v, i) => (v == null ? 'n/a' : `${fmt(p, v, s.cells[i]!)}${unitShort(pr.unit)}`))
   const valW = Math.max(...vals.map((v) => lw(v, vp, true))) + 14
   const neg = s.values.some((v) => v != null && v < 0), pos = s.values.some((v) => v != null && v > 0)
-  const top = 6, bot = H - 6, rowH = (bot - top) / n, barH = rowH * L.chart.barHeight
-  const x0 = nameW + (neg ? valW : 0), x1 = W - (pos ? valW : 4)
+  const top = 6 + pad, bot = H - 6 - pad, rowH = (bot - top) / n, barH = rowH * L.chart.barHeight
+  const x0 = nameW + (neg ? valW : 0), x1 = W - pad - (pos ? valW : 4)
   const d = domain(s.values, true, 0.02), sx = scale(d[0], d[1], x0, x1), z = sx(0)
   pr.categories.forEach((c, i) => {
     const v = s.values[i], yc = top + rowH * (i + 0.5), isF = c === focusName
-    if (isF) out.push(rect('frr-band focus', { x: 0, y: top + rowH * i + 1, w: W, h: rowH - 2 }, L.color.surface))
-    out.push(text(`frr-cat ${i}`, { x: 0, y: yc - 9, w: nameW - 12, h: 18 }, c, np, isF ? L.color.navy : L.color.ink, { align: 'r', bold: isF, font: L.type.body.font }))
+    if (isF) out.push(rect('frr-band focus', { x: pad ? pad / 2 : 0, y: top + rowH * i + 1, w: W - pad, h: rowH - 2 }, style.panel ? L.color.surfaceDeep : L.color.surface))
+    if (rankW) out.push(text(`frr-rank ${i}`, { x: pad, y: yc - 9, w: rankW - 6, h: 18 }, String(i + 1), np, isF ? L.color.navy : L.color.muted, { align: 'l', bold: isF, font: L.type.dataLabel.font }))
+    out.push(text(`frr-cat ${i}`, { x: pad + rankW, y: yc - 9, w: nameW - 12 - pad - rankW, h: 18 }, c, np, isF ? L.color.navy : L.color.ink, { align: 'r', bold: isF, font: L.type.body.font }))
     if (v == null) { out.push(axisText(g, `frr-gap ${i}`, { x: x0, y: yc - 7, w: 80, h: 14 }, 'no value')); return }
     const a = Math.min(z, sx(v)), b = Math.max(z, sx(v))
     out.push(rect(markName(0, i, v), { x: a, y: yc - barH / 2, w: Math.max(1, b - a), h: barH }, isF ? L.color.navy : L.color.peer, `${c}: ${vals[i]}`))
