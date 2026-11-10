@@ -29,8 +29,27 @@ export function durableOfSource(deck: OpenedPptx, index: number, sourceId: strin
 export const textOf = (el: any): string =>
   (el?.paragraphs || el?.text?.paragraphs || []).map((p: any) => (p.runs || []).map((r: any) => r.text ?? '').join('')).join('\n')
 
+const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp', bmp: 'image/bmp' }
+const mediaUrls = new WeakMap<object, Map<string, string | undefined>>()
+
+/** A package's media part (picture fills, picture backgrounds, pictures without inline data) as an object URL, made
+ *  once per part. Formats a browser can't draw (EMF, WMF, TIFF) resolve to nothing, as before. */
+export function mediaUrl(deck: OpenedPptx, ref: string): string | undefined {
+  let m = mediaUrls.get(deck.archive)
+  if (!m) mediaUrls.set(deck.archive, (m = new Map()))
+  if (m.has(ref)) return m.get(ref)
+  let url: string | undefined
+  const type = MIME[ref.split('.').pop()!.toLowerCase()]
+  if (type && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    const bytes = (deck.archive as any).readBytes(ref) as Uint8Array | null
+    if (bytes) url = URL.createObjectURL(new Blob([bytes as any], { type }))
+  }
+  m.set(ref, url)
+  return url
+}
+
 export function render(deck: OpenedPptx, index: number, fitWidthPx: number, metrics: FontMetricsProvider): RenderSlide {
-  return buildRenderSlide(deck.deck.slides[index]!, deck.deck.size, { fitWidthPx, metrics, slideNo: index + 1 })
+  return buildRenderSlide(deck.deck.slides[index]!, deck.deck.size, { fitWidthPx, metrics, slideNo: index + 1, media: (ref) => mediaUrl(deck, ref) })
 }
 
 /** Canvas source ids for a set of durable ids (render nodes carry both). */

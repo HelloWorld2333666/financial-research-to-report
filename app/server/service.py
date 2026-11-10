@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -136,6 +137,16 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=
     async def run_agent(request: Request):
         return await AGUIAdapter.dispatch_request(request, agent=agent, deps=StateDeps(workspace_agent.WorkspaceState()))
 
+    async def design_deck(request: Request):
+        root = os.environ.get("FRR_DESIGN_LIBRARY")
+        sha = request.path_params["sha"]
+        if not root or not re.fullmatch(r"[0-9a-f]{64}", sha):
+            return JSONResponse({"error": "design library not configured"}, status_code=404)
+        f = Path(root) / "sources" / f"{sha}.pptx"
+        if not f.is_file():
+            return JSONResponse({"error": "not in the design library"}, status_code=404)
+        return FileResponse(f, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+
     async def agent_config(_):
         cfg = workspace_agent.model_config()
         try:
@@ -171,6 +182,8 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=
         Route("/api/projects/{pid}/tasks/{tid}/retry", guarded(retry_task), methods=["POST"]),
         Route("/api/agent", run_agent, methods=["POST"]),
         Route("/api/agent/config", agent_config, methods=["GET"]),
+        # design library (private, local only): template decks by content hash, only when FRR_DESIGN_LIBRARY is set
+        Route("/api/design-library/deck/{sha}", design_deck, methods=["GET"]),
     ]
     if web_dist.joinpath("index.html").exists():
         # the app's files gzipped (bundle 2.1 MB -> 0.7 MB, fonts about half) for use over a network; only the static
