@@ -48,6 +48,8 @@ def recipe_score(r: dict, q: dict) -> float:
         s += 1.0 if any(a.startswith("chart_led") for a in r["archetypes"]) else -1.0
     if q.get("kpis"):
         s += 0.5 if "kpi" in r["purpose"] else 0.0
+    if q.get("table"):
+        s += 2.0 if any(a.startswith("table") for a in r["archetypes"]) else 0.0
     return s
 
 

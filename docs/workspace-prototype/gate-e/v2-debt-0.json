@@ -1,0 +1,35 @@
+{
+ "kind": "candidate",
+ "brief": "v2-debt",
+ "cand": 0,
+ "label": "Chart with a commentary column (burgundy)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "chart-commentary",
+   "params": {
+    "columns": [
+     {
+      "span": 7,
+      "slots": [
+       "exhibit",
+       "chart"
+      ]
+     },
+     {
+      "span": 5,
+      "slots": [
+       "side",
+       "notes",
+       "so"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

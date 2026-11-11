@@ -1,5 +1,42 @@
 # Design rules (our own wording; aggregate observations, no reference content)
 
+## Principles from the reference reports (Gate E)
+These are why professional research slides read as designed and Gate D's did not. Apply them before choosing colours.
+1. **Light frame:**
+   - no masthead band;
+   - a small tracker above a large serif action title;
+   - one charcoal hairline under the title block;
+   - the source at the foot.
+   The content gets the space.
+2. **Exhibits carry their own findings.** Each exhibit has a bold title stating what it shows ("Only Belgium ran a larger deficit than France"), a unit line (measure, unit, period), and a hairline before the evidence.
+3. **Evidence and commentary sit side by side:**
+   - a chart or table in the wider column;
+   - commentary blocks with bold lead-ins (two to four words) in the narrower one;
+   - a "so what" under a heavier rule at the foot, level with the exhibit's baseline.
+4. **Rows are the unit of comparison:**
+   - tables carry bars, earlier values and changes in the same row;
+   - the focus row is tinted;
+   - hairlines separate rows;
+   - a charcoal rule sits under the header;
+   - a summary row closes the exhibit.
+5. **Multi-measure assessments use matrices:**
+   - numbered badges on rows;
+   - focus and reference side by side;
+   - the gap, the change, a sparkline and a computed reading.
+6. **Larger, fewer elements:** title 28 pt, text 11.5–12 pt, axis labels 9.5–10 pt, sources 8 pt. Density comes from more information per element, not more elements.
+7. **Variety inside one frame:** consecutive slides use different compositions (commentary, ranked table, matrix) while the frame, type and colour roles stay constant.
+
+## Colour roles (any language)
+- **Text:** titles and body in the ink colour (charcoal), never the primary.
+- **Primary colour** (wine in `burgundy`, navy in `institutional`): only the focal data. That is:
+  - the focus series, row and bar;
+  - the lead figures;
+  - badges;
+  - divider fields.
+- **Accent** (antique gold): rules, brackets, callout leaders, and at most one highlight per slide.
+- **Context:** peers and secondary data in warm greys; peers' figures in charcoal.
+- **Styles:** `burgundy` (title-rule frame) and `institutional` (masthead band) are switchable languages in `core/design/language.ts`. A new style is a new language entry, not new code.
+
 ## Titles and text
 - **Action title:**
   - a full sentence stating the conclusion, 16 words or fewer;

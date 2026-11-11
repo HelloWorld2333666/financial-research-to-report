@@ -10,6 +10,7 @@ import ratingFixture from './core/fixtures/rating-evidence.json'
 import { loadFonts } from './core/fonts'
 import { planSlide } from './core/design/planner'
 import { balanceRank, balanceTrend, debtTrend, navigation, riskNarrative } from './core/design/editorial'
+import { balanceTable, debtCommentary, riskMatrix } from './core/design/proposals'
 import { qaDeck, qaSlide } from './core/design/qa'
 
 export async function runChecks() {
@@ -256,7 +257,9 @@ export async function runChecks() {
   // ---------------------------------------------------------------- Gate C: recipe slides (R3 trend, R9 navigation), verified on both sides
   await safe('gatec_recipe_slides_server_agree', async () => {
     const made: string[] = []
-    const cands = [...balanceTrend(s.project), ...navigation(s.project, 'agenda', 1), ...navigation(s.project, 'divider', 1)]
+    const cands = [...balanceTrend(s.project), ...navigation(s.project, 'agenda', 1), ...navigation(s.project, 'divider', 1),
+      debtCommentary(s.project), riskMatrix(s.project), // Gate E proposals; the ranked table needs three countries' deficits
+      ...(Object.values(s.project.datasets).filter((d) => d.metric === 'deficit').length >= 3 ? [balanceTable(s.project)] : [])]
     for (const c of cands) {
       const r2 = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
       const i = s.slides().length - 1, f = qaSlide(s, i, s.metrics)

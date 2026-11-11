@@ -7,13 +7,35 @@
       "pattern": "R1",
       "name": "Chart with a figures rail",
       "when": "One chart carries the message; one hero figure, at most two supporting figures and one short note say what it means.",
-      "archetypes": ["chart_led/single", "chart_led/two", "kpi_row/single", "kpi_row/two"],
-      "purpose": ["trend", "comparison", "kpi"],
-      "composition": { "kind": "rail", "params": { "side": "right", "chartCols": 8, "rail": "tinted" } },
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two",
+        "kpi_row/single",
+        "kpi_row/two"
+      ],
+      "purpose": [
+        "trend",
+        "comparison",
+        "kpi"
+      ],
+      "composition": {
+        "kind": "rail",
+        "params": {
+          "side": "right",
+          "chartCols": 8,
+          "rail": "tinted"
+        }
+      },
       "variants": {
-        "plain": { "rail": "plain" },
-        "tinted": { "rail": "tinted" },
-        "dark": { "rail": "dark" }
+        "plain": {
+          "rail": "plain"
+        },
+        "tinted": {
+          "rail": "tinted"
+        },
+        "dark": {
+          "rail": "dark"
+        }
       },
       "rules": [
         "Action title: the conclusion in one sentence of 16 words or fewer, over the chart columns only.",
@@ -28,10 +50,25 @@
       "pattern": "R2",
       "name": "Ranked bars with end values",
       "when": "One metric across many entities at one period, where the focus entity's rank is the message.",
-      "archetypes": ["chart_led/single", "chart_led/two"],
-      "purpose": ["comparison"],
-      "composition": { "kind": "rail", "params": { "side": "right", "chartCols": 8, "rail": "plain" } },
-      "draw": { "panel": true, "ranks": true },
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two"
+      ],
+      "purpose": [
+        "comparison"
+      ],
+      "composition": {
+        "kind": "rail",
+        "params": {
+          "side": "right",
+          "chartCols": 8,
+          "rail": "plain"
+        }
+      },
+      "draw": {
+        "panel": true,
+        "ranks": true
+      },
       "rules": [
         "Bars sorted by value; the focus bar in the structure colour on a tinted row, every other bar one quiet grey.",
         "Values written at the bar ends; no axis, gridlines or legend.",
@@ -44,10 +81,26 @@
       "pattern": "R3",
       "name": "Annotated trend with a shaded period",
       "when": "A metric over time for a focus entity against peers, where one period or one extreme carries the message.",
-      "archetypes": ["chart_led/single", "chart_led/two", "chart_led/many"],
-      "purpose": ["trend"],
-      "composition": { "kind": "rail", "params": { "side": "right", "chartCols": 8, "rail": "tinted" } },
-      "draw": { "band": "window", "callout": "extreme" },
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two",
+        "chart_led/many"
+      ],
+      "purpose": [
+        "trend"
+      ],
+      "composition": {
+        "kind": "rail",
+        "params": {
+          "side": "right",
+          "chartCols": 8,
+          "rail": "tinted"
+        }
+      },
+      "draw": {
+        "band": "window",
+        "callout": "extreme"
+      },
       "rules": [
         "Series labelled at their ends with name and latest value; no legend.",
         "The focus series heavy with every point marked; peers thin and quiet.",
@@ -60,9 +113,18 @@
       "pattern": "R9",
       "name": "Agenda with the current section marked",
       "when": "Opening a deck or a section: the sections in order, the one that follows highlighted.",
-      "archetypes": ["agenda"],
-      "purpose": ["section"],
-      "composition": { "kind": "agenda", "params": { "current": 0 } },
+      "archetypes": [
+        "agenda"
+      ],
+      "purpose": [
+        "section"
+      ],
+      "composition": {
+        "kind": "agenda",
+        "params": {
+          "current": 0
+        }
+      },
       "rules": [
         "A paper column with the word Contents in the display face; the sections on navy.",
         "Two-digit numerals in the display face; the current section in gold and bold, the others muted.",
@@ -74,13 +136,165 @@
       "pattern": "R9",
       "name": "Section divider",
       "when": "Between sections of a deck of eight slides or more.",
-      "archetypes": ["divider"],
-      "purpose": ["section"],
-      "composition": { "kind": "divider", "params": { "current": 0 } },
+      "archetypes": [
+        "divider"
+      ],
+      "purpose": [
+        "section"
+      ],
+      "composition": {
+        "kind": "divider",
+        "params": {
+          "current": 0
+        }
+      },
       "rules": [
         "Full navy slide; the section numeral in gold, the section title in the display face, one line saying what the section answers.",
         "No photographs unless licensed for this deck; no figures."
       ]
+    },
+    {
+      "id": "chart-commentary",
+      "pattern": "R4",
+      "name": "Chart with a commentary column",
+      "when": "One chart carries the evidence and three facts explain it; the slide closes on a stated implication.",
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two"
+      ],
+      "purpose": [
+        "trend",
+        "comparison"
+      ],
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 7,
+              "slots": [
+                "exhibit",
+                "chart"
+              ]
+            },
+            {
+              "span": 5,
+              "slots": [
+                "side",
+                "notes",
+                "so"
+              ]
+            }
+          ]
+        }
+      },
+      "rules": [
+        "The exhibit title states the chart's finding; a unit line names measure, unit and period; a charcoal hairline closes the exhibit header.",
+        "Three commentary blocks, each a bold lead-in of two to four words and one sentence with its figures; hairlines between blocks.",
+        "The conclusion sits at the foot of the column under a heavier rule, level with the chart's baseline.",
+        "Figures for the focus entity in the primary colour; peers' figures in charcoal."
+      ]
+    },
+    {
+      "id": "rank-table",
+      "pattern": "R5",
+      "name": "Ranked table with a figures column",
+      "when": "Many entities compared at two periods, where rank, level and change all matter.",
+      "archetypes": [
+        "table/single",
+        "chart_led/single",
+        "chart_led/two"
+      ],
+      "purpose": [
+        "comparison",
+        "detail_table"
+      ],
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 8,
+              "slots": [
+                "exhibit",
+                "table"
+              ]
+            },
+            {
+              "span": 4,
+              "slots": [
+                "fig",
+                "notes",
+                "so"
+              ],
+              "tint": true
+            }
+          ]
+        }
+      },
+      "draw": {
+        "form": "rankTable"
+      },
+      "rules": [
+        "One row per entity, ranked in the message's direction: rank, name, a bar of the latest value with its label, the earlier value, the change.",
+        "Charcoal header over a charcoal rule; hairline rows; the focus row tinted, its bar in the primary colour, the others in light grey.",
+        "The figures column is tinted and bleeds to the slide edge; the source line keeps to the table side."
+      ]
+    },
+    {
+      "id": "risk-matrix",
+      "pattern": "R6",
+      "name": "Scorecard matrix",
+      "when": "Several measures assessed for one entity against a reference, each with level, gap, change and trend.",
+      "archetypes": [
+        "table/single",
+        "table/two",
+        "text_list/three",
+        "text_list/many",
+        "kpi_row/single"
+      ],
+      "purpose": [
+        "summary",
+        "kpi",
+        "framework",
+        "matrix"
+      ],
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 12,
+              "slots": [
+                "exhibit",
+                "matrix",
+                "so"
+              ]
+            }
+          ],
+          "matrix": {
+            "widths": [
+              2.0,
+              1.15,
+              1.05,
+              1.1,
+              1.1,
+              2.1,
+              2.4
+            ],
+            "header": true
+          }
+        }
+      },
+      "rules": [
+        "One numbered row per measure, read left to right: name and unit, focus level, reference level, gap, change, trend, reading.",
+        "Focus figures in the primary serif; reference figures in charcoal; sparklines over the same window as the header states.",
+        "Every reading is computed; the conclusion row states what the whole matrix shows, under a heavier rule."
+      ]
     }
-  ]
+  ],
+  "languages": {
+    "institutional": "Navy, gold and ivory with a masthead band (PD2)",
+    "burgundy": "Wine, antique gold and ivory with a title rule and no band (Gate E); colour roles in core/design/language.ts"
+  }
 }

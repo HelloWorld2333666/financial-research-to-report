@@ -32,7 +32,7 @@ const CASES: [string, (p: Project) => any][] = [
   ['R9 agenda', (p) => navigation(p, 'agenda', 1)[0]],
   ['R9 divider', (p) => navigation(p, 'divider', 1)[0]],
 ]
-const KINDS: CompositionKind[] = ['rail', 'statement', 'wide', 'bands', 'lead_panel', 'agenda', 'divider']
+const KINDS: CompositionKind[] = ['rail', 'statement', 'wide', 'bands', 'lead_panel', 'agenda', 'divider', 'columns']
 
 describe('Gate C recipe table', () => {
   it('has unique ids, known compositions and rules for every recipe', () => {
@@ -125,5 +125,29 @@ describe('Gate D fixes: what the local model actually sent', () => {
   it('a deficit trend request reaches the R3 brief', () => {
     const r = planSlide(P(), { purpose: 'trend', metric: 'deficit', focus: 'FR', peers: ['DE'], recipe: 'trend-annotated' })
     expect(r.candidates[0]!.design.layout.composition?.recipe).toBe('trend-annotated')
+  })
+})
+
+describe('Gate E proposals (burgundy, columns composition)', () => {
+  it('are valid, bound to evidence, verified by integrity, native objects only, QA clean', async () => {
+    const { debtCommentary, balanceTable, riskMatrix } = await import('./design/proposals')
+    for (const [name, make] of [['debt', debtCommentary], ['balance', balanceTable], ['risk', riskMatrix]] as const) {
+      const s = await store(seven(P())), c = (make as any)(s.project)
+      expect(c.problems, name).toEqual([])
+      const r = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
+      expect(r.ok, `${name}: ${r.error}`).toBe(true)
+      const ig = integrity(s.deck, s.project, s.sidecar)
+      expect(ig.ok, `${name}: ${ig.mismatch.join('; ')}`).toBe(true)
+      expect(ig.unsourced, name).toBe(0)
+      expect(qaSlide(s, 0, s.metrics).filter((f) => f.level === 'error').map((f) => f.message), name).toEqual([])
+      const els = s.sidecar.designs![slideList(s.deck)[0]!.id]!.elements
+      for (const id of Object.values(els)) expect(findEl(s.deck, id)!.el.type, `${name} ${id}`).not.toBe('picture')
+    }
+  })
+  it('a lead-in carries words only', async () => {
+    const { debtCommentary } = await import('./design/proposals')
+    const p = P(), d = debtCommentary(p).design
+    ;(d.objects.find((o: any) => o.id === 'c1') as any).text.lead = 'Up 4.3 pp.'
+    expect(validateDesign(p, d).join(' ')).toMatch(/lead-in carries words only/)
   })
 })

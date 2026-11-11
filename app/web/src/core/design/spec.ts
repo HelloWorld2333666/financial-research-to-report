@@ -14,6 +14,9 @@ export const FAMILIES: LayoutFamily[] = ['analytical_hero', 'comparative', 'exec
 
 /** PD2: a composition arranges the slide's semantic objects in a visual language (compose.ts). */
 export type CompositionKind = 'rail' | 'statement' | 'wide' | 'bands' | 'lead_panel'
+  // Gate E: a declarative layout. The composition's params give the columns (12-column grid spans) and the slots
+  // stacked in each; objects name their slot. New layouts are data (recipes.json), not code
+  | 'columns'
   // Gate C (recipe R9): deck navigation, no evidence
   | 'agenda' | 'divider'
 export const NAVIGATION: CompositionKind[] = ['agenda', 'divider']
@@ -25,6 +28,10 @@ export interface Composition {
     rail?: 'plain' | 'tinted' | 'dark'
     /** agenda/divider: the 0-based section being opened */
     current?: number
+    /** columns: left to right, each a span of the 12-column grid and the slots stacked in it, top to bottom */
+    columns?: { span: number; slots: string[]; tint?: boolean }[]
+    /** columns: a matrix slot's column widths (relative) and whether row 0 is a header */
+    matrix?: { widths: number[]; header?: boolean }
   }
   /** the recipe (recipes.json) this composition was built from, for the rationale and for retrieval feedback */
   recipe?: string
@@ -49,20 +56,28 @@ export interface LayoutParams {
 }
 
 /** Text with the evidence behind each figure in it. */
-export interface DesignText { text: string; numbers?: NumberRef[] }
+export interface DesignText { text: string; numbers?: NumberRef[]
+  /** Gate E: a bold lead-in set before the text ("France rose." …); words only, never a figure */
+  lead?: string }
 
 export type TextRole = 'kicker' | 'title' | 'subtitle' | 'takeaway' | 'observations' | 'narrative' | 'caption' | 'source'
   // PD2 roles, styled by the visual language
   | 'section' | 'headline' | 'standfirst' | 'label' | 'note' | 'body'
+  // Gate E: an exhibit title stating a finding, its unit line, commentary with bold lead-ins, the closing "so what", a matrix cell
+  | 'exhibit' | 'unit' | 'lead' | 'conclusion' | 'cell'
 export type DesignObject =
-  | { id: string; kind: 'text'; role: TextRole; text: DesignText; items?: DesignText[]; group?: string; tone?: 'onDark'; accent?: 'gold' | 'muted' }
+  | { id: string; kind: 'text'; role: TextRole; text: DesignText; items?: DesignText[]; group?: string; tone?: 'onDark'; accent?: 'gold' | 'muted' | 'focus' | 'ink' } & Placed
   /** a chart; `viz` is a frr-viz/1 spec (the visual's meaning); `emphasis` is styling only (the dataset drawn in the focus colour) */
-  | { id: string; kind: 'viz'; role: 'primary' | 'secondary'; viz: VizSpec; emphasis?: string; group?: string; draw?: ChartDraw }
+  | { id: string; kind: 'viz'; role: 'primary' | 'secondary'; viz: VizSpec; emphasis?: string; group?: string; draw?: ChartDraw } & Placed
   | { id: string; kind: 'table'; role: 'primary' | 'secondary'; table: TableSpec }
   /** a KPI callout: one bound figure, what it measures (with its unit), and optional bound context */
-  | { id: string; kind: 'kpi'; role: 'kpi'; value: DesignText; label: string; context?: DesignText; variant?: 'hero' | 'stat' | 'band'; group?: string; tone?: 'onDark' }
+  | { id: string; kind: 'kpi'; role: 'kpi'; value: DesignText; label: string; context?: DesignText; variant?: 'hero' | 'stat' | 'band'; group?: string; tone?: 'onDark' } & Placed
   /** PD2: structural shapes of a composition (masthead band, dark panel, rules); native shapes, not data */
   | { id: string; kind: 'shape'; role: 'masthead' | 'panel' | 'rule' }
+
+/** Where an object sits in a 'columns' composition: its slot, and for a matrix slot its cell (row, column); a cell in
+ *  column 0 may carry a badge (a numeral in a filled circle, a position, not a figure). */
+export interface Placed { slot?: string; cell?: { r: number; c: number; badge?: string } }
 
 /** How a designed chart is drawn (presentation only; the spec is the meaning). Recipes R2 and R3 add the last four. */
 export interface ChartDraw {
@@ -71,6 +86,10 @@ export interface ChartDraw {
   panel?: boolean; ranks?: boolean
   /** R3: a shaded band over a period (categories, inclusive), labelled with the period; one callout on the focus series */
   band?: { from: string; to: string }; callout?: 'max' | 'min'
+  /** Gate E: a two-period spec drawn as a ranked table (rank, name, bar of the latest value, earlier value, change) */
+  form?: 'rankTable'
+  /** a sparkline in a matrix cell: no end labels (the cell's figures carry the values) */
+  spark?: boolean
 }
 
 export interface SlideDesign {
@@ -162,7 +181,13 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
   } else if (d.layout?.family === 'composed') {
     if (!d.layout.composition) errs.push('a composed slide needs a composition')
     if (!(d.objects ?? []).some((o) => o.kind === 'text' && o.role === 'headline')) errs.push('a composed slide needs a headline')
-    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band'))) errs.push('a composed slide needs a focal point: a hero figure, a primary chart or figure bands')
+    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band') || !!(o as any).cell)) errs.push('a composed slide needs a focal point: a hero figure, a primary chart, figure bands or a matrix')
+    if (d.layout.composition?.kind === 'columns') {
+      const slots = new Set((d.layout.composition.params?.columns ?? []).flatMap((c) => c.slots))
+      const span = (d.layout.composition.params?.columns ?? []).reduce((a, c) => a + c.span, 0)
+      if (!slots.size || span > 12) errs.push('a columns composition needs columns whose spans add up to 12 at most')
+      for (const o of d.objects ?? []) if ((o as any).slot && !slots.has((o as any).slot)) errs.push(`${o.id}: slot "${(o as any).slot}" is not in the composition`)
+    }
   }
   for (const o of d.objects ?? []) {
     if (o.kind === 'viz') {
@@ -179,6 +204,7 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
       if (!o.label?.trim()) errs.push(`${o.id}: a KPI needs a label saying what it measures`)
     }
   }
+  for (const { where, t } of designTexts(d)) if (t.lead && figures(t.lead).length) errs.push(`${where}: a lead-in carries words only, not figures`)
   for (const { where, t } of designTexts(d)) for (const n of textNumbers(t.text, t.numbers, p)) {
     if (n.status === 'unsourced') errs.push(`${where}: "${n.text}" has no evidence behind it`)
     if (n.status === 'stale') errs.push(`${where}: "${n.text}" no longer matches the data (${n.data})`)

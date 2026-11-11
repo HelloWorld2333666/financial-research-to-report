@@ -1,0 +1,40 @@
+{
+ "kind": "candidate",
+ "brief": "v2-risk",
+ "cand": 0,
+ "label": "Scorecard matrix (burgundy)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "risk-matrix",
+   "params": {
+    "columns": [
+     {
+      "span": 12,
+      "slots": [
+       "exhibit",
+       "matrix",
+       "so"
+      ]
+     }
+    ],
+    "matrix": {
+     "widths": [
+      2,
+      1.15,
+      1.05,
+      1.1,
+      1.1,
+      2.1,
+      2.4
+     ],
+     "header": true
+    }
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

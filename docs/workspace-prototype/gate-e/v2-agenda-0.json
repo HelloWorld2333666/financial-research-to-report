@@ -1,0 +1,19 @@
+{
+ "kind": "candidate",
+ "brief": "v2-agenda",
+ "cand": 0,
+ "label": "Agenda with the current section marked (R9)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "agenda",
+   "params": {
+    "current": 1
+   },
+   "recipe": "agenda"
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

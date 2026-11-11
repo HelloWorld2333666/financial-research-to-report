@@ -1,0 +1,36 @@
+{
+ "kind": "candidate",
+ "brief": "v2-balance",
+ "cand": 0,
+ "label": "Ranked table with a figures column (burgundy)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "rank-table",
+   "params": {
+    "columns": [
+     {
+      "span": 8,
+      "slots": [
+       "exhibit",
+       "table"
+      ]
+     },
+     {
+      "span": 4,
+      "slots": [
+       "fig",
+       "notes",
+       "so"
+      ],
+      "tint": true
+     }
+    ]
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

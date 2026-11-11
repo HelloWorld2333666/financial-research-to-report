@@ -25,14 +25,23 @@ professional research decks, `app/web/src/core/design/recipes.json`) and buildin
    - To see one reference in detail: `retrieve load <id>` (about 500 tokens).
    - Look at **at most one** reference image: the `preview` names a contact sheet and a cell in `$FRR_DESIGN_LIBRARY/renders/sheets/` (a 4-column grid of 360×203 cells with 8 px gaps).
    - Never read whole decks or sheets.
-5. **Choose a recipe** and read its rules in `recipes.json`. The recipes are:
-   - `chart-rail` (R1): chart with a figures rail;
-   - `ranked-bars` (R2);
-   - `trend-annotated` (R3): shaded period and one callout;
-   - `agenda` and `divider` (R9).
+5. **Choose a recipe** and read its rules in `recipes.json`:
+   - **Gate E** (`columns` layouts, preferred):
+     - `chart-commentary` (R4);
+     - `rank-table` (R5);
+     - `risk-matrix` (R6).
+   - **Earlier:**
+     - `chart-rail` (R1);
+     - `ranked-bars` (R2);
+     - `trend-annotated` (R3);
+     - `agenda` and `divider` (R9).
+
+   Also choose the **language**: `burgundy` (default for new work) or `institutional`.
+   - **Vary compositions** across consecutive slides.
+   - **A new layout is data:** a `columns` composition lists column spans and the slots stacked in each, and objects name their slot. Add a recipe instead of new layout code when the blocks exist (exhibit title, unit, chart, ranked table, figures, commentary with lead-ins, conclusion, matrix).
 6. **Build through the engine, never by hand-placing shapes:**
    - **In the app:** the agent calls `find_layout_references`, then `design_slide` with `recipe` (and `purpose: agenda|divider` with `section` for navigation). The user previews and applies.
-   - **In code:** a recipe is a composition (`core/design/compose.ts`) plus chart drawing options (`ChartDraw` in `spec.ts`, drawn in `charts.ts`). A new brief is an editorial function in `core/design/editorial.ts`:
+   - **In code:** a recipe is a composition (`core/design/compose.ts`) plus chart drawing options (`ChartDraw` in `spec.ts`, drawn in `charts.ts`). The Gate E briefs are in `core/design/proposals.ts`. A new brief is an editorial function:
      - it computes every qualitative statement from the data;
      - it writes every figure through `Writer`;
      - it throws when the data don't support its sentence.

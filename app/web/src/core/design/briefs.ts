@@ -3,12 +3,19 @@
 import type { Project } from '../types'
 import { planSlide, type DesignCandidate, type DesignRequest } from './planner'
 import { balanceRank, balanceTrend, debtTrend, navigation, riskNarrative } from './editorial'
+import { balanceTable, debtCommentary, riskMatrix } from './proposals'
 
 export interface Brief { title: string; request?: DesignRequest; compose?: (p: Project) => DesignCandidate[] }
 export const BRIEFS: Record<string, Brief> = {
   debt: { title: 'Debt trend: France against Germany and Italy', compose: (p) => debtTrend(p) },
   balance: { title: 'Fiscal balance: France among seven countries', compose: (p) => balanceRank(p) },
   risk: { title: 'Executive risk assessment: debt, deficit, funding cost', compose: (p) => riskNarrative(p) },
+  // Gate E proposals (burgundy and gold, reference-derived compositions)
+  'v2-debt': { title: 'Debt trend: chart with a commentary column', compose: (p) => [debtCommentary(p)] },
+  'v2-balance': { title: 'Fiscal balance: ranked table with a figures column', compose: (p) => [balanceTable(p)] },
+  'v2-risk': { title: 'Credit risk: scorecard matrix', compose: (p) => [riskMatrix(p)] },
+  'v2-divider': { title: 'Section divider in burgundy and gold', compose: (p) => navigation(p, 'divider', 1, undefined, undefined, 'burgundy') },
+  'v2-agenda': { title: 'Agenda in burgundy and gold', compose: (p) => navigation(p, 'agenda', 1, undefined, undefined, 'burgundy') },
   // Gate C recipes
   'balance-trend': { title: 'Deficit trend: France against Germany (R3)', compose: (p) => balanceTrend(p) },
   agenda: { title: 'Agenda, fiscal position next (R9)', compose: (p) => navigation(p, 'agenda', 1) },

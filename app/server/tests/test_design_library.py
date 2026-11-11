@@ -87,7 +87,7 @@ def test_equal_boxes_are_not_a_chart(tmp_path):
 def test_recipes_and_references_come_from_one_module(tmp_path):
     # without the private library: recipes only, ranked by the request
     r = retrieve.suggest({"purpose": ["trend"], "chart": True})
-    assert r["library"] is False and r["references"] == [] and r["recipes"][0]["id"] in ("chart-rail", "trend-annotated")
+    assert r["library"] is False and r["references"] == [] and r["recipes"][0]["id"] in ("chart-commentary", "chart-rail", "trend-annotated")
     assert retrieve.suggest({"kind": "divider"})["recipes"][0]["id"] == "divider"
     assert all(x["id"] not in ("agenda", "divider") for x in retrieve.suggest({"purpose": ["comparison"], "chart": True})["recipes"])
     # with a library: references carry their archetype and the recipes it maps to, and no slide text
@@ -100,5 +100,5 @@ def test_recipes_and_references_come_from_one_module(tmp_path):
 
 def test_recipe_table_is_the_planners():
     ids = [r["id"] for r in retrieve.recipes()]
-    assert ids == ["chart-rail", "ranked-bars", "trend-annotated", "agenda", "divider"]
+    assert ids == ["chart-rail", "ranked-bars", "trend-annotated", "agenda", "divider", "chart-commentary", "rank-table", "risk-matrix"]
     assert retrieve.RECIPES.name == "recipes.json" and "core/design" in retrieve.RECIPES.as_posix()

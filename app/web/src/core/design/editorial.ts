@@ -224,12 +224,12 @@ export const FRANCE_SECTIONS = [
   { title: 'Fiscal position', line: 'Where the deficit stands and how it moved' },
   { title: 'Credit risk', line: 'The pressures on the credit and how they compare' },
 ]
-export function navigation(p: Project, kind: 'agenda' | 'divider', current = 0, sections = FRANCE_SECTIONS, deckTitle = 'France: sovereign credit review'): DesignCandidate[] {
+export function navigation(p: Project, kind: 'agenda' | 'divider', current = 0, sections = FRANCE_SECTIONS, deckTitle = 'France: sovereign credit review', language = 'institutional'): DesignCandidate[] {
   if (!sections.length || current < 0 || current >= sections.length) throw new Error('navigation needs sections and a current section within them')
   const two = (i: number) => String(i + 1).padStart(2, '0'), cur = sections[current]!
   const base = (objective: string, claim: string, composition: Composition, objects: DesignObject[], why: string[]): SlideDesign => ({
     schema: DESIGN_SCHEMA, id: newDesignId(), objective, claim: { text: claim }, audience: 'executive', density: 'low', layout: { family: 'composed', params: {}, composition },
-    profile: 'institutional', language: 'institutional', objects, rationale: why })
+    profile: 'institutional', language, objects, rationale: why })
   const d = kind === 'agenda'
     ? base('Show the deck\'s sections and which one follows', 'Contents', { kind: 'agenda', params: { current }, recipe: 'agenda' }, [
         T('headline', 'headline', { text: 'Contents' }), T('standfirst', 'standfirst', { text: deckTitle }),

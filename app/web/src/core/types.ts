@@ -41,7 +41,7 @@ export interface ElementStyle {
   /** PD2: draw the chart with the design engine (core/design/charts.ts) in a visual language, instead of the native chart */
   render?: 'designed'; lang?: string; annotate?: 'change' | 'gap'; mini?: boolean; reference?: string
   /** Gate C recipes: R2 panel and rank numerals on ranked bars; R3 a shaded period and one callout on a trend */
-  panel?: boolean; ranks?: boolean; band?: { from: string; to: string }; callout?: 'max' | 'min'
+  panel?: boolean; ranks?: boolean; band?: { from: string; to: string }; callout?: 'max' | 'min'; form?: 'rankTable'; spark?: boolean
 }
 
 export const SIDECAR_SCHEMA = 'frr-sidecar/1'

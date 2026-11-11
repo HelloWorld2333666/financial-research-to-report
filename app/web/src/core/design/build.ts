@@ -121,7 +121,11 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
   const para = (rs: any[], role: keyof Language['type'], extra: Record<string, unknown> = {}) => ({ runs: rs, ...(tr(role).lineSpacing ? { lineSpacingPct: tr(role).lineSpacing } : {}), ...extra })
   const box = (b: Box) => off(b)
   // rules and hairlines first (painted beneath), then shapes, charts, text
-  for (const x of L.decor) out.push({ key: `decor:${x.id}`, kind: 'decor', box: x.box, create: { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }, bind: (slide) => ({ kind: 'decor', slide }) })
+  for (const x of L.decor) out.push(x.kind === 'badge'
+    // a numbered badge: a native circle with its numeral (a position on the slide, not a figure)
+    ? { key: `decor:${x.id}`, kind: 'decor', box: x.box, bind: (slide) => ({ kind: 'decor', slide }),
+        create: { op: 'addElement', kind: 'ellipse', offset: box(x.box), fill: x.fill ?? c.navy, paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: 10.5, bold: true, color: c.onDark, fontFamily: V.fonts.text }], align: 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 'ctr' } } as any }
+    : { key: `decor:${x.id}`, kind: 'decor', box: x.box, create: { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }, bind: (slide) => ({ kind: 'decor', slide }) })
   for (const o of d.objects) if (o.kind === 'shape' && L.boxes[o.id]) {
     const fill = o.role === 'panel' ? c.navyDeep : o.role === 'masthead' ? c.navy : c.gold
     out.push({ key: o.id, kind: 'decor', box: L.boxes[o.id]!, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(L.boxes[o.id]!), fill }, bind: (slide) => ({ kind: 'decor', slide }) })
@@ -153,9 +157,11 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
     }
     if (o.kind !== 'text') continue
     const role = (L.roles[o.id] ?? 'body') as keyof Language['type'], dark = o.tone === 'onDark', items = o.items?.length ? o.items : [o.text]
-    const color = o.accent === 'gold' ? c.gold : o.accent === 'muted' ? (dark ? c.onDarkMuted : c.muted) : dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
+    const color = o.accent === 'gold' ? c.gold : o.accent === 'focus' ? c.navy : o.accent === 'ink' ? c.ink : o.accent === 'muted' ? (dark ? c.onDarkMuted : c.muted) : dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
     const multi = o.role === 'note' || o.role === 'body' || o.role === 'narrative' || o.role === 'observations'
-    const paragraphs = items.map((t, i) => para(runs(t, role, { color, figColor: dark ? c.onDark : role === 'standfirst' ? c.ink : c.navy }), role, multi && i < items.length - 1 ? { spaceAfterPt: 7 } : {}))
+    // a bold lead-in ("France rose.") opens the paragraph in the text colour; figures stay emphasised in the primary colour
+    const leadRun = (t: DesignText) => (t.lead ? [{ ...runFor(V, role, t.lead + ' ', { color: dark ? c.onDark : c.ink }), bold: true }] : [])
+    const paragraphs = items.map((t, i) => para([...leadRun(t), ...runs(t, role, { color, figColor: dark ? c.onDark : role === 'standfirst' || o.accent === 'ink' ? c.ink : c.navy })], role, multi && i < items.length - 1 ? { spaceAfterPt: 7 } : {}))
     out.push({ key: o.id, kind: 'text', box: b, obj: o, paragraphs,
       create: { op: 'addElement', kind: 'textbox', offset: box(b), paragraphs, bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } },
       bind: textBind(navNumeral(d, o) ? 'nav' : o.role === 'headline' ? 'title' : o.role === 'standfirst' ? 'subtitle' : o.role, items) })
