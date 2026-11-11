@@ -32,6 +32,12 @@ export interface Composition {
     columns?: { span: number; slots: string[]; tint?: boolean }[]
     /** columns: a matrix slot's column widths (relative) and whether row 0 is a header */
     matrix?: { widths: number[]; header?: boolean }
+    /** columns: the first column is a full-height colour field holding the title (split background) */
+    split?: boolean
+    /** columns: hairline dividers between analytical modules */
+    dividers?: boolean
+    /** columns: a diagram slot's grid and its edges (node ids); 'back' routes a feedback edge under the row */
+    diagram?: { cols: number; rows: number; edges: { from: string; to: string; label?: string; back?: boolean }[] }
   }
   /** the recipe (recipes.json) this composition was built from, for the rationale and for retrieval feedback */
   recipe?: string
@@ -74,10 +80,12 @@ export type DesignObject =
   | { id: string; kind: 'kpi'; role: 'kpi'; value: DesignText; label: string; context?: DesignText; variant?: 'hero' | 'stat' | 'band'; group?: string; tone?: 'onDark' } & Placed
   /** PD2: structural shapes of a composition (masthead band, dark panel, rules); native shapes, not data */
   | { id: string; kind: 'shape'; role: 'masthead' | 'panel' | 'rule' }
+  /** a decorative visual asset (never data): a self-authored motif from motifs.ts, or a licensed image with provenance */
+  | { id: string; kind: 'shape'; role: 'asset'; motif: string; slot?: string; place?: 'bottom' | 'top' | 'fill'; opacity?: number }
 
 /** Where an object sits in a 'columns' composition: its slot, and for a matrix slot its cell (row, column); a cell in
  *  column 0 may carry a badge (a numeral in a filled circle, a position, not a figure). */
-export interface Placed { slot?: string; cell?: { r: number; c: number; badge?: string } }
+export interface Placed { slot?: string; cell?: { r: number; c: number; badge?: string }; node?: { r: number; c: number } }
 
 /** How a designed chart is drawn (presentation only; the spec is the meaning). Recipes R2 and R3 add the last four. */
 export interface ChartDraw {
@@ -87,7 +95,9 @@ export interface ChartDraw {
   /** R3: a shaded band over a period (categories, inclusive), labelled with the period; one callout on the focus series */
   band?: { from: string; to: string }; callout?: 'max' | 'min'
   /** Gate E: a two-period spec drawn as a ranked table (rank, name, bar of the latest value, earlier value, change) */
-  form?: 'rankTable'
+  form?: 'rankTable' | 'delta' | 'benchList'
+  /** category flags beside entity names (national flags drawn as native shapes) */
+  flags?: boolean
   /** a sparkline in a matrix cell: no end labels (the cell's figures carry the values) */
   spark?: boolean
 }
@@ -181,7 +191,7 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
   } else if (d.layout?.family === 'composed') {
     if (!d.layout.composition) errs.push('a composed slide needs a composition')
     if (!(d.objects ?? []).some((o) => o.kind === 'text' && o.role === 'headline')) errs.push('a composed slide needs a headline')
-    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band') || !!(o as any).cell)) errs.push('a composed slide needs a focal point: a hero figure, a primary chart, figure bands or a matrix')
+    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band') || !!(o as any).cell || !!(o as any).node)) errs.push('a composed slide needs a focal point: a hero figure, a primary chart, figure bands, a matrix or a diagram')
     if (d.layout.composition?.kind === 'columns') {
       const slots = new Set((d.layout.composition.params?.columns ?? []).flatMap((c) => c.slots))
       const span = (d.layout.composition.params?.columns ?? []).reduce((a, c) => a + c.span, 0)
@@ -204,6 +214,7 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
       if (!o.label?.trim()) errs.push(`${o.id}: a KPI needs a label saying what it measures`)
     }
   }
+  for (const e of d.layout?.composition?.params?.diagram?.edges ?? []) if (e.label && figures(e.label).length) errs.push(`edge ${e.from}→${e.to}: an edge label carries words only`)
   for (const { where, t } of designTexts(d)) if (t.lead && figures(t.lead).length) errs.push(`${where}: a lead-in carries words only, not figures`)
   for (const { where, t } of designTexts(d)) for (const n of textNumbers(t.text, t.numbers, p)) {
     if (n.status === 'unsourced') errs.push(`${where}: "${n.text}" has no evidence behind it`)

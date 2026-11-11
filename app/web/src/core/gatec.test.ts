@@ -151,3 +151,37 @@ describe('Gate E proposals (burgundy, columns composition)', () => {
     expect(validateDesign(p, d).join(' ')).toMatch(/lead-in carries words only/)
   })
 })
+
+describe('Gate E knowledge: new techniques render as native, verified objects', () => {
+  it('dashboard (delta, benchmark list, flags, divider, motif), executive split and debt-dynamics diagram', async () => {
+    const { debtDashboard, execSummary, debtDynamics } = await import('./design/proposals')
+    for (const [name, make] of [['dashboard', debtDashboard], ['summary', execSummary], ['dynamics', debtDynamics]] as const) {
+      const s = await store(seven(P())), c = (make as any)(s.project)
+      expect(c.problems, name).toEqual([])
+      const r = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
+      expect(r.ok, `${name}: ${r.error}`).toBe(true)
+      const ig = integrity(s.deck, s.project, s.sidecar)
+      expect(ig.ok, `${name}: ${ig.mismatch.join('; ')}`).toBe(true)
+      expect(ig.unsourced, name).toBe(0)
+      expect(qaSlide(s, 0, s.metrics).filter((f) => f.level === 'error').map((f) => f.message), name).toEqual([])
+      // pictures exist only as decoration (motifs), bound as decor and described with their provenance
+      const slide = s.deck.deck.slides[0]!
+      const pics = (slide.elements as any[]).filter((el) => el.type === 'picture')
+      expect(pics.length, `${name}: motif pictures`).toBe(name === 'dynamics' ? 0 : 1)
+      for (const el of pics) {
+        expect(Object.values(s.sidecar.bindings).some((b: any) => b.kind === 'decor'), name).toBe(true)
+        expect(String(el.descr ?? ''), name).toMatch(/self-authored/)
+      }
+    }
+  })
+  it('diagram edge labels carry words only; the planner builds a Gate E recipe on request', async () => {
+    const { debtDynamics } = await import('./design/proposals')
+    const p = P(), d = debtDynamics(p).design
+    d.layout.composition!.params!.diagram!.edges[0]!.label = 'adds 0.3 pp'
+    expect(validateDesign(p, d).join(' ')).toMatch(/edge label carries words only/)
+    const r = planSlide(P(), { purpose: 'risk', focus: 'FR', peers: ['DE'], recipe: 'causal-chain' })
+    expect(r.candidates[0]!.design.layout.composition?.recipe).toBe('causal-chain')
+    const t = planSlide(P(), { purpose: 'trend', metric: 'debt', focus: 'FR', peers: ['DE', 'IT'], recipe: 'multi-module' })
+    expect(t.candidates[0]!.design.layout.composition?.recipe).toBe('multi-module')
+  })
+})

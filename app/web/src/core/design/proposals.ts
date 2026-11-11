@@ -88,7 +88,7 @@ export function balanceTable(p: Project, focus = 'FR', language = 'burgundy'): D
     T('standfirst', 'standfirst', { text: `General government balance, ${prev} and ${at}` }),
     T('ex', 'exhibit', { text: larger.length ? `Only ${list(larger)} ran a larger deficit than ${fe}` : `${fe} ran the largest deficit` }, { slot: 'exhibit' }),
     T('ex-unit', 'unit', { text: `Government balance, % of GDP; change in percentage points (▼ wider deficit)` }, { slot: 'exhibit' }),
-    { id: 'table', kind: 'viz', role: 'primary', viz: bell, emphasis: F, slot: 'table', draw: { form: 'rankTable' } },
+    { id: 'table', kind: 'viz', role: 'primary', viz: bell, emphasis: F, slot: 'table', draw: { form: 'rankTable', flags: true } },
     { id: 'hero', kind: 'kpi', role: 'kpi', variant: 'hero', value: w.text(w.num(F, at)), label: `${fe}, ${at}: the ${ORD[rank]} deficit of the ${words[n]}`, slot: 'fig' },
     { id: 'change', kind: 'kpi', role: 'kpi', variant: 'stat', value: w.text(w.change(F, prev, at)), label: `Change since ${prev}`, context: w.text(`from ${w.num(F, prev)}`), slot: 'fig' },
     T('c1', 'lead', lead({ text: `${narrowed.length ? `${list(narrowed)} narrowed ${narrowed.length > 1 ? 'their deficits' : 'its deficit'}` : 'No deficit narrowed'}${widened.length ? `; ${list(widened)} widened` : ''}.` },
@@ -151,4 +151,97 @@ export function riskMatrix(p: Project, focus = 'FR', peer = 'DE', language = 'bu
     ['Reference principle: a scenario-style matrix, one numbered row per pressure, read left to right: level, peer, gap, change, trend, reading',
       'Figures for the focus country in burgundy serif; the peer in charcoal; sparklines carry the trend without repeating values',
       'A conclusion row under a heavier rule states what the matrix shows; every reading is computed from the data'], w, language)
+}
+
+// ------------------------------------------------------------------ 4. debt dashboard: two coordinated modules and a figures panel
+// References: multi-module pages with their own exhibit headers and dividers; a highlighted increment with a large change;
+// a benchmark list with flags; a warm figures panel with a thematic motif (decorative, self-authored).
+export function debtDashboard(p: Project, focus = 'FR', peers = ['DE', 'IT'], language = 'burgundy'): DesignCandidate {
+  const F = ds(focus, 'debt'), P = peers.map((g) => ds(g, 'debt')).filter((d) => p.datasets[d]), all = [F, ...P]
+  const a = firstCommon(p, all)!, b = commonLatest(p, all)!, fe = entityOf(p, F), ref = P[0]!, pe = entityOf(p, ref)
+  const dir = (d: string) => Math.sign(value(p, d, b)! - value(p, d, a)!)
+  const onlyRiser = dir(F) > 0 && P.every((d) => dir(d) < 0)
+  if (!onlyRiser) throw new Error('this dashboard is written for a focus country whose debt rose while every peer fell')
+  const w = new Writer(p)
+  const headline = `${fe} is the only one of the ${words[all.length]} whose debt ratio rose since ${a}`
+  const objs: DesignObject[] = [
+    T('section', 'section', { text: `${fe} · Sovereign debt` }),
+    T('headline', 'headline', { text: headline }),
+    T('ex1', 'exhibit', { text: `${poss(fe)} ratio, ${a} and ${b}` }, { slot: 'ex1' }),
+    T('ex1-unit', 'unit', { text: 'Gross government debt, % of GDP' }, { slot: 'ex1' }),
+    { id: 'delta', kind: 'viz', role: 'primary', viz: spec(p, 'change', 'dumbbell', [F], { between: [a, b], title: 'Gross debt, % of GDP' }), emphasis: F, slot: 'm1', draw: { form: 'delta' } },
+    T('ex2', 'exhibit', { text: 'Against the peers' }, { slot: 'ex2' }),
+    T('ex2-unit', 'unit', { text: `% of GDP; change in percentage points` }, { slot: 'ex2' }),
+    { id: 'bench', kind: 'viz', role: 'secondary', viz: spec(p, 'change', 'dumbbell', all, { between: [a, b], title: 'Gross debt, % of GDP' }), emphasis: F, slot: 'm2', draw: { form: 'benchList' } },
+    { id: 'hero', kind: 'kpi', role: 'kpi', variant: 'hero', value: w.text(w.num(F, b)), label: `${fe}, gross debt ${b}, % of GDP`, slot: 'fig' },
+    { id: 'gap', kind: 'kpi', role: 'kpi', variant: 'stat', value: w.text(w.gap(F, ref, b)), label: `Gap to ${pe}, ${b}`, context: w.text(`${w.gap(F, ref, a)} in ${a}`), slot: 'fig' },
+    T('so', 'conclusion', { text: `The gap to ${pe} widened while both peers reduced their ratios` }, { slot: 'so' }),
+    { id: 'art', kind: 'shape', role: 'asset', motif: 'paris', slot: 'art' } as DesignObject,
+    T('source', 'source', { text: sourceLine(p, all) }),
+  ]
+  return make(p, 'Debt dashboard: delta, benchmark list and figures panel', `Show how ${poss(fe)} debt developed against its peers`, { text: headline },
+    { kind: 'columns', recipe: 'multi-module', params: { dividers: true, columns: [{ span: 4, slots: ['ex1', 'm1'] }, { span: 4, slots: ['ex2', 'm2'] }, { span: 4, slots: ['fig', 'so', 'art'], tint: true }] } }, objs,
+    ['Two coordinated modules, each with its own finding-led header, separated by a hairline divider', 'The increment drawn in burgundy on the 2025 column; the change written large in serif',
+      'Peers as a benchmark list with flags; the figures panel in warm ivory with a gold edge and a self-authored Paris motif (decorative)'], w, language)
+}
+
+// ------------------------------------------------------------------ 5. executive summary on a split background
+export function execSummary(p: Project, focus = 'FR', peer = 'DE', language = 'burgundy'): DesignCandidate {
+  const D = ds(focus, 'debt'), B = ds(focus, 'deficit'), Y = ds(focus, 'yield'), I = ds(focus, 'interest'), PD = ds(peer, 'debt'), PY = ds(peer, 'yield')
+  for (const x of [D, B, Y, I, PD, PY]) if (!p.datasets[x]) throw new Error(`the summary needs ${x}`)
+  const dss = [D, B, Y, I, PD, PY], at = commonLatest(p, dss)!, a = firstCommon(p, dss)!, fe = entityOf(p, D), pe = entityOf(p, PD)
+  const v = (d: string, t: string) => value(p, d, t)!
+  const w = new Writer(p)
+  const row = (r: number, l: string, t: DesignText, fig: DesignText): DesignObject[] => [
+    T(`f${r}`, 'cell', { ...t, lead: l }, { slot: 'matrix', cell: { r: r - 1, c: 0, badge: String(r) } }),
+    T(`f${r}-fig`, 'cell', fig, { accent: 'focus', slot: 'matrix', cell: { r: r - 1, c: 1 } }),
+  ]
+  const objs: DesignObject[] = [
+    T('section', 'section', { text: `${fe} · Executive summary` }),
+    T('headline', 'headline', { text: `${poss(fe)} credit is under pressure on four fronts` }),
+    T('standfirst', 'standfirst', { text: `Verified data, ${a}–${at}, with ${pe} as the reference peer` }),
+    { id: 'art', kind: 'shape', role: 'asset', motif: 'paris', slot: 'art' } as DesignObject,
+    ...row(1, v(D, at) > v(D, a) ? 'Debt is still rising.' : 'Debt eased.', w.text(`Gross debt reached ${w.num(D, at)} of GDP in ${at}, ${w.change(D, a, at)} since ${a}.`), w.text(w.num(D, at))),
+    ...row(2, v(B, at) < v(B, a) ? 'The deficit is wider.' : 'The deficit narrowed.', w.text(`The balance was ${w.num(B, at)} of GDP, against ${w.num(B, a)} in ${a}.`), w.text(w.num(B, at))),
+    ...row(3, 'Funding costs more.', w.text(`The 10-year yield was ${w.num(Y, at)}, ${w.spread(Y, PY, at)} above ${poss(pe)}.`), w.text(w.spread(Y, PY, at))),
+    ...row(4, v(I, at) > v(I, a) ? 'Interest is climbing.' : 'Interest eased.', w.text(`Interest spending reached ${w.num(I, at)} of GDP, ${w.change(I, a, at)} since ${a}.`), w.text(w.num(I, at))),
+    T('so', 'conclusion', { text: `All four measures moved against ${fe} since ${a}` }, { slot: 'so' }),
+    T('source', 'source', { text: sourceLine(p, dss, ['spread derived from the two yields']) }),
+  ]
+  const allWorse = v(D, at) > v(D, a) && v(B, at) < v(B, a) && v(Y, at) > v(Y, a) && v(I, at) > v(I, a)
+  if (!allWorse) throw new Error('this summary is written for four measures that all moved against the focus country')
+  return make(p, 'Executive summary on a split background', `Summarize ${poss(fe)} credit position`, { text: `${poss(fe)} credit is under pressure on four fronts` },
+    { kind: 'columns', recipe: 'exec-split', params: { split: true, columns: [{ span: 4, slots: ['art'] }, { span: 8, slots: ['matrix', 'so'] }], matrix: { widths: [3.6, 1], header: false } } }, objs,
+    ['Split background: the title and a thematic motif in a warm-ivory field with a gold edge; the findings on white',
+      'Four numbered findings, each a bold lead-in and one sentence, with its figure set large in burgundy serif to the right', 'One conclusion under a gold rule'], w, language)
+}
+
+// ------------------------------------------------------------------ 6. sovereign debt dynamics: an analytical diagram
+export function debtDynamics(p: Project, focus = 'FR', peer = 'DE', language = 'burgundy'): DesignCandidate {
+  const D = ds(focus, 'debt'), B = ds(focus, 'deficit'), Y = ds(focus, 'yield'), I = ds(focus, 'interest')
+  const PD = ds(peer, 'debt'), PB = ds(peer, 'deficit'), PY = ds(peer, 'yield'), PI = ds(peer, 'interest')
+  const dss = [D, B, Y, I, PD, PB, PY, PI]
+  for (const x of dss) if (!p.datasets[x]) throw new Error(`the diagram needs ${x}`)
+  const at = commonLatest(p, dss)!, a = firstCommon(p, dss)!, fe = entityOf(p, D), pe = entityOf(p, PD)
+  const v = (d: string, t: string) => value(p, d, t)!
+  const worse = [v(Y, at) > v(Y, a), v(I, at) > v(I, a), v(B, at) < v(B, a), v(D, at) > v(D, a)].filter(Boolean).length
+  const w = new Writer(p)
+  const node = (id: string, c: number, name: string, d: string, pd: string): DesignObject => ({ id, kind: 'kpi', role: 'kpi', variant: 'stat', slot: 'flow', node: { r: 0, c },
+    value: w.text(w.num(d, at)), label: `${name}, ${at}`, context: w.text(`${w.change(d, a, at)} since ${a}; ${pe} ${w.num(pd, at)}`) }) as DesignObject
+  const headline = worse === 4 ? `Funding cost, interest, deficit and debt all moved against ${fe} since ${a}` : `${cap(words[worse]!)} of the four links in ${poss(fe)} debt dynamics moved against it since ${a}`
+  const objs: DesignObject[] = [
+    T('section', 'section', { text: `${fe} · Debt dynamics` }),
+    T('headline', 'headline', { text: headline }),
+    T('ex', 'exhibit', { text: 'How the pressures connect' }, { slot: 'exhibit' }),
+    T('ex-unit', 'unit', { text: `Latest values for ${fe} (${at}), change since ${a}, and ${pe} for reference; arrows show accounting links, not estimated effects` }, { slot: 'exhibit' }),
+    node('n1', 0, '10-year yield, %', Y, PY), node('n2', 1, 'Interest spending, % of GDP', I, PI), node('n3', 2, 'Government balance, % of GDP', B, PB), node('n4', 3, 'Gross debt, % of GDP', D, PD),
+    T('so', 'conclusion', w.text(`A larger debt stock and a higher yield both raise the interest bill, which reached ${w.num(I, at)} of GDP in ${at}`), { slot: 'so' }),
+    T('source', 'source', { text: sourceLine(p, dss) }),
+  ]
+  return make(p, 'Debt dynamics diagram', `Explain how ${poss(fe)} credit pressures connect`, { text: headline },
+    { kind: 'columns', recipe: 'causal-chain', params: { columns: [{ span: 12, slots: ['exhibit', 'flow', 'so'] }],
+      diagram: { cols: 4, rows: 1, edges: [{ from: 'n1', to: 'n2', label: 'sets the cost of new borrowing' }, { from: 'n2', to: 'n3', label: 'is part of public spending' },
+        { from: 'n3', to: 'n4', label: 'a deficit adds to the debt stock' }, { from: 'n4', to: 'n2', label: 'a larger debt stock raises the interest bill', back: true }] } } }, objs,
+    ['A causal chain of four bound figures in cards with a burgundy top edge; gold connectors labelled with the accounting link they stand for',
+      'A feedback edge routed under the row closes the loop (debt raises the interest bill)', 'Every node shows France\'s latest value, its change and the peer for reference'], w, language)
 }

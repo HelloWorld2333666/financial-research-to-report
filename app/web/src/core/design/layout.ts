@@ -13,7 +13,10 @@ export interface Laid {
   sizes: Record<string, number>
   zones: { header: Box; content: Box; footer: Box }
   /** the takeaway band/line and header rule, drawn as decoration */
-  decor: { id: string; box: Box; kind: 'rule' | 'band' | 'card' | 'badge'; fill?: string; text?: string; pt?: number }[]
+  /** decoration (never data): rules, bands, cards (optionally stroked), badges, connector arrows and lines, arrowheads,
+   *  edge labels (words only) and decorative pictures (self-authored or licensed assets, with their provenance in descr) */
+  decor: { id: string; box: Box; kind: 'rule' | 'band' | 'card' | 'badge' | 'arrow' | 'line' | 'head' | 'label' | 'asset'
+    fill?: string; stroke?: string; text?: string; pt?: number; color?: string; bold?: boolean; align?: 'left' | 'center' | 'right'; dataUrl?: string; descr?: string }[]
   notes: string[]
 }
 

@@ -611,9 +611,12 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
         """Find design recipes (and, when the private design library is configured, reference layouts) for a slide before
         design_slide. purpose: what the slide argues; chart/table: what it carries; kpis: headline figures; panels: parallel
         blocks; chars: body text it must hold. Returns up to three recipes (id, when to use it) and up to three references
-        (archetype, why, slot counts; no reference text). Pass the chosen recipe id to design_slide."""
+        (archetype, why, slot counts; no reference text), plus the design principles that apply, one line each with their status
+        (tested, renderable or principle only). Pass the chosen recipe id to design_slide; recipes include chart-commentary,
+        multi-module (trend), rank-table (comparison), risk-matrix, exec-split, causal-chain (risk)."""
         q = {"purpose": purpose, "chart": chart, "table": table, "kpis": kpis, "panels": panels, "kind": kind, **({"chars": chars} if chars is not None else {})}
         r = suggest(q, os.environ.get("FRR_DESIGN_LIBRARY"))
+        # the principles come back as one-line rules (id, status): enough to choose and justify a recipe, not the library
         return {"kind": "layout_references", **r,
                 "summary": f"{len(r['recipes'])} recipe(s)" + (f" and {len(r['references'])} reference layout(s) from the private library" if r["library"] else " (no private library configured)")
                            + ". Choose one and call design_slide with its recipe id."}

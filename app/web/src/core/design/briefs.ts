@@ -3,7 +3,7 @@
 import type { Project } from '../types'
 import { planSlide, type DesignCandidate, type DesignRequest } from './planner'
 import { balanceRank, balanceTrend, debtTrend, navigation, riskNarrative } from './editorial'
-import { balanceTable, debtCommentary, riskMatrix } from './proposals'
+import { balanceTable, debtCommentary, debtDashboard, debtDynamics, execSummary, riskMatrix } from './proposals'
 
 export interface Brief { title: string; request?: DesignRequest; compose?: (p: Project) => DesignCandidate[] }
 export const BRIEFS: Record<string, Brief> = {
@@ -14,6 +14,9 @@ export const BRIEFS: Record<string, Brief> = {
   'v2-debt': { title: 'Debt trend: chart with a commentary column', compose: (p) => [debtCommentary(p)] },
   'v2-balance': { title: 'Fiscal balance: ranked table with a figures column', compose: (p) => [balanceTable(p)] },
   'v2-risk': { title: 'Credit risk: scorecard matrix', compose: (p) => [riskMatrix(p)] },
+  'v3-dashboard': { title: 'Debt dashboard: modules and figures panel', compose: (p) => [debtDashboard(p)] },
+  'v3-summary': { title: 'Executive summary, split background', compose: (p) => [execSummary(p)] },
+  'v3-dynamics': { title: 'Debt dynamics diagram', compose: (p) => [debtDynamics(p)] },
   'v2-divider': { title: 'Section divider in burgundy and gold', compose: (p) => navigation(p, 'divider', 1, undefined, undefined, 'burgundy') },
   'v2-agenda': { title: 'Agenda in burgundy and gold', compose: (p) => navigation(p, 'agenda', 1, undefined, undefined, 'burgundy') },
   // Gate C recipes

@@ -10,6 +10,7 @@ import type { VizSpec } from '../viz'
 import { commonLatest, entityOf, firstCommon, ranked, sourceLine, value, Writer } from './insight'
 import { profileOf } from './profiles'
 import { balanceRank, balanceTrend, debtTrend, FRANCE_SECTIONS, navigation, riskNarrative } from './editorial'
+import { balanceTable, debtCommentary, debtDashboard, debtDynamics, execSummary, riskMatrix } from './proposals'
 import { designTexts, DESIGN_SCHEMA, newDesignId, validateDesign, type Audience, type Density, type DesignObject, type DesignText, type LayoutFamily, type LayoutParams, type SlideDesign } from './spec'
 
 export type Purpose = 'trend' | 'comparison' | 'risk' | 'agenda' | 'divider'
@@ -37,7 +38,7 @@ export interface DesignRequest {
 }
 export interface DesignCandidate { label: string; design: SlideDesign; problems: string[] }
 /** Bumped when planning rules change, so saved chat cards re-plan instead of showing a plan made under older rules. */
-export const PLAN_VERSION = 4
+export const PLAN_VERSION = 5
 export interface PlanResult { candidates: DesignCandidate[]; inputs: { dataset: string; entity: string; unit: string; source: string }[]; notes: string[]; error?: string }
 
 const NOUN: Record<string, string> = { debt: 'government debt', deficit: 'government balance', interest: 'interest spending', yield: '10-year bond yield', growth: 'real GDP growth' }
@@ -239,6 +240,16 @@ function editorial(p: Project, req: DesignRequest, notes: string[]): DesignCandi
       : req.purpose === 'trend' && req.metric === 'deficit' ? balanceTrend(p, focus, peers.length ? peers : undefined)
       : req.purpose === 'comparison' && (req.metric ?? 'deficit') === 'deficit' ? balanceRank(p, focus, peers.length ? peers : undefined)
       : req.purpose === 'risk' ? riskNarrative(p, focus, peers[0] ?? 'DE') : []
+    // Gate E recipes: the reference-led designs, built when the request names one (the agent's find_layout_references
+    // returns them); a recipe the data can't carry is reported by planSlide
+    const gateE: Record<string, () => DesignCandidate> = {
+      'chart-commentary': () => debtCommentary(p, focus, peers.length ? peers : undefined), 'multi-module': () => debtDashboard(p, focus, peers.length ? peers : undefined),
+      'rank-table': () => balanceTable(p, focus), 'risk-matrix': () => riskMatrix(p, focus, peers[0] ?? 'DE'),
+      'exec-split': () => execSummary(p, focus, peers[0] ?? 'DE'), 'causal-chain': () => debtDynamics(p, focus, peers[0] ?? 'DE'),
+    }
+    const fits = (r: string) => (r === 'chart-commentary' || r === 'multi-module') ? req.purpose === 'trend' && (req.metric ?? 'debt') === 'debt'
+      : r === 'rank-table' ? req.purpose === 'comparison' && (req.metric ?? 'deficit') === 'deficit' : req.purpose === 'risk'
+    if (req.recipe && gateE[req.recipe] && fits(req.recipe)) { try { c.unshift(gateE[req.recipe]!()) } catch (e: any) { notes.push(`The ${req.recipe} design does not fit this data (${String(e?.message ?? e)}).`) } }
     if (c.length && req.claim?.trim()) notes.push(`The proposed wording "${req.claim.trim()}" was not used: these compositions state only directions, ranks and figures computed from the data.`)
     return c.filter((x) => !x.problems.length).length ? c : []
   } catch (e: any) {

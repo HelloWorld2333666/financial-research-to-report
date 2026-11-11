@@ -121,11 +121,28 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
   const para = (rs: any[], role: keyof Language['type'], extra: Record<string, unknown> = {}) => ({ runs: rs, ...(tr(role).lineSpacing ? { lineSpacingPct: tr(role).lineSpacing } : {}), ...extra })
   const box = (b: Box) => off(b)
   // rules and hairlines first (painted beneath), then shapes, charts, text
-  for (const x of L.decor) out.push(x.kind === 'badge'
-    // a numbered badge: a native circle with its numeral (a position on the slide, not a figure)
-    ? { key: `decor:${x.id}`, kind: 'decor', box: x.box, bind: (slide) => ({ kind: 'decor', slide }),
-        create: { op: 'addElement', kind: 'ellipse', offset: box(x.box), fill: x.fill ?? c.navy, paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: x.pt ?? 10.5, bold: true, color: c.onDark, fontFamily: V.fonts.text }], align: 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 'ctr' } } as any }
-    : { key: `decor:${x.id}`, kind: 'decor', box: x.box, create: { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }, bind: (slide) => ({ kind: 'decor', slide }) })
+  // decoration (never data-bearing): every kind becomes a native, editable element bound as 'decor'
+  const stroke = (color: string, pt = 0.75) => ({ color, widthEmu: Math.round(pt * 12700) })
+  const decorOp = (x: Laid['decor'][number]): any => {
+    const at = box(x.box)
+    switch (x.kind) {
+      case 'badge': // a numbered or marker circle: filled, or outlined when it has a stroke
+        return { op: 'addElement', kind: 'ellipse', offset: at, fill: x.stroke ? c.paper : (x.fill ?? c.navy), ...(x.stroke ? { stroke: stroke(x.stroke, 1.25) } : {}),
+          paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: x.pt ?? 10.5, bold: true, color: x.stroke ? x.stroke : c.onDark, fontFamily: V.fonts.text }], align: 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 'ctr' } }
+      case 'card': // a bordered box behind a diagram node or module
+        return { op: 'addElement', kind: 'rect', offset: at, fill: x.fill ?? c.paper, ...(x.stroke ? { stroke: stroke(x.stroke, 1) } : {}) }
+      case 'arrow': return { op: 'addElement', kind: 'lineArrow', offset: at, stroke: stroke(x.color ?? c.gold, 1.25) }
+      case 'line': return { op: 'addElement', kind: 'line', offset: at, stroke: stroke(x.color ?? c.gold, 1.25) }
+      case 'head': return { op: 'addElement', kind: 'triangle', offset: at, fill: x.color ?? c.gold } // an upward arrowhead
+      case 'label': // an edge or section label: words only (validated), not bound to evidence
+        return { op: 'addElement', kind: 'textbox', offset: at, paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: x.pt ?? 10, bold: !!x.bold, color: x.color ?? c.muted, fontFamily: V.fonts.text }], align: x.align ?? 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } }
+      case 'asset': // a decorative picture (self-authored motif or a licensed asset); provenance in descr
+        return { op: 'addPicture', offset: at, bytes: x.dataUrl, ext: 'png', name: `decor ${x.id}`, ...(x.descr ? { descr: x.descr } : {}) }
+      default:
+        return { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }
+    }
+  }
+  for (const x of L.decor) out.push({ key: `decor:${x.id}`, kind: 'decor', box: x.box, create: decorOp(x), bind: (slide) => ({ kind: 'decor', slide }) })
   for (const o of d.objects) if (o.kind === 'shape' && L.boxes[o.id]) {
     const fill = o.role === 'panel' ? c.navyDeep : o.role === 'masthead' ? c.navy : c.gold
     out.push({ key: o.id, kind: 'decor', box: L.boxes[o.id]!, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(L.boxes[o.id]!), fill }, bind: (slide) => ({ kind: 'decor', slide }) })

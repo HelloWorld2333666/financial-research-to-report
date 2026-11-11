@@ -1,0 +1,47 @@
+{
+ "kind": "candidate",
+ "brief": "v3-dashboard",
+ "cand": 0,
+ "label": "Debt dashboard: delta, benchmark list and figures panel",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "multi-module",
+   "params": {
+    "dividers": true,
+    "columns": [
+     {
+      "span": 4,
+      "slots": [
+       "ex1",
+       "m1"
+      ]
+     },
+     {
+      "span": 4,
+      "slots": [
+       "ex2",
+       "m2"
+      ]
+     },
+     {
+      "span": 4,
+      "slots": [
+       "fig",
+       "so",
+       "art"
+      ],
+      "tint": true
+     }
+    ]
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": [
+  "warning:small_primary_visual: the main visual uses 22% of the content area; the slide reads as mostly empty",
+  "warning:near_miss_alignment: 6 near-miss alignment(s): right edges 4 px apart; right edges 8 px apart"
+ ]
+}

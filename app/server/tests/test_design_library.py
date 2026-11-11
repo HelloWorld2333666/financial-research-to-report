@@ -100,5 +100,24 @@ def test_recipes_and_references_come_from_one_module(tmp_path):
 
 def test_recipe_table_is_the_planners():
     ids = [r["id"] for r in retrieve.recipes()]
-    assert ids == ["chart-rail", "ranked-bars", "trend-annotated", "agenda", "divider", "chart-commentary", "rank-table", "risk-matrix"]
+    assert ids == ["chart-rail", "ranked-bars", "trend-annotated", "agenda", "divider", "chart-commentary", "rank-table", "risk-matrix", "multi-module", "exec-split", "causal-chain"]
     assert retrieve.RECIPES.name == "recipes.json" and "core/design" in retrieve.RECIPES.as_posix()
+
+
+def test_principles_catalog_is_consistent_and_retrievable():
+    ps = retrieve.principles()
+    ids = [p["id"] for p in ps]
+    assert len(ids) == len(set(ids)) and len(ids) >= 50
+    assert {p["status"] for p in ps} <= {"principle", "recipe", "renderable", "tested"}
+    for p in ps:
+        if p["status"] in ("renderable", "tested"):
+            assert p.get("impl"), p["id"]  # a usable principle names where it is implemented
+        else:
+            assert p.get("fallback") or p["module"] in ("typography", "tables", "layout", "diagrams", "assets", "storytelling", "qa", "charts"), p["id"]
+    for r in retrieve.recipes():
+        assert set(r.get("principles", [])) <= set(ids), r["id"]
+    # retrieval returns a few one-line principles, usable ones first, and stays small
+    out = retrieve.suggest({"purpose": ["summary", "kpi"]})
+    assert out["recipes"][0]["id"] == "exec-split" and 0 < len(out["principles"]) <= 6
+    assert all(len(p["rule"]) <= 151 for p in out["principles"]) and len(__import__("json").dumps(out)) < 3000
+    assert [p["id"] for p in retrieve.load_principles(["CH7"])] == ["CH7"]

@@ -7,6 +7,7 @@ import type { FontMetricsProvider } from '@genoffice/pptx-render'
 import type { DesignObject, DesignText, SlideDesign } from './spec'
 import { languageOf, type Language, type TypeRole } from './language'
 import { H, lineCount, W, type Box, type Laid } from './layout'
+import { MOTIFS } from './motifs'
 
 const px = (pt: number) => (pt * 96) / 72
 const textOf = (o: DesignObject) => (o.kind === 'text' ? [o.text, ...(o.items ?? [])].filter((t) => t.text).map((t) => t.text).join('\n') : '')
@@ -131,10 +132,60 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
       const h = Math.min(rowH - 8, textH(o, r, w0)), yy = top + (rowH - h) / 2
       if (o.kind === 'kpi') { setFigure(o, 'cellFigure', x0, yy, w0); continue }
       setText(o, roleIn(o, r), x0, yy, w0)
-      if (o.cell.badge) decor.push({ id: `badge-${o.id}`, kind: 'badge', box: { x: colX[ci]! + 1, y: top + rowH / 2 - 12, w: 24, h: 24 }, fill: L.color.navy, text: o.cell.badge })
+      if (o.cell.badge) decor.push({ id: `badge-${o.id}`, kind: 'badge', box: { x: colX[ci]! + 1, y: top + rowH / 2 - 13, w: 26, h: 26 }, text: o.cell.badge, ...(L.frame.panelMarker === 'line' ? { stroke: L.color.navy } : { fill: L.color.navy }) })
     }
-    if (mp.header) rule('matrix-head-rule', { x: b.x, y: b.y + headH - 1, w: b.w, h: 1 }, L.color.ink)
+    if (mp.header) rule('matrix-head-rule', { x: b.x, y: b.y + headH - 1, w: b.w, h: 1 }, (L.color.rule ?? L.color.ink))
     for (let i = 1; i < rows; i++) rule(`matrix-row-${i}`, { x: b.x, y: b.y + headH + i * rowH, w: b.w, h: 0.75 }, L.color.hair)
+  }
+
+  /** a decorative motif in a box, kept to its aspect, anchored to the box's foot (or top) */
+  const asset = (o: { id: string; motif: string; place?: string; opacity?: number }, b: Box) => {
+    const m = MOTIFS[o.motif]
+    if (!m) { notes.push(`${o.id}: no motif "${o.motif}"`); return }
+    const w = Math.min(b.w, (b.h * m.w) / m.h), h = (w * m.h) / m.w
+    decor.push({ id: `asset-${o.id}`, kind: 'asset', box: { x: b.x + (b.w - w) / 2, y: o.place === 'top' ? b.y : b.y + b.h - h, w, h }, dataUrl: m.png, descr: `decorative motif "${o.motif}": ${m.provenance}` })
+    boxes[o.id] = { x: 0, y: 0, w: 0, h: 0 }
+  }
+  /** a diagram: nodes (figures or text) on a grid in their cards; edges as native connectors: rightward and downward
+   *  arrows, and feedback edges routed under the row with an upward arrowhead; edge labels are words, never figures */
+  const diagram = (objs: DesignObject[], b: Box) => {
+    const dg = P.diagram ?? { cols: 3, rows: 1, edges: [] }, gx = 112, gy = 56
+    const nw = (b.w - gx * (dg.cols - 1)) / dg.cols, back = dg.edges.some((e) => e.back)
+    // nodes as tall as their content needs (figure, label, context), never more than the slot allows
+    const need = Math.max(...objs.filter((o) => (o as any).node).map((o) => o.kind === 'kpi' ? Math.ceil(lineH(L.type.cellFigure)) + 10 + height(o.label, L.type.caption, nw - 36) + (o.context ? height(o.context.text, L.type.bodySmall, nw - 36) + 6 : 0) + 28 : 120))
+    const nh = Math.min(need, (b.h - (back ? 70 : 0) - gy * (dg.rows - 1)) / dg.rows)
+    const at: Record<string, Box> = {}
+    for (const o of objs) {
+      const n = (o as any).node as { r: number; c: number } | undefined
+      if (!n) continue
+      const nb = { x: b.x + n.c * (nw + gx), y: b.y + n.r * (nh + gy), w: nw, h: nh }
+      at[o.id] = nb
+      decor.push({ id: `node-${o.id}`, kind: 'card', box: nb, fill: L.color.paper, stroke: L.color.gold })
+      decor.push({ id: `node-top-${o.id}`, kind: 'rule', box: { x: nb.x, y: nb.y, w: nb.w, h: 3 }, fill: L.color.navy })
+      if (o.kind === 'kpi') setFigure(o, 'cellFigure', nb.x + 18, nb.y + 20, nb.w - 36)
+      else setText(o, 'body', nb.x + 18, nb.y + 20, nb.w - 36)
+    }
+    dg.edges.forEach((e, i) => {
+      const A = at[e.from], B = at[e.to]
+      if (!A || !B) { notes.push(`edge ${e.from}→${e.to}: missing node`); return }
+      const lab = (x: number, y: number, w: number, t?: string) => t && decor.push({ id: `edge-label-${i}`, kind: 'label', box: { x, y, w, h: Math.ceil(height(t, { ...L.type.caption, pt: 9.5 }, w)) + 4 }, text: t, pt: 9.5, color: L.color.muted, align: 'center' })
+      if (e.back) {
+        const x1 = A.x + A.w / 2, x2 = B.x + B.w / 2, yb = Math.max(A.y + A.h, B.y + B.h) + 34
+        decor.push({ id: `edge-${i}-a`, kind: 'line', box: { x: x1, y: A.y + A.h, w: 0, h: yb - (A.y + A.h) }, color: L.color.navy })
+        decor.push({ id: `edge-${i}-b`, kind: 'line', box: { x: Math.min(x1, x2), y: yb, w: Math.abs(x1 - x2), h: 0 }, color: L.color.navy })
+        decor.push({ id: `edge-${i}-c`, kind: 'line', box: { x: x2, y: B.y + B.h + 9, w: 0, h: yb - (B.y + B.h + 9) }, color: L.color.navy })
+        decor.push({ id: `edge-${i}-head`, kind: 'head', box: { x: x2 - 6, y: B.y + B.h, w: 12, h: 10 }, color: L.color.navy })
+        lab(Math.min(x1, x2) + 20, yb + 6, Math.abs(x1 - x2) - 40, e.label)
+      } else if (Math.abs(A.y - B.y) < 2 && B.x > A.x) {
+        const ym = A.y + A.h / 2
+        decor.push({ id: `edge-${i}`, kind: 'arrow', box: { x: A.x + A.w + 6, y: ym, w: B.x - (A.x + A.w) - 12, h: 0 }, color: L.color.gold })
+        { const lw0 = B.x - (A.x + A.w) - 8, lh = Math.ceil(height(e.label ?? '', { ...L.type.caption, pt: 9.5 }, lw0)) + 4; lab(A.x + A.w + 4, ym - lh - 6, lw0, e.label) }
+      } else {
+        const xm = A.x + A.w / 2
+        decor.push({ id: `edge-${i}`, kind: 'arrow', box: { x: xm, y: A.y + A.h + 6, w: 0, h: B.y - (A.y + A.h) - 12 }, color: L.color.gold })
+        lab(xm + 8, A.y + A.h + 8, 160, e.label)
+      }
+    })
   }
 
   const k = c.kind
@@ -201,22 +252,34 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     // the right edge; the title block keeps clear of it (the reference reports' implications panel)
     const lastCol = columns[columns.length - 1]!, fullPanel = !!lastCol.tint && L.frame.panel === 'full' && columns.length > 1
     const panelX = M + columns.slice(0, -1).reduce((a, c) => a + cols(c.span) + G, 0) - 30
-    const headW = fullPanel ? panelX - M - 36 : W - 2 * M
-    let y = header(M, top0, headW, fullPanel ? 3 : 2, fullPanel ? headW : cols(10)) + 14
-    if (L.frame.titleRule !== false) rule('title-rule', { x: M, y, w: W - 2 * M, h: 0.75 }, L.color.ink)
-    const y0 = y + (L.frame.titleRule !== false ? 22 : 26), bottom = footTop - 12
+    const split = !!P.split && columns.length > 1, fieldW = split ? M + cols(columns[0]!.span) + 30 : 0
+    if (split) decor.push({ id: 'split-field', kind: 'rule', box: { x: 0, y: 0, w: fieldW, h: H }, fill: L.color.surface }, { id: 'split-edge', kind: 'rule', box: { x: fieldW, y: 0, w: 1.5, h: H }, fill: L.color.gold })
+    const headW = split ? cols(columns[0]!.span) : fullPanel ? panelX - M - 36 : W - 2 * M
+    let y = header(M, top0 + (split ? 30 : 0), headW, split ? 5 : fullPanel ? 3 : 2, split || fullPanel ? headW : cols(10)) + 14
+    if (L.frame.titleRule !== false && !split) rule('title-rule', { x: M, y, w: W - 2 * M, h: 0.75 }, (L.color.rule ?? L.color.ink))
+    const titleEnd = y
+    const y0 = split ? top0 + 30 : y + (L.frame.titleRule !== false ? 22 : 26), bottom = footTop - 12
+    if (split && source) { // the source line sits under the content, beside the field
+      const sx = fieldW + 40, sw = W - M - sx, h = height(textOf(source), L.type.footnote, sw)
+      boxes[source.id] = { x: sx, y: H - 18 - h, w: sw, h }
+      const fl = decor.find((x) => x.id === 'foot-line'); if (fl) fl.box = { x: sx, y: H - 18 - h - 10, w: sw, h: 0.75 }
+    }
     let x = M
     const roleOf = (o: DesignObject): keyof Language['type'] => o.kind !== 'text' ? 'body'
       : o.role === 'exhibit' ? 'exhibit' : o.role === 'unit' ? 'unit' : o.role === 'lead' ? 'lead' : o.role === 'conclusion' ? 'conclusion' : o.role === 'label' ? 'label' : o.role === 'note' ? 'bodySmall' : 'body'
     const GAP = 16
     for (const col of columns) {
-      const w = cols(col.span), cx = x, last = col === columns[columns.length - 1]
-      x += w + G
+      const w = cols(col.span), last = col === columns[columns.length - 1], first = col === columns[0]
+      // in a split layout the content columns sit right of the field
+      const cx = split && !first ? Math.max(x, fieldW + 40) : x
+      x = cx + w + G
+      if (P.dividers && !first && !(col.tint && fullPanel && last)) rule(`divider-${cx}`, { x: cx - G / 2 - 6, y: y0 + 4, w: 0.75, h: bottom - y0 - 8 }, L.color.hair)
       if (col.tint) {
         const full = fullPanel && last, px0 = full ? panelX : cx - 22
         decor.push({ id: `col-tint-${cx}`, kind: 'rule', box: full ? { x: px0, y: 0, w: W - px0, h: H } : { x: px0, y: y0 - 16, w: last ? W - px0 : w + 44, h: last ? H - (y0 - 16) : bottom - y0 + 28 }, fill: L.color.surface })
         // the chevron marker on the panel's border, level with the panel's first heading
-        if (full) decor.push({ id: 'panel-marker', kind: 'badge', box: { x: px0 - 21, y: Math.min(y0, top0 + 64) - 6, w: 42, h: 42 }, fill: L.color.navy, text: '»', pt: 17 })
+        if (full && L.frame.panelMarker === 'line') decor.push({ id: 'panel-edge', kind: 'rule', box: { x: px0, y: 0, w: 1.5, h: H }, fill: L.color.gold })
+        else if (full) decor.push({ id: 'panel-marker', kind: 'badge', box: { x: px0 - 21, y: Math.min(y0, top0 + 64) - 6, w: 42, h: 42 }, fill: L.color.navy, text: '»', pt: 17 })
         if (last && source) {
           const sw = px0 - 24 - M, h = height(textOf(source), L.type.footnote, sw)
           boxes[source.id] = { x: M, y: H - 18 - h, w: sw, h }
@@ -224,7 +287,7 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
         }
       }
       const beforePanel = fullPanel && columns.indexOf(col) === columns.length - 2
-      const ox = col.tint && fullPanel && last ? panelX + 40 : cx, ow = col.tint && fullPanel && last ? W - M + 12 - (panelX + 40) : beforePanel ? w - 34 : w
+      const ox = col.tint && fullPanel && last ? panelX + 40 : cx, ow = col.tint && fullPanel && last ? W - M + 12 - (panelX + 40) : beforePanel ? w - 34 : Math.min(w, W - M - cx)
       const objs = col.slots.flatMap((sl) => d.objects.filter((o) => (o as any).slot === sl))
       // measure: fixed heights, and which blocks fill
       const isMatrix = (o: DesignObject) => !!(o as any).cell
@@ -232,7 +295,8 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
       for (const sl of col.slots) {
         const so = d.objects.filter((o) => (o as any).slot === sl)
         if (!so.length) continue
-        if (so.some(isMatrix)) { items.push({ o: so, h: 0, fill: true, slot: sl }); continue }
+        if (so.some(isMatrix) || so.some((o) => !!(o as any).node)) { items.push({ o: so, h: 0, fill: true, slot: sl }); continue }
+        if (so.every((o) => o.kind === 'shape' && (o as any).role === 'asset')) { items.push({ o: so, h: 0, fill: true, slot: sl }); continue }
         for (const o of so) {
           if (o.kind === 'viz') items.push({ o: [o], h: 0, fill: true, slot: sl })
           else if (o.kind === 'kpi') items.push({ o: [o], h: Math.ceil(lineH(L.type[o.variant === 'hero' ? 'hero' : 'heroSmall']) * 1.04) + 8 + height(o.label, L.type.caption, ow) + (o.context ? height(o.context.text, L.type.bodySmall, ow) + 4 : 0), fill: false, slot: sl })
@@ -247,13 +311,13 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
       const step = (i: number) => { const o = items[i]!.o[0]!, n = items[i + 1]?.o[0]; return o.kind === 'text' && o.role === 'exhibit' && n?.kind === 'text' && n.role === 'unit' ? 4 : GAP }
       const fixed = items.reduce((a, it) => a + it.h, 0) + items.slice(0, -1).reduce((a, _, i) => a + step(i), 0)
       const fills = items.filter((it) => it.fill).length
-      const share = fills ? Math.max(60, (bottom - y0 - fixed) / fills) : 0
+      const colTop = col.tint && fullPanel && last ? Math.min(y0, top0 + 64) : split && first ? titleEnd + 26 : y0
+      const share = fills ? Math.max(60, (bottom - colTop - fixed) / fills) : 0
       if (!fills && y0 + fixed > bottom) notes.push(`column ${cx}: the blocks are taller than the slide`)
       const leads = items.filter((it) => it.o[0]!.kind === 'text' && (it.o[0] as any).role === 'lead').length
       const spare = fills ? 0 : Math.max(0, bottom - (col.tint && fullPanel && last ? Math.min(y0, top0 + 64) : y0) - fixed), extraGap = leads > 1 ? Math.min(64, (spare * 0.8) / (leads - 1)) : 0
       // a full-height panel is free of the title block: its content may start higher than the exhibits beside it
-      const top = col.tint && fullPanel && last ? Math.min(y0, top0 + 64) : y0
-      let cy = top
+      let cy = colTop
       items.forEach((it, i) => {
         const prev = items[i - 1]?.o[0], o = it.o[0]!
         // hairline between consecutive commentary blocks; heavier rule above the conclusion
@@ -261,8 +325,10 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
         if (o.kind === 'text' && o.role === 'lead' && prev?.kind === 'text' && prev.role === 'lead') rule(`lead-rule-${o.id}`, { x: ox, y: cy - (GAP + extraGap) / 2 - 0.5, w: ow, h: 0.75 }, L.color.hair)
         // with nothing to fill, the conclusion sits at the foot of its column, level with its neighbour's last row
         if (o.kind === 'text' && o.role === 'conclusion' && !fills && i === items.length - 1) cy = Math.max(cy, bottom - it.h)
-        if (o.kind === 'text' && o.role === 'conclusion') { rule(`concl-rule-${o.id}`, { x: ox, y: cy, w: ow, h: 1.5 }, L.color.ink); cy += 10 }
+        if (o.kind === 'text' && o.role === 'conclusion') { rule(`concl-rule-${o.id}`, { x: ox, y: cy, w: ow, h: 1.5 }, (L.color.rule ?? L.color.ink)); cy += 12 }
         if (it.fill && it.o.some(isMatrix)) { matrix(it.o, { x: ox, y: cy, w: ow, h: share }); cy += share }
+        else if (it.fill && it.o.some((o) => !!(o as any).node)) { diagram(it.o, { x: ox, y: cy, w: ow, h: share }); cy += share }
+        else if (it.fill && it.o[0]!.kind === 'shape') { for (const a of it.o) asset(a as any, { x: ox, y: cy, w: ow, h: share }); cy += share }
         else if (it.fill) { placeChart(o, { x: ox, y: cy, w: ow, h: share }); cy += share }
         else if (o.kind === 'kpi') { cy = setFigure(o, o.variant === 'hero' ? 'hero' : 'heroSmall', ox, cy, ow) }
         else if (o.kind === 'text') {
@@ -270,7 +336,7 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
           if (o.kind === 'text' && o.role === 'conclusion') cy += 2
           // the exhibit's hairline goes under its unit line when one follows, else under the exhibit title
           const next = items[i + 1]?.o[0]
-          if ((o.role === 'exhibit' && !(next?.kind === 'text' && next.role === 'unit')) || (o.role === 'unit' && prev?.kind === 'text' && prev.role === 'exhibit')) { rule(`ex-rule-${o.id}`, { x: ox, y: cy + 6, w: ow, h: 0.75 }, L.color.ink); cy += 12 }
+          if ((o.role === 'exhibit' && !(next?.kind === 'text' && next.role === 'unit')) || (o.role === 'unit' && prev?.kind === 'text' && prev.role === 'exhibit')) { rule(`ex-rule-${o.id}`, { x: ox, y: cy + 6, w: ow, h: 0.75 }, (L.color.rule ?? L.color.ink)); cy += 12 }
         }
         cy += step(i)
       })
@@ -335,7 +401,7 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     if (source) { boxes[source.id] = { ...boxes[source.id]!, w: lw }; const h = height(textOf(source), L.type.footnote, lw); boxes[source.id]!.h = h; boxes[source.id]!.y = H - 18 - h }
     const fl = decor.find((x) => x.id === 'foot-line'); if (fl && source) { fl.box.w = lw; fl.box.y = boxes[source.id]!.y - 10 }
   }
-  for (const o of d.objects) if (!boxes[o.id] && !(o === section && !showTracker)) notes.push(`${o.id} has no place in a ${k} composition`)
+  for (const o of d.objects) if (!boxes[o.id] && !(o === section && !showTracker) && !(o.kind === 'shape' && (o as any).role === 'asset')) notes.push(`${o.id} has no place in a ${k} composition`)
   const content: Box = { x: M, y: top0, w: W - 2 * M, h: footTop - top0 }
   return { boxes, sizes, roles, language: L, decor, notes, ...(background ? { background } : {}), zones: { header: { x: 0, y: 0, w: W, h: top0 }, content, footer: { x: M, y: footTop, w: W - 2 * M, h: H - footTop } } }
 }

@@ -178,6 +178,82 @@ function dumbbell(g: G): Mark[] {
   return out
 }
 
+/** National flags as native striped shapes (public-domain designs, drawn here), used as category markers beside names. */
+const FLAGS: Record<string, { dir: 'v' | 'h'; c: string[]; w?: number[] }> = {
+  FR: { dir: 'v', c: ['#0055A4', '#FFFFFF', '#EF4135'] }, DE: { dir: 'h', c: ['#000000', '#DD0000', '#FFCE00'] }, IT: { dir: 'v', c: ['#009246', '#FFFFFF', '#CE2B37'] },
+  BE: { dir: 'v', c: ['#000000', '#FDDA24', '#EF3340'] }, NL: { dir: 'h', c: ['#AE1C28', '#FFFFFF', '#21468B'] }, AT: { dir: 'h', c: ['#ED2939', '#FFFFFF', '#ED2939'] },
+  ES: { dir: 'h', c: ['#AA151B', '#F1BF00', '#AA151B'], w: [1, 2, 1] }, PT: { dir: 'v', c: ['#006600', '#FF0000'], w: [2, 3] }, IE: { dir: 'v', c: ['#169B62', '#FFFFFF', '#FF883E'] },
+}
+const geoOf = (p: Project, entity: string) => Object.values(p.datasets).find((d) => d.entity === entity)?.geo?.toUpperCase()
+function flag(out: Mark[], p: Project, entity: string, x: number, y: number, w = 18, h = 12) {
+  const f = FLAGS[geoOf(p, entity) ?? '']
+  if (!f) return false
+  const ws = f.w ?? f.c.map(() => 1), sum = ws.reduce((a, b) => a + b, 0)
+  let at = 0
+  f.c.forEach((col, i) => {
+    const part = ws[i]! / sum
+    out.push(rect(`frr-flag ${entity} ${i}`, f.dir === 'v' ? { x: x + at * w, y, w: part * w, h } : { x, y: y + at * h, w, h: part * h }, col))
+    at += part
+  })
+  out.push({ ...rect(`frr-flag ${entity} frame`, { x, y, w, h }, 'none'), stroke: '#D6D0C6', strokeW: 0.75 } as Mark)
+  return true
+}
+
+/** Gate E: a two-period comparison for one focus entity as two columns, the increment highlighted in the primary colour
+ *  (or the decrease shown as an outlined ghost), with the change written large above. Every value is a named mark. */
+function deltaColumns(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
+  const i = Math.max(0, pr.categories.findIndex((c) => c === (style.emphasis ? p.datasets[style.emphasis]?.entity : undefined)))
+  const a = A.values[i], b = B.values[i]
+  if (a == null || b == null) return [axisText(g, 'frr-gap', { x: 0, y: H / 2, w: W, h: 14 }, 'no value')]
+  const u = unitShort(pr.unit), top = 96, base = H - 28, colW = Math.min(110, W * 0.26), gap = Math.min(70, W * 0.16)
+  const x0 = (W - (2 * colW + gap)) / 2, x1 = x0 + colW + gap
+  const lo = Math.min(0, a, b), hi = Math.max(0, a, b), sy = scale(lo, hi === lo ? lo + 1 : hi, base, top), z = sy(0)
+  const col = (x: number, v: number) => ({ x, y: Math.min(z, sy(v)), w: colW, h: Math.max(1, Math.abs(sy(v) - z)) })
+  out.push(rect(markName(0, i, a), col(x0, a), L.color.peer, `${A.name}: ${fmt(p, a, A.cells[i]!)}${u}`))
+  out.push(rect(markName(1, i, b), col(x1, b), L.color.peer, `${B.name}: ${fmt(p, b, B.cells[i]!)}${u}`))
+  const up = Math.abs(b) > Math.abs(a)
+  if (up) out.push(rect('frr-delta increment', { x: x1, y: Math.min(sy(a), sy(b)), w: colW, h: Math.abs(sy(b) - sy(a)) }, L.color.navy))
+  else out.push({ ...rect('frr-delta ghost', { x: x1, y: Math.min(sy(a), sy(b)), w: colW, h: Math.abs(sy(b) - sy(a)) }, 'none'), stroke: L.color.navy, strokeW: 1 } as Mark)
+  const lp = L.type.dataLabel.pt
+  for (const [k, x, v, S] of [[0, x0, a, A], [1, x1, b, B]] as [number, number, number, typeof A][]) {
+    const t = `${fmt(p, v, S.cells[i]!)}${u}`, yv = v >= 0 ? Math.min(sy(v), up && k === 1 ? sy(b) : sy(v)) - 22 : sy(v) + 6
+    out.push(text(`frr-label ${k} ${i}`, { x, y: yv, w: colW, h: 18 }, t, lp, k === 1 ? L.color.navy : L.color.ink, { bold: true, align: 'ctr', font: L.type.dataLabel.font }))
+    out.push(axisText(g, `frr-cat ${k}`, { x, y: base + 8, w: colW, h: 14 }, S.name, 'ctr'))
+  }
+  out.push(path('frr-baseline', [[[x0 - 16, z], [x1 + colW + 16, z]]], L.color.hair, 1))
+  // the change, large, with a short rising (or falling) leader from the first column's top to the second's
+  const ch = b - a, ct = `${ch > 0 ? '+' : ''}${fmt(p, ch, B.cells[i]!)} ${deltaUnit(pr.unit)}`.replace('-', '−')
+  out.push(text('frr-label delta', { x: 0, y: 8, w: W, h: 44 }, ct, L.type.heroMid.pt, L.color.navy, { bold: true, align: 'ctr', font: L.type.heroMid.font }))
+  return out
+}
+
+/** Gate E: a compact benchmark list: flag, entity, the latest value (a named mark) and the change; the focus row tinted. */
+function benchList(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
+  const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined, n = pr.categories.length
+  const order = pr.categories.map((_, i) => i).sort((x, y) => (pr.categories[x] === focusName ? -1 : pr.categories[y] === focusName ? 1 : (B.values[y] ?? 0) - (B.values[x] ?? 0)))
+  const u = unitShort(pr.unit), du = deltaUnit(pr.unit), tp = L.type.cell.pt, head = 26, rowH = Math.min(64, (H - head) / n)
+  const chgW = 78, valW = 70, aX = W - chgW - 2 * valW - 12, bX = W - chgW - valW - 6
+  for (const [t, x, w, al] of [[A.name, aX, valW, 'r'], [B.name, bX, valW, 'r'], ['Change', W - chgW, chgW, 'r']] as [string, number, number, 'l' | 'r'][])
+    if (t) out.push(text(`frr-head ${t}`, { x, y: head - 20, w, h: 16 }, t, L.type.cellHead.pt, L.color.muted, { bold: true, align: al, font: L.type.cellHead.font }))
+  out.push(path('frr-head rule', [[[0, head], [W, head]]], L.color.rule ?? L.color.ink, 1))
+  order.forEach((i, row) => {
+    const t0 = head + row * rowH, yc = t0 + rowH / 2, c = pr.categories[i]!, isF = c === focusName, a = A.values[i], b = B.values[i]
+    if (isF) out.push(rect('frr-band focus', { x: 0, y: t0 + 1, w: W, h: rowH - 2 }, L.color.surfaceDeep))
+    if (row > 0) out.push(path(`frr-row ${row}`, [[[0, t0], [W, t0]]], L.color.hair, 0.75))
+    const hasFlag = flag(out, p, c, 6, yc - 6)
+    out.push(text(`frr-cat ${i}`, { x: hasFlag ? 34 : 6, y: yc - 9, w: aX - 40, h: 18 }, c, tp, isF ? L.color.navy : L.color.ink, { bold: isF, font: L.type.cell.font }))
+    if (a != null) out.push({ ...text(markName(0, i, a), { x: aX, y: yc - 9, w: valW, h: 18 }, `${fmt(p, a, A.cells[i]!)}${u}`, tp, L.color.muted, { align: 'r', font: L.type.cell.font }) } as Mark)
+    if (b != null) out.push({ ...text(markName(1, i, b), { x: bX, y: yc - 10, w: valW, h: 20 }, `${fmt(p, b, B.cells[i]!)}${u}`, tp + 0.5, isF ? L.color.navy : L.color.ink, { bold: true, align: 'r', font: L.type.cell.font }) } as Mark)
+    if (a != null && b != null) {
+      const ch = b - a, t = `${ch > 0 ? '+' : ''}${fmt(p, ch, B.cells[i]!)} ${du}`.replace('-', '−')
+      out.push(text(`frr-label chg ${i}`, { x: W - chgW, y: yc - 9, w: chgW, h: 18 }, t, tp, isF ? L.color.navy : L.color.muted, { bold: isF, align: 'r', font: L.type.cell.font }))
+    }
+  })
+  return out
+}
+
 /** Gate E: a two-period comparison as a ranked table. Rows run in the message's direction (largest deficit, i.e. lowest
  *  balance, first); columns: rank, entity, a bar of the latest value with its label, the earlier value, the change.
  *  Both periods' values are named marks (the earlier one a text mark), so integrity checks every figure in the table. */
@@ -187,7 +263,7 @@ function rankTable(g: G): Mark[] {
   const order = pr.categories.map((_, i) => i).sort((a, b) => (B.values[a] ?? Infinity) - (B.values[b] ?? Infinity))
   const tp = L.type.cell.pt, hp = L.type.cellHead.pt, vp = L.type.dataLabel.pt, ink = L.color.ink
   const u = unitShort(pr.unit), du = deltaUnit(pr.unit)
-  const rankW = 26, nameW = Math.max(...pr.categories.map((c) => lw(c, tp, c === focusName))) + 16, prevW = Math.max(lw(A.name, hp, true), 58) + 14, chgW = Math.max(lw('Change', hp, true), 78) + 22
+  const rankW = 26, nameW = Math.max(...pr.categories.map((c) => lw(c, tp, c === focusName))) + 16 + (style.flags ? 26 : 0), prevW = Math.max(lw(A.name, hp, true), 58) + 14, chgW = Math.max(lw('Change', hp, true), 78) + 22
   const barX0 = rankW + nameW, barX1 = W - prevW - chgW - 12, head = 30, rowH = (H - head) / n, barH = Math.min(32, rowH * L.chart.barHeight)
   const valW = Math.max(...B.values.map((v, i) => (v == null ? 0 : lw(`${fmt(p, v, B.cells[i]!)}${u}`, vp, true)))) + 12
   const neg = B.values.some((v) => v != null && v < 0), pos = B.values.some((v) => v != null && v > 0)
@@ -200,7 +276,8 @@ function rankTable(g: G): Mark[] {
     if (isF) out.push(rect('frr-band focus', { x: 0, y: top + 1, w: W, h: rowH - 2 }, L.color.surfaceDeep))
     if (row > 0) out.push(path(`frr-row ${row}`, [[[0, top], [W, top]]], L.color.hair, 0.75))
     out.push(text(`frr-rank ${i}`, { x: 4, y: yc - 9, w: rankW - 4, h: 18 }, String(row + 1), tp, isF ? L.color.navy : L.color.muted, { bold: isF, font: L.type.cell.font }))
-    out.push(text(`frr-cat ${i}`, { x: rankW, y: yc - 9, w: nameW - 8, h: 18 }, c, tp, isF ? L.color.navy : ink, { bold: isF, font: L.type.cell.font }))
+    const fl = style.flags ? flag(out, p, c, rankW, yc - 6) : false
+    out.push(text(`frr-cat ${i}`, { x: rankW + (fl ? 26 : 0), y: yc - 9, w: nameW - 8, h: 18 }, c, tp, isF ? L.color.navy : ink, { bold: isF, font: L.type.cell.font }))
     if (b != null) {
       const x0 = Math.min(z, sx(b)), x1 = Math.max(z, sx(b)), t = `${fmt(p, b, B.cells[i]!)}${u}`, w = lw(t, vp, isF) + 2
       out.push(rect(markName(1, i, b), { x: x0, y: yc - barH / 2, w: Math.max(1, x1 - x0), h: barH }, isF ? L.color.navy : L.color.peerSoft, `${c}, ${B.name}: ${t}`))
@@ -219,7 +296,7 @@ function rankTable(g: G): Mark[] {
   return out
 }
 
-const DRAW: Record<string, (g: G) => Mark[]> = { line, bar: rankBar, dumbbell: (g) => (g.style.form === 'rankTable' ? rankTable(g) : dumbbell(g)) }
+const DRAW: Record<string, (g: G) => Mark[]> = { line, bar: rankBar, dumbbell: (g) => (g.style.form === 'rankTable' ? rankTable(g) : g.style.form === 'delta' ? deltaColumns(g) : g.style.form === 'benchList' ? benchList(g) : dumbbell(g)) }
 
 /** The designed drawing of a spec, or null when the design engine doesn't draw this family. */
 export function designedLayout(p: Project, spec: VizSpec, pr: Projected, size: Size, style: ElementStyle): Mark[] | null {

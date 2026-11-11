@@ -1,0 +1,55 @@
+{
+ "kind": "candidate",
+ "brief": "v3-dynamics",
+ "cand": 0,
+ "label": "Debt dynamics diagram",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "causal-chain",
+   "params": {
+    "columns": [
+     {
+      "span": 12,
+      "slots": [
+       "exhibit",
+       "flow",
+       "so"
+      ]
+     }
+    ],
+    "diagram": {
+     "cols": 4,
+     "rows": 1,
+     "edges": [
+      {
+       "from": "n1",
+       "to": "n2",
+       "label": "sets the cost of new borrowing"
+      },
+      {
+       "from": "n2",
+       "to": "n3",
+       "label": "is part of public spending"
+      },
+      {
+       "from": "n3",
+       "to": "n4",
+       "label": "a deficit adds to the debt stock"
+      },
+      {
+       "from": "n4",
+       "to": "n2",
+       "label": "a larger debt stock raises the interest bill",
+       "back": true
+      }
+     ]
+    }
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

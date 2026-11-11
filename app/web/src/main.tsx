@@ -12,6 +12,7 @@ import { checkText } from './core/claims'
 import { effectiveObs } from './core/evidence'
 import { localTime } from './core/time'
 import { RenderView } from './render'
+import { useImages } from './core/images'
 import { qaDeck, qaSlide } from './core/design/qa'
 import { planSlide } from './core/design/planner'
 import { DataPanel, EvidencePanel, ExportDialog, TasksPanel } from './panels'
@@ -92,6 +93,8 @@ function Workspace({ store }: { store: Store }) {
     return () => clearInterval(t)
   }, [])
   const thumbs = useMemo(() => slides.map((s) => render(store.deck, s.index, 150, store.metrics)), [store.revision, slides.length])
+  // pictures (inserted images, picture fills and backgrounds) for the canvas and the slide rail
+  const images = useImages(useMemo(() => [slide, ...thumbs], [slide, thumbs]))
   const ig = useMemo(() => integrity(store.deck, store.project, store.sidecar), [store.revision])
   const say = (m: string) => { setNotice(m); setTimeout(() => setNotice((n) => (n === m ? null : n)), 4000) }
   // a visual allowed with a warning returns its warnings instead of applying: the user reads them and may "Use anyway"
@@ -259,12 +262,12 @@ function Workspace({ store }: { store: Store }) {
         <aside className="rail" aria-label="Slides">{thumbs.map((t, i) => (
           <div key={slides[i]!.id} className={'thumb-row' + (i === index ? ' current' : '')} data-slide={slides[i]!.id} onClick={() => { setCur(i); store.select([]) }}>
             <span className="no">{i + 1}</span>
-            <div className="thumb"><div className="thumb-canvas" style={{ transform: `scale(${136 / t.widthPx})` }}><SlideCanvas slide={t} selectedIds={[]} images={new Map()} zoom={1} onSelect={() => {}} onEditText={() => {}} onTransform={() => {}} onEditTableCell={() => {}} onContextMenu={() => {}} onTableColResize={() => {}} /></div></div>
+            <div className="thumb"><div className="thumb-canvas" style={{ transform: `scale(${136 / t.widthPx})` }}><SlideCanvas slide={t} selectedIds={[]} images={images} zoom={1} onSelect={() => {}} onEditText={() => {}} onTransform={() => {}} onEditTableCell={() => {}} onContextMenu={() => {}} onTableColResize={() => {}} /></div></div>
           </div>))}</aside>
         <section className="stage" ref={stageRef}>
           {notice && <div className="notice" role="status">{notice}</div>}
           <div className="sheet" style={{ width: fit, height: (fit * 9) / 16 }}>
-            <SlideCanvas slide={slide} selectedIds={sourceIdsFor(slide, store.selection)} images={new Map()} zoom={1}
+            <SlideCanvas slide={slide} selectedIds={sourceIdsFor(slide, store.selection)} images={images} zoom={1}
               onSelect={onSelect} onEditText={onEditText} onTransform={onTransform} onTransformMulti={onTransformMulti} onEditTableCell={onEditTableCell}
               onContextMenu={() => {}} onTableColResize={() => {}} onMarqueeSelect={(ids) => store.select(ids.map(durable).filter(Boolean) as string[])}
               enteredGroupId={enteredSource} onEnterGroup={(g, c) => { setEntered(durable(g)); store.select(c ? [durable(c)!].filter(Boolean) : []) }}

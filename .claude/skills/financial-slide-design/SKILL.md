@@ -1,66 +1,46 @@
 ---
 name: financial-slide-design
-description: Design or redesign financial and economic research slides in this project (financial-research-to-report) to a consulting-report standard, from verified evidence, as editable native objects. Use when asked to create a new slide or deck section, make a slide look professional or like a research-house deck, redesign a slide, or add agenda/section-divider slides. Do not use for text edits, number or data changes, chart-type switches, small moves, or questions about the evidence.
+description: Design or redesign financial and economic research slides in this project (financial-research-to-report) to a consulting-report standard, from verified evidence, as editable native objects. Use when asked to create a new slide or deck section, make a slide look professional or like a research-house deck, redesign a slide, or add summary, agenda or divider slides. Do not use for text edits, number or data changes, chart-type switches, small moves, or questions about the evidence.
 ---
 
 # Financial slide design
 
-Turns a slide request into an evidence-bound, editable slide by choosing a **recipe** (a layout pattern abstracted from
-professional research decks, `app/web/src/core/design/recipes.json`) and building it with the project's own engine
-(compositions, designed charts, the institutional visual language). Nothing is copied from reference decks.
+This Skill builds slides from **recipes** (`app/web/src/core/design/recipes.json`) with the project's own engine. Design knowledge is a catalog of deduplicated **principles** (`knowledge/principles.json`), drawn from curated references, with an honest status for each:
+- **principle:** documented;
+- **recipe:** structured;
+- **renderable:** the engine draws it;
+- **tested:** verified by an automated test.
 
-## When to use it, and when not to
-- **Use:** new slides or sections; "make this look like a consulting deck"; redesigning a slide; agenda and divider slides.
-- **Bypass** (use the ordinary tools, zero extra cost): text edits, number or data changes, chart-type switches, moving or resizing, evidence questions.
+Load only what the slide needs.
 
-## Procedure
-1. **Interpret.** Message, audience, the data available (verified datasets only), language, and the slide's role (content, agenda or divider). Never invent a figure: every number on a slide must come from the Evidence Core through the planner's Writer.
-2. **Storyline** (multi-slide requests only). Order the slides (situation, complication, implication). Give each one action title: a conclusion in 16 words or fewer, stating a direction or a rank that the data support.
-3. **Classify the need** into a request: `purpose` (trend, comparison, kpi, summary, framework, …), `chart`, `table`, `kpis`, `panels`, `chars`, `kind` (content, agenda, divider).
-4. **Retrieve.** One call returns up to 3 recipes and, when the private library is configured, up to 3 reference layouts (about 500 tokens):
+## Workflow
+1. **Purpose and content.** Work out the message, the verified data available, and the slide's role (summary, content, agenda, divider). Never invent a figure.
+2. **Retrieve.** One call returns the recipes, the principles that apply (short form) and up to three private references:
    ```bash
-   cd app/server && ../../.venv/bin/python -m design_library.retrieve suggest '{"purpose":["trend"],"chart":true,"kpis":1}'
+   cd app/server && ../../.venv/bin/python -m design_library.retrieve suggest '{"purpose":["trend"],"chart":true}'
    ```
-   - `FRR_DESIGN_LIBRARY` names the private library; without it you get recipes only.
-   - To see one reference in detail: `retrieve load <id>` (about 500 tokens).
-   - Look at **at most one** reference image: the `preview` names a contact sheet and a cell in `$FRR_DESIGN_LIBRARY/renders/sheets/` (a 4-column grid of 360×203 cells with 8 px gaps).
-   - Never read whole decks or sheets.
-5. **Choose a recipe** and read its rules in `recipes.json`:
-   - **Gate E** (`columns` layouts, preferred):
-     - `chart-commentary` (R4);
-     - `rank-table` (R5);
-     - `risk-matrix` (R6).
-   - **Earlier:**
-     - `chart-rail` (R1);
-     - `ranked-bars` (R2);
-     - `trend-annotated` (R3);
-     - `agenda` and `divider` (R9).
+   For full principle text: `retrieve principles TY2,CH7`.
+3. **Load the module** for the main element, in `modules/`:
+   - `charts`, `tables`, `layout`, `diagrams`;
+   - `typography`, `assets`, `storytelling`, `qa`.
+   Read one or two, not all. Open a reference image only when its visual detail is needed.
+4. **Compose.** Choose a recipe and a language (`burgundy` by default, `institutional` available). Vary compositions across consecutive slides.
+5. **Generate editable elements:**
+   - **In the app:** `find_layout_references` then `design_slide(recipe=…)`.
+   - **In code:** a brief in `core/design/proposals.ts` or `editorial.ts`. It computes every statement from data, writes every figure through `Writer`, and throws when the data don't support the sentence.
+6. **Render and inspect.** Run `render_slides.py … brief:<name>:<k>` on an in-memory project copy. QA must have no errors; integrity must pass with no unsourced figures.
+7. **Revise** at most twice, against named defects (`modules/qa.md`).
 
-   Also choose the **language**: `burgundy` (default for new work) or `institutional`.
-   - **Vary compositions** across consecutive slides.
-   - **A new layout is data:** a `columns` composition lists column spans and the slots stacked in each, and objects name their slot. Add a recipe instead of new layout code when the blocks exist (exhibit title, unit, chart, ranked table, figures, commentary with lead-ins, conclusion, matrix).
-6. **Build through the engine, never by hand-placing shapes:**
-   - **In the app:** the agent calls `find_layout_references`, then `design_slide` with `recipe` (and `purpose: agenda|divider` with `section` for navigation). The user previews and applies.
-   - **In code:** a recipe is a composition (`core/design/compose.ts`) plus chart drawing options (`ChartDraw` in `spec.ts`, drawn in `charts.ts`). The Gate E briefs are in `core/design/proposals.ts`. A new brief is an editorial function:
-     - it computes every qualitative statement from the data;
-     - it writes every figure through `Writer`;
-     - it throws when the data don't support its sentence.
-7. **Visual QA.** Render and look once:
-   ```bash
-   cd app/server && ../../.venv/bin/python render_slides.py --base http://127.0.0.1:<port> --project <id> --out <dir> brief:<name>:<k>
-   ```
-   - The JSON next to each PNG lists QA findings. Integrity must be OK; QA must have no errors.
-   - Render on a project **copy** (the render page never saves); never change the production France deck without approval.
-8. **Revise** at most twice, each time against a named defect (overlap, a repeated figure, a weak focal point, a contradiction between headline and chart).
+## Unsupported techniques
+If a principle's status is `principle`, use its `fallback` and say so in the rationale. Don't approximate with pictures: analytical content stays native and bound to evidence.
 
-## Rules that always hold
-- Editability over appearance: native text boxes, shapes and tables; designed charts are groups of named marks bound to their spec. No pictures of charts or text.
-- One focal point per slide; peers quiet; direct labels, not legends; footnote with sources at 8 pt.
-- Navigation slides carry no figures. Their numerals are positions in the deck; integrity exempts them and nothing else.
-- See `references/rules.md` for typography, colour, chart and table conventions, and `references/taxonomy.md` for the request vocabulary.
+## Adding references
+1. Add a record to the private `frr-design-library/knowledge/references.jsonl`: purpose, layout, techniques, and the principle IDs it supports.
+2. Add a new principle only when no existing one covers the lesson. Otherwise link the reference to the existing ID.
 
-## Privacy and licensing
-- The reference decks, contact sheets and catalog are **private**. They live outside the repository (`FRR_DESIGN_LIBRARY`).
-- Never copy reference text, artwork, logos or exact compositions into the repository, a slide or a prompt.
-- Never upload them to an external service.
-- `retrieve` output carries no slide text; keep it that way.
+Nothing else needs reprocessing.
+
+## Privacy
+- Reference decks, images and records stay in the private library (outside the repository).
+- Principles and modules are written in our own words, with no reference text, artwork or brand marks.
+- Web imagery only with the user's approval of source and licence.

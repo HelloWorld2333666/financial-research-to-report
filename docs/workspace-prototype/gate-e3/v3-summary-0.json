@@ -1,0 +1,41 @@
+{
+ "kind": "candidate",
+ "brief": "v3-summary",
+ "cand": 0,
+ "label": "Executive summary on a split background",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "exec-split",
+   "params": {
+    "split": true,
+    "columns": [
+     {
+      "span": 4,
+      "slots": [
+       "art"
+      ]
+     },
+     {
+      "span": 8,
+      "slots": [
+       "matrix",
+       "so"
+      ]
+     }
+    ],
+    "matrix": {
+     "widths": [
+      3.6,
+      1
+     ],
+     "header": false
+    }
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

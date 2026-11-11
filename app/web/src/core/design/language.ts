@@ -24,6 +24,7 @@ export interface Language {
     peerSoft: string // second peer tone
     surface: string // tinted band behind a focus row or note
     surfaceDeep: string // a focus row on a tinted panel
+    rule?: string // exhibit, matrix and conclusion rules (default: ink)
     onDark: string // text on navy
     onDarkMuted: string
   }
@@ -37,7 +38,7 @@ export interface Language {
   frame: { margin: number; top: number; bottom: number; masthead: { height: number; rule: number } | null; chrome?: 'band' | 'rule'
     /** rule chrome: a small tracker above the title (default yes); a rule under the title block (default yes); a tinted last
      *  column as a full-height panel bleeding to the edges, the title kept clear of it, a chevron marker on its border */
-    tracker?: boolean; titleRule?: boolean; panel?: 'full' | 'inset' }
+    tracker?: boolean; titleRule?: boolean; panel?: 'full' | 'inset'; panelMarker?: 'chevron' | 'line' }
   chart: { focusWidth: number; peerWidth: number; gridWidth: number; focusDot: number; peerDot: number; barHeight: number; legend: 'direct' | 'legend' }
 }
 
@@ -81,47 +82,46 @@ export const LANGUAGES: Record<string, Language> = {
     chart: { focusWidth: 3, peerWidth: 1.6, gridWidth: 0.75, focusDot: 4, peerDot: 2.5, barHeight: 0.58, legend: 'direct' },
   },
 }
-// Burgundy (Gate E, revised after review): the consulting-report look on WHITE. Near-black heavy serif titles, bold
-// sans exhibit headers with a dark rule, a full-height light-grey implications panel, large type. Colour roles: black
-// carries text and rules; wine marks the focal data and key figures; a rose tint and neutral greys carry the rest;
-// antique gold is reduced to rare accents. Provisional values (the HKMC reference image was not supplied).
-const wine = '#7A1C33', ink = '#141414'
+// Burgundy institutional (Gate E, revision 3): white pages and warm-ivory fields; deep burgundy only for France's data,
+// key figures and highlights; muted antique gold for hairlines, dividers and borders; near-black in small amounts (titles,
+// figures); warm taupe for peer data (not grey-heavy). Large, deliberate type; no band. Provisional colour values.
+const wine = '#7B1F35', ink = '#1E1A18', antique = '#B09766'
 LANGUAGES.burgundy = {
   id: 'burgundy',
-  name: 'Burgundy institutional (white)',
+  name: 'Burgundy institutional',
   fonts: { display: 'Source Serif 4', displayStrong: 'Source Serif 4', text: 'Inter' },
-  color: { paper: '#FFFFFF', ink, navy: wine, navyDeep: '#4A0F1F', gold: '#A0844F', goldSoft: '#C9A9B0', muted: '#5C5C5C', hair: '#CFCFCF',
-    grid: '#E3E3E3', peer: '#A6A6A6', peerSoft: '#D2D2D2', surface: '#EDEDED', surfaceDeep: '#F4E4E8', onDark: '#FFFFFF', onDarkMuted: '#D9C3C8' },
+  color: { paper: '#FFFFFF', ink, navy: wine, navyDeep: '#561327', gold: antique, goldSoft: '#D8C9A6', muted: '#6E655D', hair: '#E6DDCF',
+    grid: '#EEE8DE', peer: '#B9AEA2', peerSoft: '#DCD3C7', surface: '#F7F2E9', surfaceDeep: '#F4E6E7', onDark: '#FFFFFF', onDarkMuted: '#E6D2D6', rule: antique },
   type: {
-    section: { font: 'Inter', pt: 8, color: '#5C5C5C', bold: true, caps: true, tracking: 140 },
-    kicker: { font: 'Inter', pt: 9, color: wine, bold: true, caps: true, tracking: 120 },
-    headline: { font: 'Source Serif 4', pt: 31, color: ink, bold: true, lineSpacing: 92 },
-    headlineSmall: { font: 'Source Serif 4', pt: 27, color: ink, bold: true, lineSpacing: 92 },
-    standfirst: { font: 'Inter', pt: 15, color: ink, lineSpacing: 115 },
-    label: { font: 'Inter', pt: 9, color: '#5C5C5C', bold: true, caps: true, tracking: 110 },
-    body: { font: 'Inter', pt: 13, color: ink, lineSpacing: 120 },
-    bodySmall: { font: 'Inter', pt: 11.5, color: '#2E2E2E', lineSpacing: 120 },
-    hero: { font: 'Source Serif 4', pt: 50, color: wine, bold: true, lineSpacing: 88 },
-    heroMid: { font: 'Source Serif 4', pt: 38, color: wine, bold: true, lineSpacing: 88 },
-    heroSmall: { font: 'Source Serif 4', pt: 30, color: ink, bold: true, lineSpacing: 90 },
-    caption: { font: 'Inter', pt: 12, color: ink, lineSpacing: 118 },
-    footnote: { font: 'Inter', pt: 8.5, color: '#3A3A3A', lineSpacing: 115 },
-    axis: { font: 'Inter', pt: 11, color: '#3A3A3A' },
-    dataLabel: { font: 'Inter', pt: 12, color: ink, bold: true },
-    chartHeading: { font: 'Inter', pt: 14, color: ink, bold: true, lineSpacing: 112 },
-    navNumber: { font: 'Source Serif 4', pt: 30, color: '#FFFFFF', bold: true, lineSpacing: 90 },
-    navItem: { font: 'Inter', pt: 17, color: '#FFFFFF', bold: true, lineSpacing: 115 },
-    tracker: { font: 'Inter', pt: 8, color: '#5C5C5C', bold: true, caps: true, tracking: 140 },
-    exhibit: { font: 'Inter', pt: 15, color: ink, bold: true, lineSpacing: 112 },
-    unit: { font: 'Inter', pt: 13, color: ink, lineSpacing: 115 },
-    lead: { font: 'Inter', pt: 13.5, color: ink, lineSpacing: 120 },
-    conclusion: { font: 'Inter', pt: 14, color: ink, bold: true, lineSpacing: 118 },
-    cell: { font: 'Inter', pt: 12.5, color: ink, lineSpacing: 118 },
-    cellHead: { font: 'Inter', pt: 12, color: ink, bold: true, lineSpacing: 112 },
+    section: { font: 'Inter', pt: 8.5, color: wine, bold: true, caps: true, tracking: 160 },
+    kicker: { font: 'Inter', pt: 8.5, color: wine, bold: true, caps: true, tracking: 160 },
+    headline: { font: 'Source Serif 4', pt: 30, color: ink, bold: true, lineSpacing: 93 },
+    headlineSmall: { font: 'Source Serif 4', pt: 26, color: ink, bold: true, lineSpacing: 93 },
+    standfirst: { font: 'Inter', pt: 14, color: '#4A433E', lineSpacing: 118 },
+    label: { font: 'Inter', pt: 8.5, color: '#6E655D', bold: true, caps: true, tracking: 120 },
+    body: { font: 'Inter', pt: 12.5, color: ink, lineSpacing: 122 },
+    bodySmall: { font: 'Inter', pt: 11, color: '#3B3532', lineSpacing: 122 },
+    hero: { font: 'Source Serif 4', pt: 48, color: wine, bold: true, lineSpacing: 88 },
+    heroMid: { font: 'Source Serif 4', pt: 36, color: wine, bold: true, lineSpacing: 88 },
+    heroSmall: { font: 'Source Serif 4', pt: 28, color: ink, bold: true, lineSpacing: 90 },
+    caption: { font: 'Inter', pt: 11, color: '#4A433E', lineSpacing: 120 },
+    footnote: { font: 'Inter', pt: 8.5, color: '#6E655D', lineSpacing: 115 },
+    axis: { font: 'Inter', pt: 10.5, color: '#6E655D' },
+    dataLabel: { font: 'Inter', pt: 11.5, color: ink, bold: true },
+    chartHeading: { font: 'Inter', pt: 13.5, color: ink, bold: true, lineSpacing: 112 },
+    navNumber: { font: 'Source Serif 4', pt: 30, color: wine, bold: true, lineSpacing: 90 },
+    navItem: { font: 'Inter', pt: 16, color: ink, bold: true, lineSpacing: 115 },
+    tracker: { font: 'Inter', pt: 8.5, color: wine, bold: true, caps: true, tracking: 170 },
+    exhibit: { font: 'Inter', pt: 14, color: ink, bold: true, lineSpacing: 112 },
+    unit: { font: 'Inter', pt: 11.5, color: '#6E655D', lineSpacing: 115 },
+    lead: { font: 'Inter', pt: 12.5, color: ink, lineSpacing: 124 },
+    conclusion: { font: 'Source Serif 4', pt: 15, color: ink, bold: true, lineSpacing: 115 },
+    cell: { font: 'Inter', pt: 12, color: ink, lineSpacing: 120 },
+    cellHead: { font: 'Inter', pt: 10.5, color: '#6E655D', bold: true, lineSpacing: 112 },
     cellFigure: { font: 'Source Serif 4', pt: 24, color: wine, bold: true, lineSpacing: 92 },
   },
-  frame: { margin: 52, top: 0, bottom: 26, masthead: null, chrome: 'rule', tracker: false, titleRule: false, panel: 'full' },
-  chart: { focusWidth: 3.25, peerWidth: 2, gridWidth: 0.75, focusDot: 4.5, peerDot: 3, barHeight: 0.66, legend: 'direct' },
+  frame: { margin: 56, top: 0, bottom: 26, masthead: null, chrome: 'rule', tracker: true, titleRule: false, panel: 'full', panelMarker: 'line' },
+  chart: { focusWidth: 2.75, peerWidth: 1.5, gridWidth: 0.75, focusDot: 4, peerDot: 2.5, barHeight: 0.6, legend: 'direct' },
 }
 
 export const DEFAULT_LANGUAGE = 'institutional'

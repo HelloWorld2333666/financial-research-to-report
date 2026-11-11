@@ -12,17 +12,8 @@ import { Store } from './core/store'
 import { loadFonts } from './core/fonts'
 import { render, slideList } from './core/deck'
 import { qaSlide } from './core/design/qa'
+import { loadImages } from './core/images'
 import { BRIEFS, composeBrief } from './core/design/briefs'
-
-/** Every image a render tree refers to (pictures, picture fills, pattern images), loaded for the canvas. */
-async function loadImages(trees: any[]): Promise<Map<string, HTMLImageElement>> {
-  const urls = new Set<string>()
-  const walk = (x: any) => { if (!x || typeof x !== 'object') return; for (const [k, v] of Object.entries(x)) { if (typeof v === 'string' && (k === 'dataUrl' || k === 'image') && /^(data:image|blob:)/.test(v)) urls.add(v); else if (typeof v === 'object') walk(v) } }
-  trees.forEach(walk)
-  const out = new Map<string, HTMLImageElement>()
-  await Promise.all([...urls].map((u) => new Promise<void>((res) => { const im = new Image(); im.onload = () => { out.set(u, im); res() }; im.onerror = () => res(); im.src = u })))
-  return out
-}
 
 function b64(bytes: Uint8Array) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s) }
 
@@ -110,6 +101,7 @@ export function RenderView() {
       }
       const out = render(s.deck, index, 1280, s.metrics)
       meta.qa = qaSlide(s, index, s.metrics).map((f) => `${f.level}:${f.code}: ${f.message}`)
+      setImages(await loadImages([out]))
       setSlide(out)
       setTimeout(() => { const pre = document.createElement('pre'); pre.id = 'render'; pre.hidden = true; pre.textContent = JSON.stringify(meta); document.body.appendChild(pre) }, 600)
     })().catch((e) => { setError(String(e?.message ?? e)); const pre = document.createElement('pre'); pre.id = 'render'; pre.hidden = true; pre.textContent = JSON.stringify({ error: String(e?.message ?? e) }); document.body.appendChild(pre) })
