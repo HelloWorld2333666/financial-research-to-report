@@ -88,8 +88,12 @@ export function debtTrend(p: Project, focus = 'FR', peers = ['DE', 'IT']): Desig
 }
 
 // ------------------------------------------------------------------ 2. fiscal balance: France's position among seven countries
-export function balanceRank(p: Project, focus = 'FR'): DesignCandidate[] {
-  const all = Object.values(p.datasets).filter((d) => d.metric === 'deficit').map((d) => d.id), F = ds(focus, 'deficit'), fe = entityOf(p, F), n = all.length
+export function balanceRank(p: Project, focus = 'FR', peers?: string[]): DesignCandidate[] {
+  const F = ds(focus, 'deficit')
+  // the countries ranked: the requested peers with the focus, or every country with a deficit series
+  const all = peers?.length ? [F, ...peers.map((g) => ds(g, 'deficit')).filter((d) => d !== F && p.datasets[d])] : Object.values(p.datasets).filter((d) => d.metric === 'deficit').map((d) => d.id)
+  if (!p.datasets[F] || all.length < 2) throw new Error('a ranking needs the focus country and a peer with deficit data')
+  const fe = entityOf(p, F), n = all.length
   const at = commonLatest(p, all)!, prev = String(Number(at) - 1)
   const asc = ranked(p, all, at, 'asc'), rank = asc.findIndex((x) => x.ds === F) + 1, worst = asc[0]!.ds, best = asc[asc.length - 1]!.ds
   const allDeficit = asc.every((x) => x.v < 0)

@@ -37,7 +37,7 @@ export interface DesignRequest {
 }
 export interface DesignCandidate { label: string; design: SlideDesign; problems: string[] }
 /** Bumped when planning rules change, so saved chat cards re-plan instead of showing a plan made under older rules. */
-export const PLAN_VERSION = 3
+export const PLAN_VERSION = 4
 export interface PlanResult { candidates: DesignCandidate[]; inputs: { dataset: string; entity: string; unit: string; source: string }[]; notes: string[]; error?: string }
 
 const NOUN: Record<string, string> = { debt: 'government debt', deficit: 'government balance', interest: 'interest spending', yield: '10-year bond yield', growth: 'real GDP growth' }
@@ -237,7 +237,7 @@ function editorial(p: Project, req: DesignRequest, notes: string[]): DesignCandi
     const c = req.purpose === 'agenda' || req.purpose === 'divider' ? navigation(p, req.purpose, req.section ?? 0, sections)
       : req.purpose === 'trend' && (req.metric ?? 'debt') === 'debt' ? debtTrend(p, focus, peers.length ? peers : undefined)
       : req.purpose === 'trend' && req.metric === 'deficit' ? balanceTrend(p, focus, peers.length ? peers : undefined)
-      : req.purpose === 'comparison' && (req.metric ?? 'deficit') === 'deficit' && !req.peers?.length ? balanceRank(p, focus)
+      : req.purpose === 'comparison' && (req.metric ?? 'deficit') === 'deficit' ? balanceRank(p, focus, peers.length ? peers : undefined)
       : req.purpose === 'risk' ? riskNarrative(p, focus, peers[0] ?? 'DE') : []
     if (c.length && req.claim?.trim()) notes.push(`The proposed wording "${req.claim.trim()}" was not used: these compositions state only directions, ranks and figures computed from the data.`)
     return c.filter((x) => !x.problems.length).length ? c : []
@@ -255,8 +255,12 @@ export function planSlide(p: Project, req: DesignRequest): PlanResult {
     // the data don't fit an editorial brief (another metric, a comparison with surpluses, missing peers)
     let c: DesignCandidate[] = req.standard ? [] : editorial(p, req, notes)
     if (!c.length && (req.purpose === 'agenda' || req.purpose === 'divider')) return { candidates: [], inputs: [], notes, error: notes[0] ?? 'navigation slides need sections' }
-    if (req.recipe) c = [...c.filter((x) => x.design.layout.composition?.recipe === req.recipe), ...c.filter((x) => x.design.layout.composition?.recipe !== req.recipe)]
     if (!c.length) c = req.purpose === 'trend' ? planTrend(p, req, notes) : req.purpose === 'comparison' ? planComparison(p, req, notes) : planRisk(p, req, notes)
+    if (req.recipe) {
+      // a recipe the data can't carry is reported, not silently ignored: the user sees why it isn't offered
+      if (c.length && !c.some((x) => x.design.layout.composition?.recipe === req.recipe)) notes.push(`No "${req.recipe}" design fits this data${req.recipe === 'trend-annotated' ? ' (it needs a period or an extreme that is not the latest value)' : ''}; the closest designs follow.`)
+      c = [...c.filter((x) => x.design.layout.composition?.recipe === req.recipe), ...c.filter((x) => x.design.layout.composition?.recipe !== req.recipe)]
+    }
     if (req.family) c = [...c.filter((x) => x.design.layout.family === req.family), ...c.filter((x) => x.design.layout.family !== req.family)]
     // every dataset the slide shows (charts, tables) or cites (figures in its text, through evidence and derivations)
     const idx = evidenceIndex(p), dss = new Set(c.flatMap((x) => x.design.objects.flatMap((o) => (o.kind === 'viz' ? o.viz.view.datasets : o.kind === 'table' ? o.table.datasets : []))))

@@ -10,6 +10,7 @@ import { findEl, slideList, textOf } from './deck'
 import { BUNDLE_SCHEMA, type Project } from './types'
 import { balanceRank, balanceTrend, debtTrend, navigation } from './design/editorial'
 import { qaSlide } from './design/qa'
+import { planSlide } from './design/planner'
 import { designTexts, validateDesign, type CompositionKind } from './design/spec'
 import { figures } from './evidence'
 
@@ -105,5 +106,24 @@ describe('Gate C slides in the deck', () => {
     const r = s.exec({ kind: 'text.set', id, text: '02: 5.1%' }, { actor: 'user' })
     expect(r.ok, r.error).toBe(true)
     expect(integrity(s.deck, s.project, s.sidecar).unsourced).toBeGreaterThan(0)
+  })
+})
+
+describe('Gate D fixes: what the local model actually sent', () => {
+  it('a ranking with an explicit peer list gets the editorial designs, the requested recipe first', () => {
+    const p = seven(P())
+    const r = planSlide(p, { purpose: 'comparison', metric: 'deficit', focus: 'FR', peers: ['AT', 'BE', 'DE', 'ES', 'IT', 'NL'], recipe: 'ranked-bars' })
+    expect(r.error).toBeUndefined()
+    expect(r.candidates[0]!.design.layout.composition?.recipe).toBe('ranked-bars')
+    expect(r.candidates.every((c) => c.design.layout.family === 'composed')).toBe(true)
+  })
+  it('a recipe the data cannot carry is reported, and the closest designs still follow', () => {
+    const r = planSlide(seven(P()), { purpose: 'trend', metric: 'debt', focus: 'FR', peers: ['DE', 'IT'], recipe: 'trend-annotated' })
+    expect(r.notes.join(' ')).toMatch(/No "trend-annotated" design fits this data/)
+    expect(r.candidates.length).toBeGreaterThan(0)
+  })
+  it('a deficit trend request reaches the R3 brief', () => {
+    const r = planSlide(P(), { purpose: 'trend', metric: 'deficit', focus: 'FR', peers: ['DE'], recipe: 'trend-annotated' })
+    expect(r.candidates[0]!.design.layout.composition?.recipe).toBe('trend-annotated')
   })
 })

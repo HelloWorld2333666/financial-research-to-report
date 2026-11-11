@@ -573,10 +573,18 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
         if purpose in ("agenda", "divider"):
             req = {"purpose": purpose, "section": max(0, int(section)), **({"recipe": recipe} if recipe else {})}
             return {"kind": "design_request", "request": req, "slide": None,
-                    "summary": f"Plan a {purpose} slide (section {int(section) + 1}). Navigation slides carry no figures. Preview and apply. Nothing has changed yet."}
+                    "summary": f"Plan {'an agenda' if purpose == 'agenda' else 'a divider'} slide (section {int(section) + 1}). Navigation slides carry no figures. Preview and apply. Nothing has changed yet."}
         dsets = project["datasets"]
         f = (focus or "FR").upper()[:2]
-        m = (metric or ("" if redesign else {"trend": "debt", "comparison": "deficit", "risk": ""}[purpose])).lower().strip()
+        m = (metric or "").lower().strip()
+        if not m and not redesign and purpose in ("trend", "comparison"):
+            # never guess the metric silently: take it from the model's own wording, or ask for it
+            said = f"{message} {objective}".lower()
+            found = [k for k, words in (("deficit", ("deficit", "balance", "fiscal")), ("debt", ("debt",)), ("yield", ("yield", "spread", "bond")),
+                                        ("interest", ("interest",)), ("growth", ("growth", "gdp growth"))) if any(w in said for w in words)]
+            if len(found) != 1:
+                return {"kind": "error", "message": "Say which metric the slide is about: metric = debt, deficit, interest, growth or yield."}
+            m = found[0]
         geos = research_scope(peers, "FR", None)[0] if peers else []
         if purpose in ("trend", "comparison") and m:
             have = [g for g in sorted({d["geo"] for d in dsets.values() if d["metric"] == m})]
