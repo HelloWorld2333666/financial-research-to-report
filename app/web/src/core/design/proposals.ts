@@ -51,11 +51,11 @@ export function debtCommentary(p: Project, focus = 'FR', peers = ['DE', 'IT'], l
   const objs: DesignObject[] = [
     T('section', 'section', { text: `${fe} · Sovereign debt` }),
     T('headline', 'headline', { text: headline }),
-    T('standfirst', 'standfirst', { text: `General government gross debt, ${a}–${b}: ${fe} against ${list(P.map((d) => entityOf(p, d)))}` }),
+    T('standfirst', 'standfirst', { text: `General government gross debt, ${a}–${b}` }),
     T('ex', 'exhibit', { text: onlyRiser ? `${fe} is the only one of the ${words[all.length]} whose debt ratio rose` : `Debt ratios, ${a}–${b}` }, { slot: 'exhibit' }),
     T('ex-unit', 'unit', { text: `Gross government debt, % of GDP; bracket: gap to ${pe}, percentage points` }, { slot: 'exhibit' }),
     { id: 'chart', kind: 'viz', role: 'primary', viz: spec(p, 'trend', 'line', all, { title: 'Gross government debt, % of GDP' }), emphasis: F, slot: 'chart', draw: { annotate: 'gap', reference: ref } },
-    T('side', 'exhibit', { text: 'What the data show' }, { slot: 'side' }),
+    T('side', 'exhibit', { text: `Key observations for ${fe}` }, { slot: 'side' }),
     T('c1', 'lead', lead(w.text(`Debt went from ${w.num(F, a)} to ${w.num(F, b)} of GDP, ${w.change(F, a, b)} since ${a}.`), dir(F) > 0 ? `${fe} rose.` : `${fe} eased.`), { slot: 'notes' }),
     // peers' figures in charcoal: burgundy is kept for the focus country
     T('c2', 'lead', lead(w.text(P.map((d) => `${entityOf(p, d)} ${w.change(d, a, b)} to ${w.num(d, b)}`).join('; ') + '.'), P.every((d) => dir(d) < 0) ? 'Peers fell.' : 'Peers moved.'), { slot: 'notes', accent: 'ink' }),
@@ -64,7 +64,7 @@ export function debtCommentary(p: Project, focus = 'FR', peers = ['DE', 'IT'], l
     T('source', 'source', { text: sourceLine(p, all) }),
   ]
   return make(p, 'Chart with a commentary column (burgundy)', `Show how ${poss(fe)} debt developed against its peers`, { text: headline },
-    { kind: 'columns', recipe: 'chart-commentary', params: { columns: [{ span: 7, slots: ['exhibit', 'chart'] }, { span: 5, slots: ['side', 'notes', 'so'] }] } }, objs,
+    { kind: 'columns', recipe: 'chart-commentary', params: { columns: [{ span: 8, slots: ['exhibit', 'chart'] }, { span: 4, slots: ['side', 'notes', 'so'], tint: true }] } }, objs,
     ['Reference principle: the exhibit is titled with its finding, and the chart takes the larger column at legible type sizes',
       'Commentary column: three blocks with bold lead-ins, one fact each, separated by hairlines; the "so what" under a heavier rule',
       'Colour hierarchy: titles and text in charcoal; burgundy only for France\'s line and figures; gold for the gap brackets'], w, language)
@@ -85,7 +85,7 @@ export function balanceTable(p: Project, focus = 'FR', language = 'burgundy'): D
   const objs: DesignObject[] = [
     T('section', 'section', { text: `${fe} · Fiscal position` }),
     T('headline', 'headline', { text: headline }),
-    T('standfirst', 'standfirst', { text: `General government balance, % of GDP, ${prev} and ${at}, ranked from the largest deficit` }),
+    T('standfirst', 'standfirst', { text: `General government balance, ${prev} and ${at}` }),
     T('ex', 'exhibit', { text: larger.length ? `Only ${list(larger)} ran a larger deficit than ${fe}` : `${fe} ran the largest deficit` }, { slot: 'exhibit' }),
     T('ex-unit', 'unit', { text: `Government balance, % of GDP; change in percentage points (▼ wider deficit)` }, { slot: 'exhibit' }),
     { id: 'table', kind: 'viz', role: 'primary', viz: bell, emphasis: F, slot: 'table', draw: { form: 'rankTable' } },
@@ -122,7 +122,6 @@ export function riskMatrix(p: Project, focus = 'FR', peer = 'DE', language = 'bu
   const objs: DesignObject[] = [
     T('section', 'section', { text: `${fe} · Credit risk` }),
     T('headline', 'headline', { text: weaker.length === rows.length ? `${fe} is weaker than ${pe} on all ${words[rows.length]} credit measures` : `${fe} is weaker than ${pe} on ${words[weaker.length]} of ${words[rows.length]} credit measures` }),
-    T('standfirst', 'standfirst', { text: `Debt, deficit, funding cost and interest burden, ${at}, with ${pe} as the reference peer` }),
     T('ex', 'exhibit', { text: `${worsened.length === rows.length ? 'Every measure' : `${cap(words[worsened.length]!)} of ${words[rows.length]} measures`} moved against ${fe} since ${a}` }, { slot: 'exhibit' }),
     T('ex-unit', 'unit', { text: `Latest values, the gap to ${pe} (percentage points; basis points for the yield) and the change since ${a}` }, { slot: 'exhibit' }),
     ...head.map((h, c) => T(`h${c}`, 'cell', { text: h }, { slot: 'matrix', cell: { r: 0, c } })),

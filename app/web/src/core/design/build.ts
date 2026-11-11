@@ -124,7 +124,7 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
   for (const x of L.decor) out.push(x.kind === 'badge'
     // a numbered badge: a native circle with its numeral (a position on the slide, not a figure)
     ? { key: `decor:${x.id}`, kind: 'decor', box: x.box, bind: (slide) => ({ kind: 'decor', slide }),
-        create: { op: 'addElement', kind: 'ellipse', offset: box(x.box), fill: x.fill ?? c.navy, paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: 10.5, bold: true, color: c.onDark, fontFamily: V.fonts.text }], align: 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 'ctr' } } as any }
+        create: { op: 'addElement', kind: 'ellipse', offset: box(x.box), fill: x.fill ?? c.navy, paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: x.pt ?? 10.5, bold: true, color: c.onDark, fontFamily: V.fonts.text }], align: 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 'ctr' } } as any }
     : { key: `decor:${x.id}`, kind: 'decor', box: x.box, create: { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }, bind: (slide) => ({ kind: 'decor', slide }) })
   for (const o of d.objects) if (o.kind === 'shape' && L.boxes[o.id]) {
     const fill = o.role === 'panel' ? c.navyDeep : o.role === 'masthead' ? c.navy : c.gold

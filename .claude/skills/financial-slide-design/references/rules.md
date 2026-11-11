@@ -2,12 +2,13 @@
 
 ## Principles from the reference reports (Gate E)
 These are why professional research slides read as designed and Gate D's did not. Apply them before choosing colours.
-1. **Light frame:**
-   - no masthead band;
-   - a small tracker above a large serif action title;
-   - one charcoal hairline under the title block;
+1. **White, light frame** (revised after review: no ivory or beige backgrounds):
+   - a white page;
+   - a black, heavy serif action title (about 31 pt);
+   - a short subtitle in regular sans;
+   - no band and no tracker;
    - the source at the foot.
-   The content gets the space.
+   A full-height light-grey implications panel may take the right third, the title kept clear of it, with a primary-colour chevron marker on its border.
 2. **Exhibits carry their own findings.** Each exhibit has a bold title stating what it shows ("Only Belgium ran a larger deficit than France"), a unit line (measure, unit, period), and a hairline before the evidence.
 3. **Evidence and commentary sit side by side:**
    - a chart or table in the wider column;
@@ -23,18 +24,18 @@ These are why professional research slides read as designed and Gate D's did not
    - numbered badges on rows;
    - focus and reference side by side;
    - the gap, the change, a sparkline and a computed reading.
-6. **Larger, fewer elements:** title 28 pt, text 11.5–12 pt, axis labels 9.5–10 pt, sources 8 pt. Density comes from more information per element, not more elements.
+6. **Larger, fewer elements:** title about 31 pt, exhibit headers 15 pt bold, text 13–13.5 pt, axis labels 11 pt, values 12 pt (inside bars where they fit), sources 8.5 pt. Density comes from more information per element, not more elements.
 7. **Variety inside one frame:** consecutive slides use different compositions (commentary, ranked table, matrix) while the frame, type and colour roles stay constant.
 
 ## Colour roles (any language)
-- **Text:** titles and body in the ink colour (charcoal), never the primary.
+- **Text:** titles and body in black, never the primary; rules under exhibit headers in black.
 - **Primary colour** (wine in `burgundy`, navy in `institutional`): only the focal data. That is:
   - the focus series, row and bar;
   - the lead figures;
   - badges;
   - divider fields.
-- **Accent** (antique gold): rules, brackets, callout leaders, and at most one highlight per slide.
-- **Context:** peers and secondary data in warm greys; peers' figures in charcoal.
+- **Accent** (antique gold): rare, at most one highlight per slide. Rules are black or neutral grey.
+- **Context:** peers and secondary data in neutral greys (not warm or beige); peers' figures in black.
 - **Styles:** `burgundy` (title-rule frame) and `institutional` (masthead band) are switchable languages in `core/design/language.ts`. A new style is a new language entry, not new code.
 
 ## Titles and text

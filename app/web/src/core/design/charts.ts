@@ -187,8 +187,8 @@ function rankTable(g: G): Mark[] {
   const order = pr.categories.map((_, i) => i).sort((a, b) => (B.values[a] ?? Infinity) - (B.values[b] ?? Infinity))
   const tp = L.type.cell.pt, hp = L.type.cellHead.pt, vp = L.type.dataLabel.pt, ink = L.color.ink
   const u = unitShort(pr.unit), du = deltaUnit(pr.unit)
-  const rankW = 26, nameW = Math.max(...pr.categories.map((c) => lw(c, tp, c === focusName))) + 16, prevW = Math.max(lw(A.name, hp, true), 58) + 14, chgW = Math.max(lw('Change', hp, true), 66) + 8
-  const barX0 = rankW + nameW, barX1 = W - prevW - chgW - 12, head = 28, rowH = (H - head) / n, barH = Math.min(22, rowH * L.chart.barHeight)
+  const rankW = 26, nameW = Math.max(...pr.categories.map((c) => lw(c, tp, c === focusName))) + 16, prevW = Math.max(lw(A.name, hp, true), 58) + 14, chgW = Math.max(lw('Change', hp, true), 78) + 22
+  const barX0 = rankW + nameW, barX1 = W - prevW - chgW - 12, head = 30, rowH = (H - head) / n, barH = Math.min(32, rowH * L.chart.barHeight)
   const valW = Math.max(...B.values.map((v, i) => (v == null ? 0 : lw(`${fmt(p, v, B.cells[i]!)}${u}`, vp, true)))) + 12
   const neg = B.values.some((v) => v != null && v < 0), pos = B.values.some((v) => v != null && v > 0)
   const d = domain(B.values, true, 0.02), sx = scale(d[0], d[1], barX0 + (neg ? valW : 0), barX1 - (pos ? valW : 0)), z = sx(0)
@@ -204,7 +204,10 @@ function rankTable(g: G): Mark[] {
     if (b != null) {
       const x0 = Math.min(z, sx(b)), x1 = Math.max(z, sx(b)), t = `${fmt(p, b, B.cells[i]!)}${u}`, w = lw(t, vp, isF) + 2
       out.push(rect(markName(1, i, b), { x: x0, y: yc - barH / 2, w: Math.max(1, x1 - x0), h: barH }, isF ? L.color.navy : L.color.peerSoft, `${c}, ${B.name}: ${t}`))
-      out.push(text(`frr-label 1 ${i}`, b < 0 ? { x: x0 - 8 - w, y: yc - 8, w, h: 16 } : { x: x1 + 8, y: yc - 8, w, h: 16 }, t, vp, isF ? L.color.navy : ink, { bold: isF, align: b < 0 ? 'r' : 'l', font: L.type.dataLabel.font }))
+      // the value inside the bar at its outer end when it fits (white on the focus bar), else just outside it
+      const inside = x1 - x0 > w + 18
+      out.push(text(`frr-label 1 ${i}`, inside ? (b < 0 ? { x: x0 + 9, y: yc - 9, w, h: 18 } : { x: x1 - 9 - w, y: yc - 9, w, h: 18 }) : (b < 0 ? { x: x0 - 8 - w, y: yc - 9, w, h: 18 } : { x: x1 + 8, y: yc - 9, w, h: 18 }),
+        t, vp, inside && isF ? '#FFFFFF' : ink, { bold: true, align: inside ? (b < 0 ? 'l' : 'r') : (b < 0 ? 'r' : 'l'), font: L.type.dataLabel.font }))
     } else out.push(axisText(g, `frr-gap 1 ${i}`, { x: barX0, y: yc - 7, w: 80, h: 14 }, 'no value'))
     if (a != null) out.push({ ...text(markName(0, i, a), { x: barX1 + 12, y: yc - 9, w: prevW, h: 18 }, `${fmt(p, a, A.cells[i]!)}${u}`, tp, L.color.muted, { align: 'r', font: L.type.cell.font }) } as Mark)
     if (a != null && b != null) {

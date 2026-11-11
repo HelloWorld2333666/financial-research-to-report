@@ -32,5 +32,7 @@
   }
  },
  "candidates": 1,
- "qa": []
+ "qa": [
+  "warning:near_miss_alignment: 9 near-miss alignment(s): right edges 4 px apart; right edges 8 px apart"
+ ]
 }

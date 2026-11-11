@@ -1,4 +1,12 @@
-# Gate E (first step): reference-led redesign of three France slides, burgundy and gold
+# Gate E (first step): reference-led redesign of three France slides, burgundy
+
+**Revision 2 (2026-11-12), after your review and the 20 reference slides you sent.** The ivory paper, beige panels, charcoal serif titles and title rule are replaced:
+- **Page and type:** a white page; black, heavy serif titles (Source Serif 4 Bold, 31 pt) with a short subtitle; bold 15 pt exhibit headers over a black rule; 13–13.5 pt text.
+- **Panel:** a full-height light-grey implications panel with a wine chevron marker on its border.
+- **Charts:** values inside the bars.
+- **Colour:** neutral greys instead of warm ones, wine only for France's data and the lead figures, and gold reduced to a rare accent.
+
+The tables below describe revision 1 where they differ. The palette in `gate-e/palette.png` is the revised one.
 
 **Branch:** `feature/workspace-v2`, local commit only. **Date:** 2026-11-11.
 **Status:** three proposals for your visual review. Nothing in the France deck or the chat flow was changed.

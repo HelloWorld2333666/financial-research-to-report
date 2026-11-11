@@ -60,7 +60,8 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
   const section = one((o) => o.kind === 'text' && o.role === 'section')
   const ruled = L.frame.chrome === 'rule'
   // band chrome: the section label sits in the masthead; rule chrome: a small tracker above the title
-  if (section) setText(section, ruled ? 'tracker' : 'section', M, ruled ? 24 : Math.round((mh - px(L.type.section.pt) * 1.2) / 2), cols(9))
+  const showTracker = !ruled || L.frame.tracker !== false
+  if (section && showTracker) setText(section, ruled ? 'tracker' : 'section', M, ruled ? 24 : Math.round((mh - px(L.type.section.pt) * 1.2) / 2), cols(9))
   const source = one((o) => o.kind === 'text' && o.role === 'source')
   let footTop = H - L.frame.bottom
   if (source) {
@@ -70,7 +71,7 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     rule('foot-line', { x: M, y: footTop - 10, w: W - 2 * M, h: 0.75 }, L.color.hair)
     footTop -= 10
   }
-  const top0 = mh + (L.frame.masthead ? 34 : 48)
+  const top0 = mh + (L.frame.masthead ? 34 : ruled && L.frame.tracker === false ? 34 : 48)
 
   const headline = one((o) => o.kind === 'text' && o.role === 'headline')!
   const stand = one((o) => o.kind === 'text' && o.role === 'standfirst')
@@ -195,27 +196,35 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     // Gate E: columns of stacked blocks. Text blocks are measured in their own typefaces; charts and matrices share the
     // height that is left. Exhibit titles get a hairline under them (after their unit line); commentary blocks are
     // separated by hairlines; the conclusion sits under a heavier rule. The layout is the composition's params.
-    let y = header(M, top0, cols(11), 2, cols(10)) + 14
-    rule('title-rule', { x: M, y, w: W - 2 * M, h: 0.75 }, L.color.ink)
-    const y0 = y + 22, bottom = footTop - 12
     const columns = P.columns?.length ? P.columns : [{ span: 12, slots: [...new Set(d.objects.map((o) => (o as any).slot).filter(Boolean))] as string[] }]
+    // a tinted last column in a 'full' panel language: a grey panel from the top of the slide to the bottom, bleeding to
+    // the right edge; the title block keeps clear of it (the reference reports' implications panel)
+    const lastCol = columns[columns.length - 1]!, fullPanel = !!lastCol.tint && L.frame.panel === 'full' && columns.length > 1
+    const panelX = M + columns.slice(0, -1).reduce((a, c) => a + cols(c.span) + G, 0) - 30
+    const headW = fullPanel ? panelX - M - 36 : W - 2 * M
+    let y = header(M, top0, headW, fullPanel ? 3 : 2, fullPanel ? headW : cols(10)) + 14
+    if (L.frame.titleRule !== false) rule('title-rule', { x: M, y, w: W - 2 * M, h: 0.75 }, L.color.ink)
+    const y0 = y + (L.frame.titleRule !== false ? 22 : 26), bottom = footTop - 12
     let x = M
     const roleOf = (o: DesignObject): keyof Language['type'] => o.kind !== 'text' ? 'body'
       : o.role === 'exhibit' ? 'exhibit' : o.role === 'unit' ? 'unit' : o.role === 'lead' ? 'lead' : o.role === 'conclusion' ? 'conclusion' : o.role === 'label' ? 'label' : o.role === 'note' ? 'bodySmall' : 'body'
     const GAP = 16
     for (const col of columns) {
-      const w = cols(col.span), cx = x
+      const w = cols(col.span), cx = x, last = col === columns[columns.length - 1]
       x += w + G
-      const last = col === columns[columns.length - 1]
       if (col.tint) {
-        decor.push({ id: `col-tint-${cx}`, kind: 'rule', box: { x: cx - 22, y: y0 - 16, w: last ? W - (cx - 22) : w + 44, h: last ? H - (y0 - 16) : bottom - y0 + 28 }, fill: L.color.surface })
+        const full = fullPanel && last, px0 = full ? panelX : cx - 22
+        decor.push({ id: `col-tint-${cx}`, kind: 'rule', box: full ? { x: px0, y: 0, w: W - px0, h: H } : { x: px0, y: y0 - 16, w: last ? W - px0 : w + 44, h: last ? H - (y0 - 16) : bottom - y0 + 28 }, fill: L.color.surface })
+        // the chevron marker on the panel's border, level with the panel's first heading
+        if (full) decor.push({ id: 'panel-marker', kind: 'badge', box: { x: px0 - 21, y: Math.min(y0, top0 + 64) - 6, w: 42, h: 42 }, fill: L.color.navy, text: '»', pt: 17 })
         if (last && source) {
-          const sw = cx - 22 - 24 - M, h = height(textOf(source), L.type.footnote, sw)
+          const sw = px0 - 24 - M, h = height(textOf(source), L.type.footnote, sw)
           boxes[source.id] = { x: M, y: H - 18 - h, w: sw, h }
           const fl = decor.find((x) => x.id === 'foot-line'); if (fl) fl.box = { x: M, y: H - 18 - h - 10, w: sw, h: 0.75 }
         }
       }
-      const ox = col.tint ? cx : cx, ow = w
+      const beforePanel = fullPanel && columns.indexOf(col) === columns.length - 2
+      const ox = col.tint && fullPanel && last ? panelX + 40 : cx, ow = col.tint && fullPanel && last ? W - M + 12 - (panelX + 40) : beforePanel ? w - 34 : w
       const objs = col.slots.flatMap((sl) => d.objects.filter((o) => (o as any).slot === sl))
       // measure: fixed heights, and which blocks fill
       const isMatrix = (o: DesignObject) => !!(o as any).cell
@@ -241,8 +250,10 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
       const share = fills ? Math.max(60, (bottom - y0 - fixed) / fills) : 0
       if (!fills && y0 + fixed > bottom) notes.push(`column ${cx}: the blocks are taller than the slide`)
       const leads = items.filter((it) => it.o[0]!.kind === 'text' && (it.o[0] as any).role === 'lead').length
-      const spare = fills ? 0 : Math.max(0, bottom - y0 - fixed), extraGap = leads > 1 ? Math.min(64, (spare * 0.8) / (leads - 1)) : 0
-      let cy = y0
+      const spare = fills ? 0 : Math.max(0, bottom - (col.tint && fullPanel && last ? Math.min(y0, top0 + 64) : y0) - fixed), extraGap = leads > 1 ? Math.min(64, (spare * 0.8) / (leads - 1)) : 0
+      // a full-height panel is free of the title block: its content may start higher than the exhibits beside it
+      const top = col.tint && fullPanel && last ? Math.min(y0, top0 + 64) : y0
+      let cy = top
       items.forEach((it, i) => {
         const prev = items[i - 1]?.o[0], o = it.o[0]!
         // hairline between consecutive commentary blocks; heavier rule above the conclusion
@@ -324,7 +335,7 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     if (source) { boxes[source.id] = { ...boxes[source.id]!, w: lw }; const h = height(textOf(source), L.type.footnote, lw); boxes[source.id]!.h = h; boxes[source.id]!.y = H - 18 - h }
     const fl = decor.find((x) => x.id === 'foot-line'); if (fl && source) { fl.box.w = lw; fl.box.y = boxes[source.id]!.y - 10 }
   }
-  for (const o of d.objects) if (!boxes[o.id]) notes.push(`${o.id} has no place in a ${k} composition`)
+  for (const o of d.objects) if (!boxes[o.id] && !(o === section && !showTracker)) notes.push(`${o.id} has no place in a ${k} composition`)
   const content: Box = { x: M, y: top0, w: W - 2 * M, h: footTop - top0 }
   return { boxes, sizes, roles, language: L, decor, notes, ...(background ? { background } : {}), zones: { header: { x: 0, y: 0, w: W, h: top0 }, content, footer: { x: M, y: footTop, w: W - 2 * M, h: H - footTop } } }
 }

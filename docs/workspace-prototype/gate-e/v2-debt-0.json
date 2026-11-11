@@ -12,24 +12,27 @@
    "params": {
     "columns": [
      {
-      "span": 7,
+      "span": 8,
       "slots": [
        "exhibit",
        "chart"
       ]
      },
      {
-      "span": 5,
+      "span": 4,
       "slots": [
        "side",
        "notes",
        "so"
-      ]
+      ],
+      "tint": true
      }
     ]
    }
   }
  },
  "candidates": 1,
- "qa": []
+ "qa": [
+  "warning:near_miss_alignment: 9 near-miss alignment(s): right edges 4 px apart; right edges 8 px apart"
+ ]
 }
