@@ -1,0 +1,738 @@
+{
+ "schema": "frr-design-principles/1",
+ "note": "Design knowledge in our own words, distilled from user-curated references and the private library. Status levels: principle (documented), recipe (structured recipe exists), renderable (the engine draws it), tested (rendered and verified by an automated test). Private reference records link to these ids.",
+ "principles": [
+  {
+   "id": "TY1",
+   "module": "typography",
+   "rule": "Action title: one conclusion sentence (≤16 words) in a heavy serif, at most two lines; it states a direction or rank the data support.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "computed headline text",
+   "status": "tested",
+   "impl": "core/design/proposals.ts, compose.ts header()",
+   "tags": []
+  },
+  {
+   "id": "TY2",
+   "module": "typography",
+   "rule": "Exhibit header: a bold sans finding, the unit and period on the next line in regular weight, then a hairline rule before the evidence.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "exhibit + unit text objects",
+   "status": "tested",
+   "impl": "compose.ts columns (role exhibit/unit)",
+   "tags": []
+  },
+  {
+   "id": "TY3",
+   "module": "typography",
+   "rule": "Type scale for 1280×720: title 30 pt, exhibit 14 pt, body 12.5 pt, axis 10.5 pt, data labels 11.5 pt, sources 8.5 pt; never below 8.5 pt.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "language type roles",
+   "status": "tested",
+   "impl": "language.ts (burgundy)",
+   "tags": []
+  },
+  {
+   "id": "TY4",
+   "module": "typography",
+   "rule": "Key figures in a large serif in the primary colour; supporting figures smaller in near-black; captions in sans.",
+   "purposes": [
+    "kpi",
+    "summary",
+    "trend",
+    "comparison"
+   ],
+   "needs": "kpi objects bound to evidence",
+   "status": "tested",
+   "impl": "compose.ts setFigure, build.ts kpi",
+   "tags": []
+  },
+  {
+   "id": "TY5",
+   "module": "typography",
+   "rule": "Commentary as short blocks that open with a bold lead-in of two to four words; bold only the phrase that carries the point.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "text with lead (words only, validated)",
+   "status": "tested",
+   "impl": "spec.ts DesignText.lead, build.ts",
+   "tags": []
+  },
+  {
+   "id": "TY6",
+   "module": "typography",
+   "rule": "Sequences use large serif numerals (01–04) or numbered circles; outlined circles on light pages, filled on dark.",
+   "purposes": [
+    "summary",
+    "process",
+    "recommendation"
+   ],
+   "needs": "cell badges",
+   "status": "renderable",
+   "impl": "compose.ts matrix badges",
+   "tags": [
+    "numbering"
+   ]
+  },
+  {
+   "id": "TY7",
+   "module": "typography",
+   "rule": "Caveat tags (Illustrative, Not exhaustive, Directional) set small and underlined beside the exhibit header.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "a tag text",
+   "status": "principle",
+   "fallback": "put the caveat in the unit line",
+   "tags": []
+  },
+  {
+   "id": "TY8",
+   "module": "typography",
+   "rule": "Footnote system: superscript markers on labels with numbered notes above the source line.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "footnotes",
+   "status": "principle",
+   "fallback": "write the definition in the unit line",
+   "tags": []
+  },
+  {
+   "id": "CH1",
+   "module": "charts",
+   "rule": "Label directly: series names and latest values at line ends, values at or inside bar ends; no legend when labels can carry it.",
+   "purposes": [
+    "trend",
+    "comparison"
+   ],
+   "needs": "designed chart",
+   "status": "tested",
+   "impl": "charts.ts line/rankBar/rankTable",
+   "tags": []
+  },
+  {
+   "id": "CH2",
+   "module": "charts",
+   "rule": "Highlight in grey: the focus entity in the primary colour, everything else one or two neutral tones; a second highlight tone only with a legend.",
+   "purposes": [
+    "trend",
+    "comparison"
+   ],
+   "needs": "emphasis dataset",
+   "status": "tested",
+   "impl": "charts.ts",
+   "tags": []
+  },
+  {
+   "id": "CH3",
+   "module": "charts",
+   "rule": "Donut with the share written large in serif in its centre; pairs of donuts side by side, each with its own small title.",
+   "purposes": [
+    "kpi",
+    "survey"
+   ],
+   "needs": "a share between 0 and 100 with provenance",
+   "status": "principle",
+   "fallback": "figure with caption; never a donut for non-shares (debt ratios are not shares)",
+   "tags": [
+    "donut"
+   ]
+  },
+  {
+   "id": "CH4",
+   "module": "charts",
+   "rule": "100%-stacked horizontal bars by entity with category flags, segment values inside the segments, legend above in segment order.",
+   "purposes": [
+    "comparison",
+    "survey"
+   ],
+   "needs": "shares that sum to 100 per entity",
+   "status": "principle",
+   "fallback": "grouped bars",
+   "tags": [
+    "stacked"
+   ]
+  },
+  {
+   "id": "CH5",
+   "module": "charts",
+   "rule": "Stacked or grouped columns with totals above the stacks and segment values inside; the highlighted segment in the primary colour.",
+   "purposes": [
+    "comparison",
+    "trend"
+   ],
+   "needs": "components that add to a total",
+   "status": "principle",
+   "fallback": "ranked table with change column",
+   "tags": []
+  },
+  {
+   "id": "CH6",
+   "module": "charts",
+   "rule": "Annotate inside the chart: a shaded period labelled with its years, one computed callout, gap brackets with their values, range arrows.",
+   "purposes": [
+    "trend"
+   ],
+   "needs": "band/callout/gap options",
+   "status": "tested",
+   "impl": "charts.ts line (band, callout, annotate gap)",
+   "tags": []
+  },
+  {
+   "id": "CH7",
+   "module": "charts",
+   "rule": "Two-period increment: the later column drawn on the earlier level with the increment in the primary colour and the change written large above.",
+   "purposes": [
+    "trend",
+    "kpi"
+   ],
+   "needs": "two-period spec for one entity",
+   "status": "tested",
+   "impl": "charts.ts deltaColumns (form 'delta')",
+   "tags": []
+  },
+  {
+   "id": "CH8",
+   "module": "charts",
+   "rule": "Small multiples on one scale in a grid, grouped in labelled rows (e.g. advanced / emerging) with dashed separators; the focus entity's panel larger.",
+   "purposes": [
+    "comparison",
+    "trend"
+   ],
+   "needs": "same metric for several entities",
+   "status": "principle",
+   "fallback": "risk matrix with sparklines",
+   "tags": [
+    "small-multiples"
+   ]
+  },
+  {
+   "id": "CH9",
+   "module": "charts",
+   "rule": "A benchmark bar (average, OECD, peer group) in neutral grey inside a ranked list, labelled as a benchmark.",
+   "purposes": [
+    "comparison"
+   ],
+   "needs": "a benchmark value with provenance (derivation)",
+   "status": "principle",
+   "fallback": "name the benchmark in the exhibit title",
+   "tags": []
+  },
+  {
+   "id": "CH10",
+   "module": "charts",
+   "rule": "Flags beside entity names in rankings and lists; drawn as native shapes, not images.",
+   "purposes": [
+    "comparison"
+   ],
+   "needs": "entity geo codes",
+   "status": "tested",
+   "impl": "charts.ts flag() (rankTable flags, benchList)",
+   "tags": []
+  },
+  {
+   "id": "CH11",
+   "module": "charts",
+   "rule": "Maps carry analysis: choropleth with a stepped legend, or proportional bubbles with value labels ('now (then)'), callout boxes with leader lines and trend icons.",
+   "purposes": [
+    "comparison",
+    "macro"
+   ],
+   "needs": "geo shapes per entity",
+   "status": "principle",
+   "fallback": "ranked table with flags",
+   "tags": [
+    "map"
+   ]
+  },
+  {
+   "id": "CH12",
+   "module": "charts",
+   "rule": "Nested proportional shapes (circles or squares sized by value) compare two growth rates or a part within a whole; the ratio stated large.",
+   "purposes": [
+    "comparison",
+    "kpi"
+   ],
+   "needs": "two comparable magnitudes",
+   "status": "principle",
+   "fallback": "delta columns",
+   "tags": []
+  },
+  {
+   "id": "CH13",
+   "module": "charts",
+   "rule": "Signed changes in pills aligned under the groups they describe, coloured by sign.",
+   "purposes": [
+    "comparison"
+   ],
+   "needs": "changes per group",
+   "status": "principle",
+   "fallback": "change column in a ranked table",
+   "tags": []
+  },
+  {
+   "id": "CH14",
+   "module": "charts",
+   "rule": "Sparklines in table cells share one window (stated in the header) and carry no end labels.",
+   "purposes": [
+    "kpi",
+    "summary"
+   ],
+   "needs": "time series per row",
+   "status": "tested",
+   "impl": "charts.ts line (spark)",
+   "tags": []
+  },
+  {
+   "id": "CH15",
+   "module": "charts",
+   "rule": "Stage-axis area charts (shares across a process, e.g. channels by purchase step) with in-area callouts.",
+   "purposes": [
+    "process"
+   ],
+   "needs": "shares by stage",
+   "status": "principle",
+   "fallback": "stacked bars by stage",
+   "tags": []
+  },
+  {
+   "id": "TB1",
+   "module": "tables",
+   "rule": "Ranked table: rank, flag, entity, an in-cell bar of the latest value with its label, the earlier value and the change; focus row tinted; hairline rows.",
+   "purposes": [
+    "comparison",
+    "detail_table"
+   ],
+   "needs": "two-period spec",
+   "status": "tested",
+   "impl": "charts.ts rankTable (form 'rankTable')",
+   "tags": []
+  },
+  {
+   "id": "TB2",
+   "module": "tables",
+   "rule": "Scorecard matrix: numbered rows per measure, focus and reference side by side, gap, change, sparkline and a computed reading; a conclusion row under a heavier rule.",
+   "purposes": [
+    "kpi",
+    "summary",
+    "framework"
+   ],
+   "needs": "several metrics for focus and peer",
+   "status": "tested",
+   "impl": "compose.ts matrix, proposals.riskMatrix",
+   "tags": []
+  },
+  {
+   "id": "TB3",
+   "module": "tables",
+   "rule": "Two-level headers: a section header spanning its columns over the column headers, with rules at both levels; two tables side by side.",
+   "purposes": [
+    "detail_table",
+    "comparison"
+   ],
+   "needs": "grouped columns",
+   "status": "principle",
+   "fallback": "one table per section",
+   "tags": []
+  },
+  {
+   "id": "TB4",
+   "module": "tables",
+   "rule": "Metric rows aligned under a chart's groups (e.g. spend intent, change in spend), so the chart and its mini-table share x-positions.",
+   "purposes": [
+    "comparison"
+   ],
+   "needs": "metrics per chart group",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "TB5",
+   "module": "tables",
+   "rule": "Heatmap and indicator cells for scored comparisons, with the scale explained.",
+   "purposes": [
+    "matrix",
+    "survey"
+   ],
+   "needs": "scores",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "TB6",
+   "module": "tables",
+   "rule": "Benchmark list: flag, entity, earlier value, latest value (bold), change; focus row first and tinted.",
+   "purposes": [
+    "comparison"
+   ],
+   "needs": "two-period spec",
+   "status": "tested",
+   "impl": "charts.ts benchList",
+   "tags": []
+  },
+  {
+   "id": "LY1",
+   "module": "layout",
+   "rule": "White page with a light frame: no band; tracker in the primary colour above the title; sources at the foot.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "language frame",
+   "status": "tested",
+   "impl": "language.ts frame (rule chrome)",
+   "tags": []
+  },
+  {
+   "id": "LY2",
+   "module": "layout",
+   "rule": "Asymmetric columns (8/4, 7/5) with a full-height implications panel bleeding to the edge; the title keeps clear of it; a gold edge marks it.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "columns with a tinted last column",
+   "status": "tested",
+   "impl": "compose.ts columns (panel 'full')",
+   "tags": []
+  },
+  {
+   "id": "LY3",
+   "module": "layout",
+   "rule": "Multi-module pages: two or three analytical modules, each with its own finding-led header, separated by hairline dividers.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "columns with dividers",
+   "status": "tested",
+   "impl": "compose.ts (dividers)",
+   "tags": []
+  },
+  {
+   "id": "LY4",
+   "module": "layout",
+   "rule": "Split background: a colour field holding the title (and a motif) beside white content; for summaries, closings and statements.",
+   "purposes": [
+    "summary",
+    "statement",
+    "section"
+   ],
+   "needs": "columns with split",
+   "status": "tested",
+   "impl": "compose.ts (split)",
+   "tags": []
+  },
+  {
+   "id": "LY5",
+   "module": "layout",
+   "rule": "Summary-to-detail bracket: a bracket from a summary chart's segment to the detail table that explains it.",
+   "purposes": [
+    "comparison",
+    "detail_table"
+   ],
+   "needs": "two exhibits",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "LY6",
+   "module": "layout",
+   "rule": "Join symbols between modules (+ for 'and', » for 'therefore') on the divider line.",
+   "purposes": [
+    "framework"
+   ],
+   "needs": "modules",
+   "status": "renderable",
+   "impl": "compose.ts panel marker (chevron)",
+   "tags": []
+  },
+  {
+   "id": "LY7",
+   "module": "layout",
+   "rule": "The title as a design element: placed lower-left over a map or image on statement slides.",
+   "purposes": [
+    "statement",
+    "macro"
+   ],
+   "needs": "image or map",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "LY8",
+   "module": "layout",
+   "rule": "Background variety within one identity: white, ivory panels, ivory split fields, deep-wine dividers; dark full slides only for a few statements or maps.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "language colours",
+   "status": "renderable",
+   "impl": "language.ts, compose.ts",
+   "tags": []
+  },
+  {
+   "id": "LY9",
+   "module": "layout",
+   "rule": "Explanation cards coloured like the chart's series double as its legend.",
+   "purposes": [
+    "survey",
+    "comparison"
+   ],
+   "needs": "series colours",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "LY10",
+   "module": "layout",
+   "rule": "Variety rule: consecutive slides use different compositions; the frame, type and colour roles stay constant.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "deck plan",
+   "status": "principle",
+   "fallback": "QA warning (planned)",
+   "tags": []
+  },
+  {
+   "id": "DG1",
+   "module": "diagrams",
+   "rule": "Node-and-edge diagrams for ecosystems and transmission: nodes as cards or circles with their figure, edges as labelled arrows (words only).",
+   "purposes": [
+    "framework",
+    "process"
+   ],
+   "needs": "nodes and edges",
+   "status": "tested",
+   "impl": "compose.ts diagram()",
+   "tags": []
+  },
+  {
+   "id": "DG2",
+   "module": "diagrams",
+   "rule": "Causal chains read left to right with one feedback edge routed under the row; label links as accounting links, not estimated effects.",
+   "purposes": [
+    "framework",
+    "trend"
+   ],
+   "needs": "a chain of bound figures",
+   "status": "tested",
+   "impl": "compose.ts diagram (back edges), proposals.debtDynamics",
+   "tags": []
+  },
+  {
+   "id": "DG3",
+   "module": "diagrams",
+   "rule": "Numbered journeys or stages along a path, alternating text left and right.",
+   "purposes": [
+    "process"
+   ],
+   "needs": "stages",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "DG4",
+   "module": "diagrams",
+   "rule": "Radial frameworks: categories as arcs, levers as wedges, an axis of ambition; side-by-side versions with a highlighted outline compare plans.",
+   "purposes": [
+    "framework"
+   ],
+   "needs": "categories and levers",
+   "status": "principle",
+   "fallback": "matrix or bands",
+   "tags": [
+    "radial"
+   ]
+  },
+  {
+   "id": "DG5",
+   "module": "diagrams",
+   "rule": "Arrow-shaped banner headers (chevrons) title the two sides of a comparison.",
+   "purposes": [
+    "framework",
+    "comparison"
+   ],
+   "needs": "two panels",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "BG1",
+   "module": "assets",
+   "rule": "Colour roles: white and warm ivory backgrounds; deep burgundy only for focal data, key figures and highlights; antique gold for hairlines, dividers and borders; near-black in small amounts; warm taupe for peers; never grey-heavy.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "language",
+   "status": "tested",
+   "impl": "language.ts burgundy",
+   "tags": []
+  },
+  {
+   "id": "BG2",
+   "module": "assets",
+   "rule": "Thematic motifs: thin line art in gold, transparent, anchored to the foot of a panel or field, at most one per slide, decorative only.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "a motif id (motifFor)",
+   "status": "tested",
+   "impl": "motifs.ts, compose.ts asset()",
+   "tags": []
+  },
+  {
+   "id": "BG3",
+   "module": "assets",
+   "rule": "Licensed imagery as duotone or cutout, cropped to a field or edge, never a plain rectangle across content; licence and attribution recorded in the picture's description and the source line.",
+   "purposes": [
+    "section",
+    "statement",
+    "summary"
+   ],
+   "needs": "an approved image with licence",
+   "status": "principle",
+   "fallback": "self-authored motif",
+   "tags": [
+    "photo"
+   ]
+  },
+  {
+   "id": "BG4",
+   "module": "assets",
+   "rule": "Fine line-pattern geometry (fanning lines) as cover texture.",
+   "purposes": [
+    "section"
+   ],
+   "needs": "cover",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "BG5",
+   "module": "assets",
+   "rule": "Context markers: a country flag or topic icon beside the title.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "geo code",
+   "status": "principle",
+   "fallback": "tracker text",
+   "tags": []
+  },
+  {
+   "id": "ST1",
+   "module": "storytelling",
+   "rule": "Three levels of message: the action title states the conclusion, exhibit headers state sub-findings, the panel states implications for the audience.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "computed sentences",
+   "status": "tested",
+   "impl": "proposals.ts",
+   "tags": []
+  },
+  {
+   "id": "ST2",
+   "module": "storytelling",
+   "rule": "Then and now in one label ('13 (8)') or one row (2022, 2025, change).",
+   "purposes": [
+    "comparison",
+    "trend"
+   ],
+   "needs": "two periods",
+   "status": "tested",
+   "impl": "benchList/rankTable",
+   "tags": []
+  },
+  {
+   "id": "ST3",
+   "module": "storytelling",
+   "rule": "A big ratio statement (~2x, +52%) anchors a page when the comparison is the message.",
+   "purposes": [
+    "kpi",
+    "comparison"
+   ],
+   "needs": "a derived ratio with provenance",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "ST4",
+   "module": "storytelling",
+   "rule": "No figure repeated as a focal point on adjacent slides; each slide adds information.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "deck plan",
+   "status": "principle",
+   "fallback": "QA warning (planned)",
+   "tags": []
+  },
+  {
+   "id": "ST5",
+   "module": "storytelling",
+   "rule": "Deck rhythm: agenda, numbered dividers, content; an executive summary up front.",
+   "purposes": [
+    "section",
+    "summary"
+   ],
+   "needs": "sections",
+   "status": "tested",
+   "impl": "editorial.navigation, proposals.execSummary",
+   "tags": []
+  },
+  {
+   "id": "QA1",
+   "module": "qa",
+   "rule": "Render each new slide and compare it with one or two retrieved references before accepting it.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "render page",
+   "status": "renderable",
+   "impl": "render_slides.py",
+   "tags": []
+  },
+  {
+   "id": "QA2",
+   "module": "qa",
+   "rule": "Mechanical QA: no overflow, overlap or out-of-bounds; type ≥ 8.5 pt; integrity OK with no unsourced figures.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "qaSlide, integrity",
+   "status": "tested",
+   "impl": "qa.ts, integrity.ts",
+   "tags": []
+  },
+  {
+   "id": "QA3",
+   "module": "qa",
+   "rule": "Colour discipline: the primary colour marks only focal data; gold only for structure; near-black only for titles and figures.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "language roles",
+   "status": "principle",
+   "tags": []
+  },
+  {
+   "id": "QA4",
+   "module": "qa",
+   "rule": "Deck-level checks: repeated focal figures, consecutive identical compositions.",
+   "purposes": [
+    "*"
+   ],
+   "needs": "deck",
+   "status": "principle",
+   "tags": []
+  }
+ ]
+}

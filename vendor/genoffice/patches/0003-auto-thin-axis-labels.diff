@@ -1,0 +1,24 @@
+--- a/packages/pptx-render/src/build-chart.ts
++++ b/packages/pptx-render/src/build-chart.ts
+@@ -717,9 +717,19 @@
+   // (PowerPoint thins labels only after that)
+   // Explicit c:tickLblSkip thins the labels: crowding decisions (wrap/rotate/reserve)
+   // size against the labeled slot, not the raw per-category slot
+-  const lblSkip = model.catAxis?.tickLblSkip ?? 1
+-  const heuristicSlotW = (Math.max(plotR - plotX, 10) / nCats) * lblSkip
+   const catRotDeg = model.catAxis?.labelRotDeg
++  // Automatic thinning (no explicit tickLblSkip, no explicit rotation): single-token labels
++  // such as years cannot wrap, and they overlap long before the 1.3× rotation threshold
++  // (25 annual labels on a half-slide chart). Show every k-th label instead, like
++  // PowerPoint's automatic label interval, so no two labels collide.
++  const rawSlotW = Math.max(plotR - plotX, 10) / nCats
++  const autoSkip =
++    model.catAxis?.tickLblSkip == null && catRotDeg == null && nCats > 2 &&
++    cats.every((c) => !/\s/.test(c)) && maxCatW * 1.15 > rawSlotW
++      ? Math.ceil((maxCatW * 1.35) / rawSlotW)
++      : 1
++  const lblSkip = model.catAxis?.tickLblSkip ?? autoSkip
++  const heuristicSlotW = rawSlotW * lblSkip
+   // Word-wrapped labels stop at 3 lines; CJK labels (wrapped per character) stack as many
+   // lines as ~35% of the frame height holds before rotation kicks in (PowerPoint measured
+   // on a production deck: 18 Japanese categories wrapped 4-7 lines deep, none rotated)

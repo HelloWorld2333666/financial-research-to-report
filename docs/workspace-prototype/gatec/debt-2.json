@@ -1,0 +1,21 @@
+{
+ "kind": "candidate",
+ "brief": "debt",
+ "cand": 2,
+ "label": "Chart with a tinted figures rail (R1)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "rail",
+   "params": {
+    "side": "right",
+    "chartCols": 8,
+    "rail": "tinted"
+   },
+   "recipe": "chart-rail"
+  }
+ },
+ "candidates": 3,
+ "qa": []
+}

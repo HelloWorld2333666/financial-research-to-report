@@ -34,13 +34,17 @@ SCHEMA = "frr-slide/0.2"
 LEGACY_SCHEMA = "frr-slide/0.1"  # single slide, no slide_id; upgraded by migrate()
 SLIDE_W, SLIDE_H = 1280, 720
 MAX_SLIDES = 12
-ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "timeline", "sources", "gap", "pending"}
+ELEMENT_TYPES = {"text", "panel", "metric", "table", "barchart", "timeline", "sources", "gap", "pending",
+                 "chart", "datatable",  # chart / datatable read from project datasets (charts.py)
+                 "shape", "line", "image", "icon"}  # free design elements
 GEOMETRY = ("x", "y", "w", "h")
 # Fields an AI patch may change on an existing element. Bound-evidence fields,
 # refs, ids, types and audit fields are deliberately absent.
 PATCHABLE = {"x", "y", "w", "h", "style", "text", "label", "title", "note", "fmt", "group",
              "shape", "footnote", "prefix", "columns", "rows", "bars"}
 NUMBER_RE = re.compile(r"(?<![\w.])[-+−]?\d[\d,]*(?:\.\d+)?")
+# Instrument tenors ("10Y", "5-year", "30-yr") name a maturity, not a figure.
+TENOR_RE = re.compile(r"(?<![\w.])\d{1,2}(?:Y\b|-year\b|-yr\b| year (?=bond|yield|benchmark))", re.I)
 
 
 def now_iso() -> str:
@@ -201,6 +205,20 @@ def bound_evidence_ids(el: dict) -> list[str]:
     return [i for i in ids if i]
 
 
+def manual_edits(el: dict) -> int:
+    """User-entered or overridden figures on an element (source evidence is kept alongside)."""
+    n = 1 if el.get("type") == "metric" and el.get("working") and el["working"].get("status") != "verified" else 0
+    if el.get("type") == "table":
+        for row in el.get("rows", []):
+            for c in row.get("cells", []):
+                if (c.get("working") and c["working"].get("status") != "verified") or "value" in c:
+                    n += 1
+    if el.get("type") == "barchart":
+        n += sum(1 for b in el.get("bars", []) if (b.get("working") and b["working"].get("status") != "verified")
+                 or (not b.get("evidence_id") and "value" in b))
+    return n
+
+
 def element_evidence_ids(el: dict) -> set[str]:
     return set(bound_evidence_ids(el)) | set(el.get("refs", {}).get("evidence", []))
 
@@ -225,7 +243,7 @@ def free_texts(el: dict) -> list[str]:
 
 def numbers_in(text: str) -> set[str]:
     out = set()
-    for m in NUMBER_RE.findall(text):
+    for m in NUMBER_RE.findall(TENOR_RE.sub(" ", text)):
         n = m.replace(",", "").replace("−", "-").lstrip("+-")
         if n:
             out.add(n.rstrip("0").rstrip(".") if "." in n else n)
@@ -253,6 +271,7 @@ def evidence_numbers(project: dict, evidence_ids: set[str]) -> set[str]:
             nums |= _value_forms(float(ev["value"]))
         nums |= numbers_in(ev.get("excerpt", "")) | numbers_in(ev.get("statement", ""))
         nums |= numbers_in(ev.get("period", ""))
+        nums |= set(re.findall(r"(?:19|20)\d{2}", ev.get("period", "") or ""))  # "FY2024" supports 2024
     return nums
 
 
@@ -300,6 +319,9 @@ def validate_project(project: dict) -> list[str]:
     for a in project["annotations"]:
         if a.get("kind") not in ("region", "element"):
             errors.append(f"annotation {a.get('id')}: kind must be region or element")
+    if "datasets" in project or "charts" in project:
+        import charts  # local import: charts is optional for projects without datasets
+        errors += charts.validate(project)
     return errors
 
 
@@ -337,6 +359,10 @@ def check_integrity(project: dict) -> list[dict]:
                 add("warning", "unverified_value", eid, f"shows unverified evidence {ref}")
         if el.get("type") == "gap" and el.get("gap_id") not in gaps:
             add("error", "dangling_ref", eid, f"gap placeholder for unknown gap {el.get('gap_id')}")
+        edits = manual_edits(el)
+        if edits:
+            add("warning", "manual_edits_unverified", eid,
+                f"{edits} manually edited value{'s' if edits != 1 else ''} — pending verification (source values kept)")
         if el.get("transfer_id") and el.get("type") != "pending":
             add("info", "pending_adaptation", eid, f"moved here for AI adaptation (transfer {el['transfer_id']})")
         if el.get("type") == "pending":
@@ -372,6 +398,9 @@ def check_integrity(project: dict) -> list[dict]:
         if t.get("status") == "pending_adaptation" and t.get("target_slide_id") not in sids:
             add("warning", "transfer_target_missing", None,
                 f"transfer {t['id']} targets slide {t.get('target_slide_id')}, which was deleted")
+    if project.get("datasets"):
+        import charts
+        issues += charts.integrity(project, lambda el: slide_of(project, el))
     return issues
 
 
@@ -551,7 +580,7 @@ def validate_patch(project: dict, annotation_id: str, patch: dict) -> tuple[list
             check_numbers(target, where)
         elif kind == "add":
             el = copy.deepcopy(op.get("element") or {})
-            if el.get("type") not in ELEMENT_TYPES - {"sources"}:
+            if el.get("type") not in ELEMENT_TYPES - {"sources", "image"}:  # AI patches never add raster images
                 errors.append(f"{where}: unsupported element type {el.get('type')!r}")
                 continue
             if any(not isinstance(el.get(g), (int, float)) for g in GEOMETRY):

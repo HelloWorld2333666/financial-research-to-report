@@ -1,0 +1,18 @@
+{
+ "kind": "candidate",
+ "brief": "risk",
+ "cand": 0,
+ "label": "Three figure bands, debt leading",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "bands",
+   "params": {
+    "emphasis": "first"
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

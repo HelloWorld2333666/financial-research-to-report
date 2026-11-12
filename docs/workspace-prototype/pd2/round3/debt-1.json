@@ -1,0 +1,18 @@
+{
+ "kind": "candidate",
+ "brief": "debt",
+ "cand": 1,
+ "label": "Statement column with a change chart",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "statement",
+   "params": {
+    "side": "left"
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

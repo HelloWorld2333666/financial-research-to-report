@@ -1,24 +1,41 @@
 """Integrity checks for a ResearchRecord.
 
 Pydantic already guarantees field types; this module checks what types cannot:
-cross-references, evidence-to-claim support, and fixture/live separation.
+cross-references, evidence-to-claim support, and fixture/live separation; and
+(schema 0.2) that derivations recompute, numbers in claims equal what they cite,
+and working edits point at real evidence.
 Errors mean the record must not feed slide planning. Warnings flag things a
 reviewer should look at.
 """
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import asdict, dataclass
 
+from frr import derive
 from frr.schema import (
     EvidenceKind,
     RecordMode,
     ResearchRecord,
+    RetrievalMethod,
     SourceOrigin,
     SupportStatus,
     Verification,
+    WorkingStatus,
 )
+
+NUMBER_RE = re.compile(r"[+\-−]?\d+(?:\.\d+)?")
+
+
+def number_in(text: str) -> tuple[float, int] | None:
+    """The first number in ``text`` and how many decimals it was written with."""
+    m = NUMBER_RE.search(text.replace(",", ""))
+    if not m:
+        return None
+    raw = m.group(0).replace("−", "-")
+    return float(raw), len(raw.split(".")[1]) if "." in raw else 0
 
 
 @dataclass(frozen=True)
@@ -54,7 +71,7 @@ def validate_record(record: ResearchRecord) -> list[Issue]:
 
     collections = [
         record.questions, record.metrics, record.sources, record.evidence,
-        record.findings, record.claims, record.gaps, record.slide_modules,
+        record.findings, record.claims, record.gaps, record.slide_modules, record.derivations,
     ]
     counts = Counter(obj.id for coll in collections for obj in coll)
     for oid, n in counts.items():
@@ -134,6 +151,101 @@ def validate_record(record: ResearchRecord) -> list[Issue]:
             warn("verification_unattributed", e.id, "verified evidence should record verified_by and verified_on")
         if e.verification == Verification.verified and not (e.page and e.excerpt):
             warn("verification_not_checkable", e.id, "verified evidence has no page + excerpt for automated checks")
+
+    # ---- schema 0.2: retrieval, derivations, numbers in claims, working edits
+    for e in record.evidence:
+        r = e.retrieval
+        if r and r.method == RetrievalMethod.api and not r.query_url:
+            err("retrieval_without_query", e.id, "API retrieval must record the query URL")
+
+    for e in record.evidence:
+        if e.rating is None:
+            continue
+        if e.kind == EvidenceKind.metric_value:
+            err("rating_on_metric", e.id, "a rating action is a fact or quote, not a metric value")
+        if not (e.page and e.excerpt):
+            err("rating_without_excerpt", e.id, "a rating action needs the page and verbatim excerpt it was read from")
+        elif not re.search(rf"(?<![A-Za-z]){re.escape(e.rating.rating)}(?![A-Za-z+\-])", e.excerpt):
+            err("rating_not_in_excerpt", e.id, f"rating '{e.rating.rating}' does not appear in the excerpt")
+
+    derivations = {d.id: d for d in record.derivations}
+    values: dict[str, float | None] = {}  # derivation id -> recomputed value (None when it cannot be)
+    cyclic: set[str] = set()
+
+    def value_of(ref: str, stack: tuple[str, ...]) -> float | None:
+        if ref in evidence:
+            return evidence[ref].value
+        if ref in derivations:
+            return recompute(derivations[ref], stack)
+        return None
+
+    def recompute(d, stack: tuple[str, ...] = ()) -> float | None:
+        if d.id in stack:
+            if d.id not in cyclic:
+                cyclic.add(d.id)
+                err("derivation_cycle", d.id, f"derivation depends on itself via {' -> '.join(stack + (d.id,))}")
+            return None
+        if d.id in values:
+            return values[d.id]
+        values[d.id] = None
+        env = {}
+        for name, ref in d.inputs.items():
+            v = value_of(ref, stack + (d.id,))
+            if v is None:
+                return None
+            env[name] = v
+        try:
+            values[d.id] = derive.evaluate(d.formula, env)
+        except ValueError:
+            return None
+        return values[d.id]
+
+    for d in record.derivations:
+        try:
+            free = derive.names(d.formula)
+        except ValueError as exc:
+            err("bad_formula", d.id, str(exc))
+            continue
+        if free != set(d.inputs):
+            err("formula_inputs", d.id, f"formula reads {sorted(free)} but inputs name {sorted(d.inputs)}")
+            continue
+        for name, ref in d.inputs.items():
+            if ref in evidence:
+                if evidence[ref].kind != EvidenceKind.metric_value or evidence[ref].value is None:
+                    err("non_numeric_input", d.id, f"input '{name}' cites evidence '{ref}', which has no value")
+            elif ref not in derivations:
+                err("dangling_reference", d.id, f"input '{name}' references unknown evidence or derivation '{ref}'")
+    for d in record.derivations:
+        got = recompute(d)
+        if got is not None and not derive.matches(got, d.value, d.rounding):
+            err("derivation_mismatch", d.id, f"formula gives {got:g} from its inputs; the derivation states {d.value:g}")
+
+    for c in record.claims:
+        for n in c.numbers:
+            ref = n.evidence_id or n.derivation_id
+            if ref not in (evidence if n.evidence_id else derivations):
+                err("dangling_reference", c.id, f"number '{n.text}' references unknown {'evidence' if n.evidence_id else 'derivation'} '{ref}'")
+                continue
+            target = evidence[ref].value if n.evidence_id else derivations[ref].value
+            written = number_in(n.text)
+            if target is None or written is None:
+                err("number_unresolved", c.id, f"number '{n.text}' cannot be compared with '{ref}'")
+            elif not derive.matches(target, written[0], written[1]):
+                err("number_mismatch", c.id, f"claim writes '{n.text}' but '{ref}' is {target:g}")
+
+    for w in record.working_edits:
+        wid = f"working[{w.dataset}@{w.period}]"
+        if w.evidence_id:
+            if w.evidence_id not in evidence:
+                err("dangling_reference", wid, f"working edit overrides unknown evidence '{w.evidence_id}'")
+            elif evidence[w.evidence_id].period not in (None, w.period):
+                err("period_mismatch", wid, f"evidence '{w.evidence_id}' is for {evidence[w.evidence_id].period}, the edit for {w.period}")
+        if w.status == WorkingStatus.manual_unverified:
+            warn("unverified_working_edit", wid, f"manual value by {w.by} is not verified; final export needs acknowledgement")
+    dup = Counter((w.dataset, w.period) for w in record.working_edits)
+    for (ds, period), n in dup.items():
+        if n > 1:
+            err("duplicate_working_edit", f"working[{ds}@{period}]", f"{n} working edits for the same point; keep one")
 
     return issues
 

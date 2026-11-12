@@ -1,0 +1,2564 @@
+{
+ "schema": "frr-project/1",
+ "id": "france-test",
+ "title": "France (test fixture)",
+ "record_id": "exp2-1793515436",
+ "datasets": {
+  "ds.fr.debt": {
+   "id": "ds.fr.debt",
+   "title": "France \u00b7 general government gross debt",
+   "entity": "France",
+   "geo": "FR",
+   "metric": "debt",
+   "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+   "source_note": "Eurostat gov_10dd_edpt1 (2026-11-01)",
+   "observations": [
+    {
+     "date": "2022",
+     "value": 111.4,
+     "status": "verified",
+     "evidence_id": "ev.exp2.1"
+    },
+    {
+     "date": "2023",
+     "value": 109.5,
+     "status": "verified",
+     "evidence_id": "ev.exp2.2"
+    },
+    {
+     "date": "2024",
+     "value": 112.6,
+     "status": "verified",
+     "evidence_id": "ev.exp2.3"
+    },
+    {
+     "date": "2025",
+     "value": 115.7,
+     "status": "verified",
+     "evidence_id": "ev.exp2.4"
+    }
+   ],
+   "working": {}
+  },
+  "ds.de.debt": {
+   "id": "ds.de.debt",
+   "title": "Germany \u00b7 general government gross debt",
+   "entity": "Germany",
+   "geo": "DE",
+   "metric": "debt",
+   "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+   "source_note": "Eurostat gov_10dd_edpt1 (2026-11-01)",
+   "observations": [
+    {
+     "date": "2022",
+     "value": 64.1,
+     "status": "verified",
+     "evidence_id": "ev.exp2.5"
+    },
+    {
+     "date": "2023",
+     "value": 61.8,
+     "status": "verified",
+     "evidence_id": "ev.exp2.6"
+    },
+    {
+     "date": "2024",
+     "value": 61.4,
+     "status": "verified",
+     "evidence_id": "ev.exp2.7"
+    },
+    {
+     "date": "2025",
+     "value": 62.8,
+     "status": "verified",
+     "evidence_id": "ev.exp2.8"
+    }
+   ],
+   "working": {}
+  },
+  "ds.fr.deficit": {
+   "id": "ds.fr.deficit",
+   "title": "France \u00b7 government deficit (-) / surplus (+)",
+   "entity": "France",
+   "geo": "FR",
+   "metric": "deficit",
+   "unit": "% of GDP",
+   "measure": {
+    "kind": "balance_ratio",
+    "of": "GDP",
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+   "source_note": "Eurostat gov_10dd_edpt1 (2026-11-01)",
+   "observations": [
+    {
+     "date": "2020",
+     "value": -8.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.9"
+    },
+    {
+     "date": "2021",
+     "value": -6.6,
+     "status": "verified",
+     "evidence_id": "ev.exp2.10"
+    },
+    {
+     "date": "2022",
+     "value": -4.7,
+     "status": "verified",
+     "evidence_id": "ev.exp2.11"
+    },
+    {
+     "date": "2023",
+     "value": -5.4,
+     "status": "verified",
+     "evidence_id": "ev.exp2.12"
+    },
+    {
+     "date": "2024",
+     "value": -5.8,
+     "status": "verified",
+     "evidence_id": "ev.exp2.13"
+    },
+    {
+     "date": "2025",
+     "value": -5.1,
+     "status": "verified",
+     "evidence_id": "ev.exp2.14"
+    }
+   ],
+   "working": {}
+  },
+  "ds.de.deficit": {
+   "id": "ds.de.deficit",
+   "title": "Germany \u00b7 government deficit (-) / surplus (+)",
+   "entity": "Germany",
+   "geo": "DE",
+   "metric": "deficit",
+   "unit": "% of GDP",
+   "measure": {
+    "kind": "balance_ratio",
+    "of": "GDP",
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+   "source_note": "Eurostat gov_10dd_edpt1 (2026-11-01)",
+   "observations": [
+    {
+     "date": "2020",
+     "value": -4.3,
+     "status": "verified",
+     "evidence_id": "ev.exp2.15"
+    },
+    {
+     "date": "2021",
+     "value": -3.2,
+     "status": "verified",
+     "evidence_id": "ev.exp2.16"
+    },
+    {
+     "date": "2022",
+     "value": -1.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.17"
+    },
+    {
+     "date": "2023",
+     "value": -2.2,
+     "status": "verified",
+     "evidence_id": "ev.exp2.18"
+    },
+    {
+     "date": "2024",
+     "value": -2.7,
+     "status": "verified",
+     "evidence_id": "ev.exp2.19"
+    },
+    {
+     "date": "2025",
+     "value": -2.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.20"
+    }
+   ],
+   "working": {}
+  },
+  "ds.de.interest": {
+   "id": "ds.de.interest",
+   "title": "Germany \u00b7 interest payable",
+   "entity": "Germany",
+   "geo": "DE",
+   "metric": "interest",
+   "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+   "source_note": "Eurostat gov_10a_main (2026-11-01)",
+   "observations": [
+    {
+     "date": "2020",
+     "value": 0.6,
+     "status": "verified",
+     "evidence_id": "ev.exp2.21"
+    },
+    {
+     "date": "2021",
+     "value": 0.6,
+     "status": "verified",
+     "evidence_id": "ev.exp2.22"
+    },
+    {
+     "date": "2022",
+     "value": 0.7,
+     "status": "verified",
+     "evidence_id": "ev.exp2.23"
+    },
+    {
+     "date": "2023",
+     "value": 0.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.24"
+    },
+    {
+     "date": "2024",
+     "value": 1.0,
+     "status": "verified",
+     "evidence_id": "ev.exp2.25"
+    },
+    {
+     "date": "2025",
+     "value": 1.1,
+     "status": "verified",
+     "evidence_id": "ev.exp2.26"
+    }
+   ],
+   "working": {}
+  },
+  "ds.fr.interest": {
+   "id": "ds.fr.interest",
+   "title": "France \u00b7 interest payable",
+   "entity": "France",
+   "geo": "FR",
+   "metric": "interest",
+   "unit": "% of GDP",
+   "measure": {
+    "kind": "ratio",
+    "of": "GDP",
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+   "source_note": "Eurostat gov_10a_main (2026-11-01)",
+   "observations": [
+    {
+     "date": "2020",
+     "value": 1.3,
+     "status": "verified",
+     "evidence_id": "ev.exp2.27"
+    },
+    {
+     "date": "2021",
+     "value": 1.4,
+     "status": "verified",
+     "evidence_id": "ev.exp2.28"
+    },
+    {
+     "date": "2022",
+     "value": 1.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.29"
+    },
+    {
+     "date": "2023",
+     "value": 1.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.30"
+    },
+    {
+     "date": "2024",
+     "value": 2.0,
+     "status": "verified",
+     "evidence_id": "ev.exp2.31"
+    },
+    {
+     "date": "2025",
+     "value": 2.2,
+     "status": "verified",
+     "evidence_id": "ev.exp2.32"
+    }
+   ],
+   "working": {}
+  },
+  "ds.de.growth": {
+   "id": "ds.de.growth",
+   "title": "Germany \u00b7 real gdp growth",
+   "entity": "Germany",
+   "geo": "DE",
+   "metric": "growth",
+   "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+   "source_note": "Eurostat nama_10_gdp (2026-11-01)",
+   "observations": [
+    {
+     "date": "2020",
+     "value": -4.0,
+     "status": "verified",
+     "evidence_id": "ev.exp2.33"
+    },
+    {
+     "date": "2021",
+     "value": 4.0,
+     "status": "verified",
+     "evidence_id": "ev.exp2.34"
+    },
+    {
+     "date": "2022",
+     "value": 1.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.35"
+    },
+    {
+     "date": "2023",
+     "value": -1.0,
+     "status": "verified",
+     "evidence_id": "ev.exp2.36"
+    },
+    {
+     "date": "2024",
+     "value": 0.0,
+     "status": "verified",
+     "evidence_id": "ev.exp2.37"
+    },
+    {
+     "date": "2025",
+     "value": 0.2,
+     "status": "verified",
+     "evidence_id": "ev.exp2.38"
+    }
+   ],
+   "working": {}
+  },
+  "ds.fr.growth": {
+   "id": "ds.fr.growth",
+   "title": "France \u00b7 real gdp growth",
+   "entity": "France",
+   "geo": "FR",
+   "metric": "growth",
+   "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": true,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+   "source_note": "Eurostat nama_10_gdp (2026-11-01)",
+   "observations": [
+    {
+     "date": "2020",
+     "value": -7.4,
+     "status": "verified",
+     "evidence_id": "ev.exp2.39"
+    },
+    {
+     "date": "2021",
+     "value": 6.9,
+     "status": "verified",
+     "evidence_id": "ev.exp2.40"
+    },
+    {
+     "date": "2022",
+     "value": 2.7,
+     "status": "verified",
+     "evidence_id": "ev.exp2.41"
+    },
+    {
+     "date": "2023",
+     "value": 1.6,
+     "status": "verified",
+     "evidence_id": "ev.exp2.42"
+    },
+    {
+     "date": "2024",
+     "value": 1.5,
+     "status": "verified",
+     "evidence_id": "ev.exp2.43"
+    },
+    {
+     "date": "2025",
+     "value": 0.8,
+     "status": "verified",
+     "evidence_id": "ev.exp2.44"
+    }
+   ],
+   "working": {}
+  },
+  "ds.de.yield": {
+   "id": "ds.de.yield",
+   "title": "Germany \u00b7 10-year government bond yield",
+   "entity": "Germany",
+   "geo": "DE",
+   "metric": "yield",
+   "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+   "source_note": "Eurostat irt_lt_mcby_a (2026-11-01)",
+   "observations": [
+    {
+     "date": "2022",
+     "value": 1.14,
+     "status": "verified",
+     "evidence_id": "ev.exp2.45"
+    },
+    {
+     "date": "2023",
+     "value": 2.43,
+     "status": "verified",
+     "evidence_id": "ev.exp2.46"
+    },
+    {
+     "date": "2024",
+     "value": 2.32,
+     "status": "verified",
+     "evidence_id": "ev.exp2.47"
+    },
+    {
+     "date": "2025",
+     "value": 2.59206,
+     "status": "verified",
+     "evidence_id": "ev.exp2.48"
+    }
+   ],
+   "working": {}
+  },
+  "ds.fr.yield": {
+   "id": "ds.fr.yield",
+   "title": "France \u00b7 10-year government bond yield",
+   "entity": "France",
+   "geo": "FR",
+   "metric": "yield",
+   "unit": "%",
+   "measure": {
+    "kind": "rate",
+    "of": null,
+    "signed": false,
+    "additive_parts_of": null,
+    "scale": "interval"
+   },
+   "frequency": "annual",
+   "origin": "eurostat",
+   "verification": "verified",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+   "source_note": "Eurostat irt_lt_mcby_a (2026-11-01)",
+   "observations": [
+    {
+     "date": "2022",
+     "value": 1.7,
+     "status": "verified",
+     "evidence_id": "ev.exp2.49"
+    },
+    {
+     "date": "2023",
+     "value": 2.99,
+     "status": "verified",
+     "evidence_id": "ev.exp2.50"
+    },
+    {
+     "date": "2024",
+     "value": 2.97,
+     "status": "verified",
+     "evidence_id": "ev.exp2.51"
+    },
+    {
+     "date": "2025",
+     "value": 3.34979,
+     "status": "verified",
+     "evidence_id": "ev.exp2.52"
+    }
+   ],
+   "working": {}
+  }
+ },
+ "evidence": {
+  "ev.exp2.1": {
+   "id": "ev.exp2.1",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2022: 111.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 111.4,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.2": {
+   "id": "ev.exp2.2",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2023: 109.5",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 109.5,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.3": {
+   "id": "ev.exp2.3",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2024: 112.6",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 112.6,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.4": {
+   "id": "ev.exp2.4",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2025: 115.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 115.7,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.5": {
+   "id": "ev.exp2.5",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2022: 64.1",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 64.1,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.6": {
+   "id": "ev.exp2.6",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2023: 61.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 61.8,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.7": {
+   "id": "ev.exp2.7",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2024: 61.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 61.4,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.8": {
+   "id": "ev.exp2.8",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2025: 62.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "debt",
+   "value": 62.8,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:44:47+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP"
+  },
+  "ev.exp2.9": {
+   "id": "ev.exp2.9",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2020: -8.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -8.9,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.10": {
+   "id": "ev.exp2.10",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2021: -6.6",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -6.6,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.11": {
+   "id": "ev.exp2.11",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2022: -4.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -4.7,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.12": {
+   "id": "ev.exp2.12",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2023: -5.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -5.4,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.13": {
+   "id": "ev.exp2.13",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2024: -5.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -5.8,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.14": {
+   "id": "ev.exp2.14",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2025: -5.1",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -5.1,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.15": {
+   "id": "ev.exp2.15",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2020: -4.3",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -4.3,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.16": {
+   "id": "ev.exp2.16",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2021: -3.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -3.2,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.17": {
+   "id": "ev.exp2.17",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2022: -1.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -1.9,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.18": {
+   "id": "ev.exp2.18",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2023: -2.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -2.2,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.19": {
+   "id": "ev.exp2.19",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2024: -2.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -2.7,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.20": {
+   "id": "ev.exp2.20",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2025: -2.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -2.9,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:45:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP"
+  },
+  "ev.exp2.21": {
+   "id": "ev.exp2.21",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2020: 0.6",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 0.6,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.22": {
+   "id": "ev.exp2.22",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2021: 0.6",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 0.6,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.23": {
+   "id": "ev.exp2.23",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2022: 0.7",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 0.7,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.24": {
+   "id": "ev.exp2.24",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2023: 0.9",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 0.9,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.25": {
+   "id": "ev.exp2.25",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2024: 1",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 1.0,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.26": {
+   "id": "ev.exp2.26",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2025: 1.1",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 1.1,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:22+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.27": {
+   "id": "ev.exp2.27",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2020: 1.3",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 1.3,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.28": {
+   "id": "ev.exp2.28",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2021: 1.4",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 1.4,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.29": {
+   "id": "ev.exp2.29",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2022: 1.9",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 1.9,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.30": {
+   "id": "ev.exp2.30",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2023: 1.9",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 1.9,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.31": {
+   "id": "ev.exp2.31",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2024: 2",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 2.0,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.32": {
+   "id": "ev.exp2.32",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2025: 2.2",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "interest",
+   "value": 2.2,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:46:23+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government revenue, expenditure and main aggregates",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP"
+  },
+  "ev.exp2.33": {
+   "id": "ev.exp2.33",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2020: -4",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": -4.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.34": {
+   "id": "ev.exp2.34",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2021: 4",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 4.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.35": {
+   "id": "ev.exp2.35",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2022: 1.9",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 1.9,
+   "unit": "CLV_PCH_PRE",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.36": {
+   "id": "ev.exp2.36",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2023: -1",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": -1.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.37": {
+   "id": "ev.exp2.37",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2024: 0",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 0.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.38": {
+   "id": "ev.exp2.38",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2025: 0.2",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 0.2,
+   "unit": "CLV_PCH_PRE",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.39": {
+   "id": "ev.exp2.39",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2020: -7.4",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": -7.4,
+   "unit": "CLV_PCH_PRE",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.40": {
+   "id": "ev.exp2.40",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2021: 6.9",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 6.9,
+   "unit": "CLV_PCH_PRE",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.41": {
+   "id": "ev.exp2.41",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2022: 2.7",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 2.7,
+   "unit": "CLV_PCH_PRE",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.42": {
+   "id": "ev.exp2.42",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2023: 1.6",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 1.6,
+   "unit": "CLV_PCH_PRE",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.43": {
+   "id": "ev.exp2.43",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2024: 1.5",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 1.5,
+   "unit": "CLV_PCH_PRE",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.44": {
+   "id": "ev.exp2.44",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2025: 0.8",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "growth",
+   "value": 0.8,
+   "unit": "CLV_PCH_PRE",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+    "retrieved_at": "2026-11-01T06:47:17+00:00",
+    "content_sha256": null,
+    "series_key": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE"
+  },
+  "ev.exp2.45": {
+   "id": "ev.exp2.45",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2022: 1.14",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 1.14,
+   "unit": "%",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022"
+  },
+  "ev.exp2.46": {
+   "id": "ev.exp2.46",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2023: 2.43",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 2.43,
+   "unit": "%",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022"
+  },
+  "ev.exp2.47": {
+   "id": "ev.exp2.47",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2024: 2.32",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 2.32,
+   "unit": "%",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022"
+  },
+  "ev.exp2.48": {
+   "id": "ev.exp2.48",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2025: 2.59206",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 2.59206,
+   "unit": "%",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"DE\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022"
+  },
+  "ev.exp2.49": {
+   "id": "ev.exp2.49",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2022: 1.7",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 1.7,
+   "unit": "%",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022"
+  },
+  "ev.exp2.50": {
+   "id": "ev.exp2.50",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2023: 2.99",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 2.99,
+   "unit": "%",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022"
+  },
+  "ev.exp2.51": {
+   "id": "ev.exp2.51",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2024: 2.97",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 2.97,
+   "unit": "%",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022"
+  },
+  "ev.exp2.52": {
+   "id": "ev.exp2.52",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2025: 3.34979",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "yield",
+   "value": 3.34979,
+   "unit": "%",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+    "retrieved_at": "2026-11-01T06:47:55+00:00",
+    "content_sha256": null,
+    "series_key": "irt_lt_mcby_a {\"geo\": \"FR\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "EMU convergence criterion series - annual data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022"
+  },
+  "ev.exp2.53": {
+   "id": "ev.exp2.53",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2020: -8.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -8.9,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.54": {
+   "id": "ev.exp2.54",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2021: -6.6",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -6.6,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.55": {
+   "id": "ev.exp2.55",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2022: -4.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -4.7,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.56": {
+   "id": "ev.exp2.56",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2023: -5.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -5.4,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.57": {
+   "id": "ev.exp2.57",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2024: -5.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -5.8,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.58": {
+   "id": "ev.exp2.58",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2025: -5.1",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -5.1,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:53+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.59": {
+   "id": "ev.exp2.59",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2020: -4.3",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -4.3,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.60": {
+   "id": "ev.exp2.60",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2021: -3.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -3.2,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.61": {
+   "id": "ev.exp2.61",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2022: -1.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -1.9,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.62": {
+   "id": "ev.exp2.62",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2023: -2.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -2.2,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.63": {
+   "id": "ev.exp2.63",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2024: -2.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -2.7,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  },
+  "ev.exp2.64": {
+   "id": "ev.exp2.64",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2025: -2.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": "deficit",
+   "value": -2.9,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null,
+   "retrieval": {
+    "method": "api",
+    "query_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+    "retrieved_at": "2026-11-01T06:48:54+00:00",
+    "content_sha256": null,
+    "series_key": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"}",
+    "note": "Eurostat dissemination API (JSON-stat); response hash not captured in Experiment 2"
+   },
+   "source_title": "Government deficit/surplus, debt and associated data",
+   "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP"
+  }
+ },
+ "derivations": {},
+ "gaps": [
+  {
+   "id": "gap.rating_history",
+   "description": "no tool retrieval for this question",
+   "reason": "not_found",
+   "question_ids": [
+    "rating_history"
+   ],
+   "metric_ids": [],
+   "impact": null,
+   "suggested_action": null,
+   "auto_detected": true
+  }
+ ],
+ "design_dna": {
+  "font": "Inter",
+  "ink": "#0f2742",
+  "accent": "#c8102e",
+  "muted": "#5b6b7f",
+  "rule": "#0f2742",
+  "series": [
+   "#1f4e9c",
+   "#c8102e",
+   "#2e8b57",
+   "#b8860b"
+  ]
+ }
+}

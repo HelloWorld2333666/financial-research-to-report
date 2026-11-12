@@ -1,0 +1,1598 @@
+{
+ "schema_version": "0.1",
+ "record_id": "exp2-1793515436",
+ "mode": "live",
+ "created_at": "2026-11-01T06:49:20.334333Z",
+ "llm_provider": "ollama:qwen2.5:14b",
+ "scope": {
+  "company": "Republic of France",
+  "objective": "Analyze France's sovereign credit risk and create a professional four-slide presentation.",
+  "use_case": "company_credit",
+  "sector": "general",
+  "period": null,
+  "in_scope": [],
+  "out_of_scope": []
+ },
+ "questions": [
+  {
+   "id": "debt_level_and_trend",
+   "text": "What is France's current debt level and what trend does it follow according to the latest data from the EU?",
+   "rationale": "Understanding the current debt level and its trend provides insight into the country's fiscal health over time.",
+   "evidence_needed": [
+    "What is France's current debt level and what trend does it follow according to the latest data from the EU?"
+   ],
+   "metric_ids": [],
+   "status": "answered"
+  },
+  {
+   "id": "fiscal_balance",
+   "text": "What is France's fiscal balance and how has it changed over the recent years, as per official EU statistics?",
+   "rationale": "Analyzing the fiscal balance gives an understanding of revenues versus expenditures, indicating fiscal discipline.",
+   "evidence_needed": [
+    "What is France's fiscal balance and how has it changed over the recent years, as per official EU statistics?"
+   ],
+   "metric_ids": [],
+   "status": "answered"
+  },
+  {
+   "id": "interest_burden",
+   "text": "What is France's interest burden relative to its GDP and how has it evolved?",
+   "rationale": "Interest burden relative to GDP is crucial for assessing the sustainability of the debt and the cost of servicing it.",
+   "evidence_needed": [
+    "What is France's interest burden relative to its GDP and how has it evolved?"
+   ],
+   "metric_ids": [],
+   "status": "answered"
+  },
+  {
+   "id": "economic_growth",
+   "text": "What is France's economic growth rate and how does it compare with historical averages or the eurozone average?",
+   "rationale": "Growth prospects are key to evaluate the country's potential to service its debt over time.",
+   "evidence_needed": [
+    "What is France's economic growth rate and how does it compare with historical averages or the eurozone average?"
+   ],
+   "metric_ids": [],
+   "status": "answered"
+  },
+  {
+   "id": "market_pricing",
+   "text": "What are the current 10-year government bond yields for France compared with major benchmarks like Germany or the US?",
+   "rationale": "Bond yields reflect investor sentiment towards the country and serve as a market indicator for credit risk.",
+   "evidence_needed": [
+    "What are the current 10-year government bond yields for France compared with major benchmarks like Germany or the US?"
+   ],
+   "metric_ids": [],
+   "status": "answered"
+  },
+  {
+   "id": "rating_history",
+   "text": "What rating action history does France have with major rating agencies such as Moody's, S&P, and Fitch?",
+   "rationale": "Historical rating actions provide context and insights into how rating agencies have changed their views on France over time.",
+   "evidence_needed": [
+    "What rating action history does France have with major rating agencies such as Moody's, S&P, and Fitch?"
+   ],
+   "metric_ids": [],
+   "status": "open"
+  },
+  {
+   "id": "additional_factors",
+   "text": "Considering external factors such as global economic trends, geopolitical risks, and specific policies introduced by the French government, how do these impact France’s credit risk?",
+   "rationale": "External factors can significantly influence credit risk, highlighting the need for a broader analysis beyond just economic and financial metrics.",
+   "evidence_needed": [
+    "Considering external factors such as global economic trends, geopolitical risks, and specific policies introduced by the French government, how do these impact France’s credit risk?"
+   ],
+   "metric_ids": [],
+   "status": "answered"
+  }
+ ],
+ "metrics": [],
+ "sources": [
+  {
+   "id": "src.7ed25250f5",
+   "title": "Government deficit/surplus, debt and associated data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.a0bfab8d3d",
+   "title": "Government deficit/surplus, debt and associated data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=GD&sector=S13&sinceTimePeriod=2022&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.6f6d1b3cd7",
+   "title": "Government deficit/surplus, debt and associated data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.ecc219e2c0",
+   "title": "Government deficit/surplus, debt and associated data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2018&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.74df1e3171",
+   "title": "Government revenue, expenditure and main aggregates",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=DE&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.3699eb4a8e",
+   "title": "Government revenue, expenditure and main aggregates",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10a_main?format=JSON&geo=FR&na_item=D41PAY&sector=S13&sinceTimePeriod=2010&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.fe1d513c39",
+   "title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=DE&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.4e75f188eb",
+   "title": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_gdp?format=JSON&geo=FR&na_item=B1GQ&sinceTimePeriod=2010&unit=CLV_PCH_PRE",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.14e379de83",
+   "title": "EMU convergence criterion series - annual data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=DE&sinceTimePeriod=2022",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.eb039f505e",
+   "title": "EMU convergence criterion series - annual data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/irt_lt_mcby_a?format=JSON&geo=FR&sinceTimePeriod=2022",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.1297e5a843",
+   "title": "Government deficit/surplus, debt and associated data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=FR&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  },
+  {
+   "id": "src.a21d07d243",
+   "title": "Government deficit/surplus, debt and associated data",
+   "publisher": "Eurostat",
+   "source_type": "official_statistics",
+   "origin": "retrieved",
+   "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&geo=DE&na_item=B9&sector=S13&sinceTimePeriod=2020&unit=PC_GDP",
+   "published_date": null,
+   "accessed_date": "2026-11-01",
+   "content_sha256": null,
+   "notes": null
+  }
+ ],
+ "evidence": [
+  {
+   "id": "ev.exp2.1",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2022: 111.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 111.4,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.2",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2023: 109.5",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 109.5,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.3",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2024: 112.6",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 112.6,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.4",
+   "source_id": "src.7ed25250f5",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2025: 115.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 115.7,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.5",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2022: 64.1",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 64.1,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.6",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2023: 61.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 61.8,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.7",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2024: 61.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 61.4,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.8",
+   "source_id": "src.a0bfab8d3d",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2025: 62.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"GD\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "debt_level_and_trend"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 62.8,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.9",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2020: -8.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -8.9,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.10",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2021: -6.6",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -6.6,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.11",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2022: -4.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -4.7,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.12",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2023: -5.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -5.4,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.13",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2024: -5.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -5.8,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.14",
+   "source_id": "src.6f6d1b3cd7",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2025: -5.1",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -5.1,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.15",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2020: -4.3",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -4.3,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.16",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2021: -3.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -3.2,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.17",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2022: -1.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -1.9,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.18",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2023: -2.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -2.2,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.19",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2024: -2.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -2.7,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.20",
+   "source_id": "src.ecc219e2c0",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2025: -2.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "fiscal_balance"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -2.9,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.21",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2020: 0.6",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.6,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.22",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2021: 0.6",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.6,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.23",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2022: 0.7",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.7,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.24",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2023: 0.9",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.9,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.25",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2024: 1",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.0,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.26",
+   "source_id": "src.74df1e3171",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main DE] 2025: 1.1",
+   "locator": "gov_10a_main {\"geo\": \"DE\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.1,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.27",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2020: 1.3",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.3,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.28",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2021: 1.4",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.4,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.29",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2022: 1.9",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.9,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.30",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2023: 1.9",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.9,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.31",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2024: 2",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.0,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.32",
+   "source_id": "src.3699eb4a8e",
+   "kind": "metric_value",
+   "statement": "Government revenue, expenditure and main aggregates [gov_10a_main FR] 2025: 2.2",
+   "locator": "gov_10a_main {\"geo\": \"FR\", \"na_item\": \"D41PAY\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "interest_burden"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.2,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.33",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2020: -4",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -4.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.34",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2021: 4",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 4.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.35",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2022: 1.9",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.9,
+   "unit": "CLV_PCH_PRE",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.36",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2023: -1",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -1.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.37",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2024: 0",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.0,
+   "unit": "CLV_PCH_PRE",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.38",
+   "source_id": "src.fe1d513c39",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp DE] 2025: 0.2",
+   "locator": "nama_10_gdp {\"geo\": \"DE\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.2,
+   "unit": "CLV_PCH_PRE",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.39",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2020: -7.4",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -7.4,
+   "unit": "CLV_PCH_PRE",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.40",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2021: 6.9",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 6.9,
+   "unit": "CLV_PCH_PRE",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.41",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2022: 2.7",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.7,
+   "unit": "CLV_PCH_PRE",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.42",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2023: 1.6",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.6,
+   "unit": "CLV_PCH_PRE",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.43",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2024: 1.5",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.5,
+   "unit": "CLV_PCH_PRE",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.44",
+   "source_id": "src.4e75f188eb",
+   "kind": "metric_value",
+   "statement": "Gross domestic product (GDP) and main components (output, expenditure and income) - annual data [nama_10_gdp FR] 2025: 0.8",
+   "locator": "nama_10_gdp {\"geo\": \"FR\", \"na_item\": \"B1GQ\", \"unit\": \"CLV_PCH_PRE\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "economic_growth"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 0.8,
+   "unit": "CLV_PCH_PRE",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.45",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2022: 1.14",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.14,
+   "unit": null,
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.46",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2023: 2.43",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.43,
+   "unit": null,
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.47",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2024: 2.32",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.32,
+   "unit": null,
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.48",
+   "source_id": "src.14e379de83",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a DE] 2025: 2.59206",
+   "locator": "irt_lt_mcby_a {\"geo\": \"DE\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.59206,
+   "unit": null,
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.49",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2022: 1.7",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 1.7,
+   "unit": null,
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.50",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2023: 2.99",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.99,
+   "unit": null,
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.51",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2024: 2.97",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 2.97,
+   "unit": null,
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.52",
+   "source_id": "src.eb039f505e",
+   "kind": "metric_value",
+   "statement": "EMU convergence criterion series - annual data [irt_lt_mcby_a FR] 2025: 3.34979",
+   "locator": "irt_lt_mcby_a {\"geo\": \"FR\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "market_pricing"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": 3.34979,
+   "unit": null,
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.53",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2020: -8.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -8.9,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.54",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2021: -6.6",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -6.6,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.55",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2022: -4.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -4.7,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.56",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2023: -5.4",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -5.4,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.57",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2024: -5.8",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -5.8,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.58",
+   "source_id": "src.1297e5a843",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 FR] 2025: -5.1",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"FR\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -5.1,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.59",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2020: -4.3",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2020",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -4.3,
+   "unit": "PC_GDP",
+   "period": "2020",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.60",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2021: -3.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2021",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -3.2,
+   "unit": "PC_GDP",
+   "period": "2021",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.61",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2022: -1.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2022",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -1.9,
+   "unit": "PC_GDP",
+   "period": "2022",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.62",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2023: -2.2",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2023",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -2.2,
+   "unit": "PC_GDP",
+   "period": "2023",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.63",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2024: -2.7",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2024",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -2.7,
+   "unit": "PC_GDP",
+   "period": "2024",
+   "issuer_definition": null
+  },
+  {
+   "id": "ev.exp2.64",
+   "source_id": "src.a21d07d243",
+   "kind": "metric_value",
+   "statement": "Government deficit/surplus, debt and associated data [gov_10dd_edpt1 DE] 2025: -2.9",
+   "locator": "gov_10dd_edpt1 {\"geo\": \"DE\", \"na_item\": \"B9\", \"sector\": \"S13\", \"unit\": \"PC_GDP\"} @ 2025",
+   "page": null,
+   "excerpt": null,
+   "subject": "France",
+   "question_ids": [
+    "additional_factors"
+   ],
+   "verification": "verified",
+   "verified_by": "exp2-validator",
+   "verified_on": "2026-11-01",
+   "metric_id": null,
+   "value": -2.9,
+   "unit": "PC_GDP",
+   "period": "2025",
+   "issuer_definition": null
+  }
+ ],
+ "findings": [],
+ "claims": [],
+ "gaps": [
+  {
+   "id": "gap.rating_history",
+   "description": "no tool retrieval for this question",
+   "reason": "not_found",
+   "question_ids": [
+    "rating_history"
+   ],
+   "metric_ids": [],
+   "impact": null,
+   "suggested_action": null,
+   "auto_detected": true
+  }
+ ],
+ "slide_modules": []
+}

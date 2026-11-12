@@ -1,0 +1,18 @@
+{
+ "kind": "candidate",
+ "brief": "balance",
+ "cand": 1,
+ "label": "Wide change chart under the headline",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "wide"
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "error:text_overflow: Text overflow: e_a0b1cf1c\"France's deficit n…\" content exceeds the box height by 18px (make the box taller or reduce the font size)",
+  "error:small_text: \"Source:\" is 7.5 pt; the minimum is 8 pt"
+ ]
+}

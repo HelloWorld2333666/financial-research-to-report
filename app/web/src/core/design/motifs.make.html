@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><body><pre id="out"></pre><script>
+const G='#B09766', st=`fill="none" stroke="${G}" stroke-linecap="round" stroke-linejoin="round"`
+const lattice=(xl1,xr1,xl2,xr2,y1,y2,n)=>{let p='';for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,ya=y1+(y2-y1)*t0,yb=y1+(y2-y1)*t1,la=xl1+(xl2-xl1)*t0,lb=xl1+(xl2-xl1)*t1,ra=xr1+(xr2-xr1)*t0,rb=xr1+(xr2-xr1)*t1;p+=`M${la} ${ya}L${rb} ${yb}M${ra} ${ya}L${lb} ${yb}`}return p}
+const M={
+ paris:{w:300,h:420,svg:`<path ${st} d="M70 410 C108 330 128 250 138 200 L146 92 L150 22 L154 92 L162 200 C172 250 192 330 230 410"/>
+  <path ${st} d="M104 410 Q150 318 196 410"/><path ${st} d="M112 286 H188 M106 300 H194 M134 200 H166 M131 212 H169 M144 92 H156 M150 22 V6"/>
+  <path ${st} stroke-width="1.1" d="${lattice(112,188,134,166,300,212,5)}${lattice(134,166,145,155,200,96,6)}"/>
+  <path ${st} stroke-width="1.2" d="M10 410 H290 M20 410 V384 H44 V372 H60 V410 M236 410 V378 H252 V366 H262 V378 H280 V410"/>`},
+ finance:{w:420,h:300,svg:`<path ${st} d="M50 92 L210 28 L370 92 Z M50 92 H370 V112 H50 Z M40 250 H380 M28 264 H392 M16 278 H404"/>
+  ${[78,130,182,238,290,342].map(x=>`<path ${st} d="M${x} 112 V250 M${x+18} 112 V250 M${x-4} 112 H${x+22} M${x-4} 250 H${x+22}"/><path ${st} stroke-width="1" d="M${x+6} 118 V244 M${x+12} 118 V244"/>`).join('')}
+  <path ${st} stroke-width="1.2" d="M190 70 h40"/>`},
+ infrastructure:{w:520,h:240,svg:`<path ${st} d="M0 170 H520 M0 178 H520 M150 20 V210 M370 20 V210"/>
+  ${[30,60,90,120].map(x=>`<path ${st} stroke-width="1.1" d="M150 ${24+x/6} L${150-x} 170 M150 ${24+x/6} L${150+x} 170 M370 ${24+x/6} L${370-x} 170 M370 ${24+x/6} L${370+x} 170"/>`).join('')}
+  <path ${st} stroke-width="1" d="M20 206 q20 -6 40 0 t40 0 M200 214 q20 -6 40 0 t40 0 M400 206 q20 -6 40 0 t40 0"/>`},
+ insurance:{w:320,h:320,svg:`<path ${st} d="M30 150 Q160 10 290 150 Q268 136 246 150 Q225 136 203 150 Q182 136 160 150 Q138 136 117 150 Q96 136 74 150 Q52 136 30 150 Z"/>
+  <path ${st} stroke-width="1.2" d="M160 40 Q120 90 117 150 M160 40 Q200 90 203 150 M160 40 Q90 80 74 150 M160 40 Q230 80 246 150"/><path ${st} d="M160 150 V270 q0 26 -24 26 q-20 0 -22 -20 M160 40 V24"/>`},
+ macro:{w:320,h:320,svg:`<circle ${st} cx="160" cy="160" r="128"/><path ${st} stroke-width="1.2" d="M32 160 H288 M160 32 V288"/>
+  ${[45,90].map(r=>`<ellipse ${st} stroke-width="1.1" cx="160" cy="160" rx="${r}" ry="128"/>`).join('')}
+  <path ${st} stroke-width="1.1" d="M50 96 Q160 112 270 96 M50 224 Q160 208 270 224"/>`},
+ technology:{w:320,h:320,svg:`<rect ${st} x="80" y="80" width="160" height="160" rx="10"/><rect ${st} x="118" y="118" width="84" height="84" rx="4"/>
+  ${[100,130,160,190,220].map(v=>`<path ${st} stroke-width="1.4" d="M${v} 80 V48 M${v} 240 V272 M80 ${v} H48 M240 ${v} H272"/><circle ${st} stroke-width="1.2" cx="${v}" cy="44" r="4"/><circle ${st} stroke-width="1.2" cx="${v}" cy="276" r="4"/>`).join('')}
+  <path ${st} stroke-width="1" d="M130 118 V98 M190 202 V222 M118 160 H98 M202 140 H222"/>`},
+}
+;(async()=>{const out={};for(const [k,m] of Object.entries(M)){const s=2.5,svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${m.w}" height="${m.h}" viewBox="0 0 ${m.w} ${m.h}"><g stroke-width="2">${m.svg}</g></svg>`
+ const img=new Image();await new Promise(r=>{img.onload=r;img.onerror=()=>r(new Error(k));img.src='data:image/svg+xml;base64,'+btoa(svg)})
+ const c=document.createElement('canvas');c.width=m.w*s;c.height=m.h*s;const g=c.getContext('2d');g.drawImage(img,0,0,c.width,c.height)
+ out[k]={w:m.w,h:m.h,png:c.toDataURL('image/png')}}
+ document.getElementById("out").textContent=JSON.stringify(out)})().catch(e=>{document.getElementById("out").textContent="ERR "+e})
+</script>

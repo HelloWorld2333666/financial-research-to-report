@@ -1,0 +1,310 @@
+// Designed charts (PD2): charts drawn by the design engine from a frr-viz/1 spec and its projection, in the slide's
+// visual language: focus series emphasised, peers quiet, direct labels instead of legends, light horizontal grid only,
+// controlled margins and label sizes, and annotations computed from the data. They follow the composite contract
+// (composite.ts): every value is a mark named "frr-mark <series> <category> <value>", every value label
+// "frr-label …", every category "frr-cat …", so the server checks the values and the client re-runs this layout to
+// check positions and label texts. The spec (the chart's meaning) is unchanged; only the drawing is designed.
+import { domain, dot, fmt, markName, niceTicks, path, rect, scale, spread, text, tw, type Mark, type Size } from '../composite'
+import type { Projected, VizSpec } from '../viz'
+import type { ElementStyle, Project } from '../types'
+import { languageOf, type Language } from './language'
+
+/** Families the design engine draws itself; anything else stays a native chart or a standard composite. */
+// (a column chart is not redrawn as a line: that would override the user's choice of encoding)
+export const DESIGNED = new Set(['line', 'bar', 'dumbbell'])
+export const drawsDesigned = (spec: VizSpec, style?: ElementStyle) => style?.render === 'designed' && DESIGNED.has(spec.family)
+
+interface G { p: Project; spec: VizSpec; pr: Projected; W: number; H: number; L: Language; style: ElementStyle }
+const PX = (pt: number) => (pt * 96) / 72
+const lw = (t: string, pt: number, bold = false) => Math.ceil(tw(t, pt) * (bold ? 1.06 : 1))
+const deltaUnit = (unit: string) => (/%/.test(unit) ? 'pp' : unit)
+const unitShort = (unit: string) => (unit === '% of GDP' ? '%' : unit === '%' ? '%' : ` ${unit}`)
+
+function axisText(g: G, name: string, box: { x: number; y: number; w: number; h: number }, t: string, align: 'l' | 'ctr' | 'r' = 'l') {
+  const a = g.L.type.axis
+  return text(name, box, t, a.pt, a.color, { align, font: a.font })
+}
+
+/** Time series: one line per series, the focus series heavy with every point marked and labelled at its end. */
+function line(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], n = pr.categories.length, mini = !!style.mini || !!style.spark, spark = !!style.spark
+  const focus = Math.max(0, pr.series.findIndex((s) => s.dataset === style.emphasis))
+  const last = (si: number) => { const v = pr.series[si]!.values; for (let i = v.length - 1; i >= 0; i--) if (v[i] != null) return i; return -1 }
+  const endText = (si: number) => { const s = pr.series[si]!, i = last(si); return i < 0 ? '' : `${s.name}  ${fmt(p, s.values[i]!, s.cells[i]!)}${unitShort(pr.unit)}` }
+  const lp = L.type.dataLabel.pt * (mini ? 0.95 : 1)
+  const labelW = spark ? 8 : Math.max(...pr.series.map((_, si) => lw(endText(si), lp, true))) + 12
+  const tickW = mini ? 0 : Math.max(...niceTicks(...domain(pr.series.flatMap((s) => s.values), false, 0.1)).map((t) => lw(String(t), L.type.axis.pt))) + 10
+  const x0 = tickW, x1 = W - labelW, y0 = mini ? 6 : 10, y1 = H - (mini ? 18 : 24)
+  const d = domain(pr.series.flatMap((s) => s.values), false, mini ? 0.18 : 0.1)
+  const ticks = niceTicks(d[0], d[1], mini ? 2 : 4), lo = Math.min(d[0], ticks[0]!), hi = Math.max(d[1], ticks[ticks.length - 1]!)
+  const sy = scale(lo, hi, y1, y0), sx = (i: number) => (n === 1 ? (x0 + x1) / 2 : x0 + (i * (x1 - x0)) / (n - 1))
+  // R3: a light band over the period the slide is about, labelled with the period only
+  const bi = style.band ? [pr.categories.indexOf(style.band.from), pr.categories.indexOf(style.band.to)] : null
+  if (bi && bi[0]! >= 0 && bi[1]! >= bi[0]! && !mini) {
+    const half = n > 1 ? (x1 - x0) / (n - 1) / 2 : 20, bx0 = Math.max(x0, sx(bi[0]!) - half), bx1 = Math.min(x1, sx(bi[1]!) + half)
+    out.push(rect('frr-band period', { x: bx0, y: y0, w: bx1 - bx0, h: y1 - y0 }, L.color.surface))
+    const t = style.band!.from === style.band!.to ? style.band!.from : `${style.band!.from}–${style.band!.to}`
+    out.push(text('frr-band label', { x: bx0 + 6, y: y0 + 2, w: Math.max(40, bx1 - bx0 - 12), h: 14 }, t, L.type.axis.pt, L.color.muted, { font: L.type.axis.font, bold: true }))
+  }
+  if (!mini) {
+    for (const t of ticks) {
+      out.push(path(`frr-grid y${t}`, [[[x0, sy(t)], [x1, sy(t)]]], L.color.grid, L.chart.gridWidth))
+      out.push(axisText(g, `frr-tick y${t}`, { x: 0, y: sy(t) - 7, w: x0 - 8, h: 14 }, String(t).replace('-', '−'), 'r'))
+    }
+  }
+  out.push(path('frr-baseline', [[[x0, y1], [x1, y1]]], L.color.hair, 1))
+  pr.categories.forEach((c, i) => { if (!mini || i === 0 || i === n - 1) out.push(axisText(g, `frr-cat ${i}`, { x: sx(i) - 30, y: y1 + 5, w: 60, h: 14 }, c, 'ctr')) })
+  const order = pr.series.map((_, i) => i).filter((i) => i !== focus).concat(focus)
+  const peerCol = (k: number) => [L.color.peer, L.color.peerSoft, '#B8BEC9', '#D6C9A8'][k % 4]!
+  const colOf = new Map(order.map((si, k) => [si, si === focus ? L.color.navy : peerCol(k)]))
+  for (const si of order) {
+    const s = pr.series[si]!, col = colOf.get(si)!, isF = si === focus
+    const runs: [number, number][][] = []; let cur: [number, number][] = []
+    s.values.forEach((v, i) => { if (v == null) { if (cur.length) runs.push(cur); cur = [] } else cur.push([sx(i), sy(v)]) })
+    if (cur.length) runs.push(cur)
+    if (runs.some((r) => r.length > 1)) out.push(path(`frr-line ${si}`, runs.filter((r) => r.length > 1), col, isF ? L.chart.focusWidth : L.chart.peerWidth))
+    s.values.forEach((v, i) => { if (v != null) out.push(dot(markName(si, i, v), sx(i), sy(v), isF ? L.chart.focusDot : L.chart.peerDot, col, `${s.name}, ${pr.categories[i]}: ${fmt(p, v, s.cells[i]!)} ${pr.unit}`)) })
+  }
+  // end labels, pushed apart vertically; the focus label bold in the structure colour
+  const ends = pr.series.map((_, si) => last(si)), ys = spread(ends.map((i, si) => (i < 0 ? -1e6 : sy(pr.series[si]!.values[i]!))), PX(lp) * 1.25, y0, y1)
+  if (!spark) pr.series.forEach((s, si) => {
+    const i = ends[si]!; if (i < 0) return
+    const t = endText(si), isF = si === focus
+    out.push(text(`frr-label ${si} ${i}`, { x: x1 + 10, y: ys[si]! - 8, w: lw(t, lp, isF) + 4, h: 16 }, t, lp, isF ? L.color.navy : L.color.muted, { bold: isF, font: L.type.dataLabel.font }))
+  })
+  // R3: one callout on the focus series' highest or lowest value, when that isn't its last point (the end label shows it)
+  if (style.callout && !mini) {
+    const s = pr.series[focus]!, idx = s.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0)
+    const i = idx.reduce((a, b) => ((style.callout === 'max' ? s.values[b]! > s.values[a]! : s.values[b]! < s.values[a]!) ? b : a), idx[0] ?? -1)
+    if (i >= 0 && i !== ends[focus]) {
+      const v = s.values[i]!, t = `${style.callout === 'max' ? 'High' : 'Low'} ${pr.categories[i]}: ${fmt(p, v, s.cells[i]!)}${unitShort(pr.unit)}`, w = lw(t, L.type.caption.pt, true) + 4
+      // beside the point with a short horizontal leader: to the right unless that runs past the plot
+      const right = sx(i) + 26 + w <= x1, yc = Math.min(Math.max(sy(v), y0 + 8), y1 - 8)
+      const lx0 = right ? sx(i) + 7 : sx(i) - 7, lx1 = right ? sx(i) + 20 : sx(i) - 20
+      out.push(path('frr-callout leader', [[[lx0, yc], [lx1, yc]]], L.color.gold, 1))
+      out.push(text(`frr-label callout`, { x: right ? lx1 + 4 : lx1 - 4 - w, y: yc - 7, w, h: 14 }, t, L.type.caption.pt, L.color.navy, { bold: true, font: L.type.caption.font, align: right ? 'l' : 'r' }))
+    }
+  }
+  // annotation: the focus series' start value, and its change over the period
+  if (style.annotate === 'change' && !mini) {
+    const s = pr.series[focus]!, i0 = s.values.findIndex((v) => v != null), i1 = ends[focus]!
+    if (i0 >= 0 && i1 > i0) {
+      const a = s.values[i0]!, b = s.values[i1]!, t0 = `${fmt(p, a, s.cells[i0]!)}${unitShort(pr.unit)}`
+      const above = sy(a) - 26 > y0
+      out.push(text(`frr-label ${focus} start`, { x: sx(i0) - 4, y: above ? sy(a) - 24 : sy(a) + 8, w: lw(t0, L.type.dataLabel.pt) + 4, h: 16 }, t0, L.type.dataLabel.pt, L.color.navy, { font: L.type.dataLabel.font }))
+      const dlt = `${b - a > 0 ? '+' : ''}${fmt(p, b - a, s.cells[i1]!)} ${deltaUnit(pr.unit)} since ${pr.categories[i0]}`.replace('+−', '−')
+      const dw = lw(dlt, L.type.caption.pt, true) + 4
+      out.push(text(`frr-label ${focus} delta`, { x: x1 + 10, y: Math.max(y0 - 16, ys[focus]! - 26), w: dw, h: 14 }, dlt, L.type.caption.pt, L.color.gold, { bold: true, font: L.type.caption.font }))
+    }
+  }
+  // annotation: the gap between the focus series and a reference series, bracketed at the first and last period
+  const ri = style.reference ? pr.series.findIndex((x) => x.dataset === style.reference) : -1
+  if (style.annotate === 'gap' && ri >= 0 && !mini) {
+    const F = pr.series[focus]!, R = pr.series[ri]!
+    const both = pr.categories.map((_, i) => i).filter((i) => F.values[i] != null && R.values[i] != null)
+    for (const [k, i] of [[0, both[0]], [1, both[both.length - 1]]] as [number, number | undefined][]) {
+      if (i == null || (k === 1 && i === both[0])) continue
+      const yf = sy(F.values[i]!), yr = sy(R.values[i]!), x = sx(i) + (k === 0 ? 14 : -14), strong = k === 1
+      out.push(path(`frr-bracket ${k}`, [[[x - 4, yf + 6], [x, yf + 6], [x, yr - 6], [x - 4, yr - 6]].map(([a, b]) => [k === 0 ? 2 * x - a : a, b] as [number, number])], strong ? L.color.gold : L.color.goldSoft, strong ? 1.5 : 1))
+      const t = `${fmt(p, F.values[i]! - R.values[i]!, F.cells[i]!)} ${deltaUnit(pr.unit)}`, tw0 = lw(t, L.type.dataLabel.pt, strong) + 4
+      out.push(text(`frr-label gap ${k}`, { x: k === 0 ? x + 8 : x - 8 - tw0, y: (yf + yr) / 2 - 8, w: tw0, h: 16 }, t, L.type.dataLabel.pt, strong ? L.color.gold : L.color.muted, { bold: strong, align: k === 0 ? 'l' : 'r', font: L.type.dataLabel.font }))
+    }
+  }
+  const gaps = pr.series.flatMap((s) => pr.categories.filter((_, i) => s.values[i] == null).map((c) => `${s.name} ${c}`))
+  if (gaps.length && !mini) out.push(axisText(g, 'frr-gap note', { x: x0, y: H - 12, w: W - x0, h: 12 }, `No value: ${gaps.join(', ')}`))
+  return out
+}
+
+/** Ranking: one bar per entity in the view's order, values written at the bar ends, the focus entity in navy on a tinted row. */
+function rankBar(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], s = pr.series[0]!, n = pr.categories.length
+  const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined
+  const np = 10.5, vp = L.type.dataLabel.pt, pad = style.panel ? 18 : 0, rankW = style.ranks ? 30 : 0
+  if (style.panel) out.push(rect('frr-panel', { x: 0, y: 0, w: W, h: H }, L.color.surface))
+  const nameW = pad + rankW + Math.max(...pr.categories.map((c) => lw(c, np, c === focusName))) + 18
+  const vals = s.values.map((v, i) => (v == null ? 'n/a' : `${fmt(p, v, s.cells[i]!)}${unitShort(pr.unit)}`))
+  const valW = Math.max(...vals.map((v) => lw(v, vp, true))) + 14
+  const neg = s.values.some((v) => v != null && v < 0), pos = s.values.some((v) => v != null && v > 0)
+  const top = 6 + pad, bot = H - 6 - pad, rowH = (bot - top) / n, barH = rowH * L.chart.barHeight
+  const x0 = nameW + (neg ? valW : 0), x1 = W - pad - (pos ? valW : 4)
+  const d = domain(s.values, true, 0.02), sx = scale(d[0], d[1], x0, x1), z = sx(0)
+  pr.categories.forEach((c, i) => {
+    const v = s.values[i], yc = top + rowH * (i + 0.5), isF = c === focusName
+    if (isF) out.push(rect('frr-band focus', { x: pad ? pad / 2 : 0, y: top + rowH * i + 1, w: W - pad, h: rowH - 2 }, style.panel ? L.color.surfaceDeep : L.color.surface))
+    if (rankW) out.push(text(`frr-rank ${i}`, { x: pad, y: yc - 9, w: rankW - 6, h: 18 }, String(i + 1), np, isF ? L.color.navy : L.color.muted, { align: 'l', bold: isF, font: L.type.dataLabel.font }))
+    out.push(text(`frr-cat ${i}`, { x: pad + rankW, y: yc - 9, w: nameW - 12 - pad - rankW, h: 18 }, c, np, isF ? L.color.navy : L.color.ink, { align: 'r', bold: isF, font: L.type.body.font }))
+    if (v == null) { out.push(axisText(g, `frr-gap ${i}`, { x: x0, y: yc - 7, w: 80, h: 14 }, 'no value')); return }
+    const a = Math.min(z, sx(v)), b = Math.max(z, sx(v))
+    out.push(rect(markName(0, i, v), { x: a, y: yc - barH / 2, w: Math.max(1, b - a), h: barH }, isF ? L.color.navy : L.color.peer, `${c}: ${vals[i]}`))
+    const t = vals[i]!, w = lw(t, vp, isF) + 2
+    out.push(text(`frr-label 0 ${i}`, v < 0 ? { x: a - 8 - w, y: yc - 8, w, h: 16 } : { x: b + 8, y: yc - 8, w, h: 16 }, t, vp, isF ? L.color.navy : L.color.muted, { align: v < 0 ? 'r' : 'l', bold: isF, font: L.type.dataLabel.font }))
+  })
+  out.push(path('frr-zero', [[[z, top - 2], [z, bot]]], L.color.muted, 1))
+  return out
+}
+
+/** Change between two periods per entity: a quiet start point, a solid end point, the focus row emphasised. */
+function dumbbell(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
+  const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined
+  const order = pr.categories.map((_, i) => i).sort((a, b) => (A.values[a] == null || B.values[a] == null ? 1 : 0) - (A.values[b] == null || B.values[b] == null ? 1 : 0) || (B.values[a] ?? 0) - (B.values[b] ?? 0))
+  const np = 10.5, nameW = Math.max(...pr.categories.map((c) => lw(c, np, c === focusName))) + 18
+  // few rows get taller rows (up to 96 px), and the block sits centred with its key directly above it
+  const cap = pr.categories.length <= 4 ? 96 : 64, rowH = Math.min(cap, (H - 66) / pr.categories.length), top = 40 + Math.max(0, (H - 66 - rowH * pr.categories.length) / 2), bot = top + rowH * pr.categories.length
+  const d = domain([...A.values, ...B.values], false, 0.12), ticks = niceTicks(d[0], d[1], 4), lo = Math.min(d[0], ticks[0]!), hi = Math.max(d[1], ticks[ticks.length - 1]!)
+  const x0 = nameW + 50, x1 = W - 60, sx = scale(lo, hi, x0, x1)
+  for (const t of ticks) {
+    out.push(path(`frr-grid x${t}`, [[[sx(t), top - 4], [sx(t), bot]]], t === 0 ? L.color.muted : L.color.grid, t === 0 ? 1 : L.chart.gridWidth))
+    out.push(axisText(g, `frr-tick x${t}`, { x: sx(t) - 24, y: bot + 6, w: 48, h: 14 }, String(t).replace('-', '−'), 'ctr'))
+  }
+  // key, written once at the top
+  const ky = top - 26
+  out.push({ ...dot('frr-key a', x0, ky + 7, 4.5, L.color.paper), stroke: L.color.muted, strokeW: 1.25 } as Mark)
+  out.push(axisText(g, 'frr-key a text', { x: x0 + 10, y: ky, w: 60, h: 14 }, A.name), dot('frr-key b', x0 + 80, ky + 7, 4.5, L.color.navy), axisText(g, 'frr-key b text', { x: x0 + 90, y: ky, w: 60, h: 14 }, B.name))
+  order.forEach((i, row) => {
+    const yc = top + rowH * (row + 0.5), c = pr.categories[i]!, isF = c === focusName, a = A.values[i], b = B.values[i]
+    if (isF) out.push(rect('frr-band focus', { x: 0, y: top + rowH * row + 1, w: W, h: rowH - 2 }, L.color.surface))
+    out.push(text(`frr-cat ${i}`, { x: 0, y: yc - 9, w: nameW - 12, h: 18 }, c, np, isF ? L.color.navy : L.color.ink, { align: 'r', bold: isF, font: L.type.body.font }))
+    if (a != null && b != null) out.push(path(`frr-link ${i}`, [[[sx(a), yc], [sx(b), yc]]], isF ? L.color.navy : L.color.peer, isF ? 2.5 : 1.75))
+    const col = isF ? L.color.navy : L.color.ink
+    if (a != null) out.push({ ...dot(markName(0, i, a), sx(a), yc, 5, L.color.paper, `${c}, ${A.name}: ${fmt(p, a, A.cells[i]!)} ${pr.unit}`), stroke: isF ? L.color.navy : L.color.muted, strokeW: 1.5 } as Mark)
+    if (b != null) out.push(dot(markName(1, i, b), sx(b), yc, 5.5, isF ? L.color.navy : L.color.muted, `${c}, ${B.name}: ${fmt(p, b, B.cells[i]!)} ${pr.unit}`))
+    if (b != null) {
+      const t = `${fmt(p, b, B.cells[i]!)}${unitShort(pr.unit)}`, right = a == null || b >= a, w = lw(t, L.type.dataLabel.pt, isF) + 2
+      const xa = a == null ? sx(b) : sx(Math.min(a, b)), xb = a == null ? sx(b) : sx(Math.max(a, b))
+      out.push(text(`frr-label 1 ${i}`, right ? { x: xb + 10, y: yc - 8, w, h: 16 } : { x: xa - 10 - w, y: yc - 8, w, h: 16 }, t, L.type.dataLabel.pt, col, { align: right ? 'l' : 'r', bold: isF, font: L.type.dataLabel.font }))
+    } else out.push(axisText(g, `frr-gap 1 ${i}`, { x: x1 + 4, y: yc - 7, w: 56, h: 14 }, `${B.name} n/a`))
+  })
+  return out
+}
+
+/** National flags as native striped shapes (public-domain designs, drawn here), used as category markers beside names. */
+const FLAGS: Record<string, { dir: 'v' | 'h'; c: string[]; w?: number[] }> = {
+  FR: { dir: 'v', c: ['#0055A4', '#FFFFFF', '#EF4135'] }, DE: { dir: 'h', c: ['#000000', '#DD0000', '#FFCE00'] }, IT: { dir: 'v', c: ['#009246', '#FFFFFF', '#CE2B37'] },
+  BE: { dir: 'v', c: ['#000000', '#FDDA24', '#EF3340'] }, NL: { dir: 'h', c: ['#AE1C28', '#FFFFFF', '#21468B'] }, AT: { dir: 'h', c: ['#ED2939', '#FFFFFF', '#ED2939'] },
+  ES: { dir: 'h', c: ['#AA151B', '#F1BF00', '#AA151B'], w: [1, 2, 1] }, PT: { dir: 'v', c: ['#006600', '#FF0000'], w: [2, 3] }, IE: { dir: 'v', c: ['#169B62', '#FFFFFF', '#FF883E'] },
+}
+const geoOf = (p: Project, entity: string) => Object.values(p.datasets).find((d) => d.entity === entity)?.geo?.toUpperCase()
+function flag(out: Mark[], p: Project, entity: string, x: number, y: number, w = 18, h = 12) {
+  const f = FLAGS[geoOf(p, entity) ?? '']
+  if (!f) return false
+  const ws = f.w ?? f.c.map(() => 1), sum = ws.reduce((a, b) => a + b, 0)
+  let at = 0
+  f.c.forEach((col, i) => {
+    const part = ws[i]! / sum
+    out.push(rect(`frr-flag ${entity} ${i}`, f.dir === 'v' ? { x: x + at * w, y, w: part * w, h } : { x, y: y + at * h, w, h: part * h }, col))
+    at += part
+  })
+  out.push({ ...rect(`frr-flag ${entity} frame`, { x, y, w, h }, 'none'), stroke: '#D6D0C6', strokeW: 0.75 } as Mark)
+  return true
+}
+
+/** Gate E: a two-period comparison for one focus entity as two columns, the increment highlighted in the primary colour
+ *  (or the decrease shown as an outlined ghost), with the change written large above. Every value is a named mark. */
+function deltaColumns(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
+  const i = Math.max(0, pr.categories.findIndex((c) => c === (style.emphasis ? p.datasets[style.emphasis]?.entity : undefined)))
+  const a = A.values[i], b = B.values[i]
+  if (a == null || b == null) return [axisText(g, 'frr-gap', { x: 0, y: H / 2, w: W, h: 14 }, 'no value')]
+  const u = unitShort(pr.unit), top = 96, base = H - 28, colW = Math.min(110, W * 0.26), gap = Math.min(70, W * 0.16)
+  const x0 = (W - (2 * colW + gap)) / 2, x1 = x0 + colW + gap
+  const lo = Math.min(0, a, b), hi = Math.max(0, a, b), sy = scale(lo, hi === lo ? lo + 1 : hi, base, top), z = sy(0)
+  const col = (x: number, v: number) => ({ x, y: Math.min(z, sy(v)), w: colW, h: Math.max(1, Math.abs(sy(v) - z)) })
+  out.push(rect(markName(0, i, a), col(x0, a), L.color.peer, `${A.name}: ${fmt(p, a, A.cells[i]!)}${u}`))
+  out.push(rect(markName(1, i, b), col(x1, b), L.color.peer, `${B.name}: ${fmt(p, b, B.cells[i]!)}${u}`))
+  const up = Math.abs(b) > Math.abs(a)
+  if (up) out.push(rect('frr-delta increment', { x: x1, y: Math.min(sy(a), sy(b)), w: colW, h: Math.abs(sy(b) - sy(a)) }, L.color.navy))
+  else out.push({ ...rect('frr-delta ghost', { x: x1, y: Math.min(sy(a), sy(b)), w: colW, h: Math.abs(sy(b) - sy(a)) }, 'none'), stroke: L.color.navy, strokeW: 1 } as Mark)
+  const lp = L.type.dataLabel.pt
+  for (const [k, x, v, S] of [[0, x0, a, A], [1, x1, b, B]] as [number, number, number, typeof A][]) {
+    const t = `${fmt(p, v, S.cells[i]!)}${u}`, yv = v >= 0 ? Math.min(sy(v), up && k === 1 ? sy(b) : sy(v)) - 22 : sy(v) + 6
+    out.push(text(`frr-label ${k} ${i}`, { x, y: yv, w: colW, h: 18 }, t, lp, k === 1 ? L.color.navy : L.color.ink, { bold: true, align: 'ctr', font: L.type.dataLabel.font }))
+    out.push(axisText(g, `frr-cat ${k}`, { x, y: base + 8, w: colW, h: 14 }, S.name, 'ctr'))
+  }
+  out.push(path('frr-baseline', [[[x0 - 16, z], [x1 + colW + 16, z]]], L.color.hair, 1))
+  // the change, large, with a short rising (or falling) leader from the first column's top to the second's
+  const ch = b - a, ct = `${ch > 0 ? '+' : ''}${fmt(p, ch, B.cells[i]!)} ${deltaUnit(pr.unit)}`.replace('-', '−')
+  out.push(text('frr-label delta', { x: 0, y: 8, w: W, h: 44 }, ct, L.type.heroMid.pt, L.color.navy, { bold: true, align: 'ctr', font: L.type.heroMid.font }))
+  return out
+}
+
+/** Gate E: a compact benchmark list: flag, entity, the latest value (a named mark) and the change; the focus row tinted. */
+function benchList(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
+  const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined, n = pr.categories.length
+  const order = pr.categories.map((_, i) => i).sort((x, y) => (pr.categories[x] === focusName ? -1 : pr.categories[y] === focusName ? 1 : (B.values[y] ?? 0) - (B.values[x] ?? 0)))
+  const u = unitShort(pr.unit), du = deltaUnit(pr.unit), tp = L.type.cell.pt, head = 26, rowH = Math.min(64, (H - head) / n)
+  const chgW = 78, valW = 70, aX = W - chgW - 2 * valW - 12, bX = W - chgW - valW - 6
+  for (const [t, x, w, al] of [[A.name, aX, valW, 'r'], [B.name, bX, valW, 'r'], ['Change', W - chgW, chgW, 'r']] as [string, number, number, 'l' | 'r'][])
+    if (t) out.push(text(`frr-head ${t}`, { x, y: head - 20, w, h: 16 }, t, L.type.cellHead.pt, L.color.muted, { bold: true, align: al, font: L.type.cellHead.font }))
+  out.push(path('frr-head rule', [[[0, head], [W, head]]], L.color.rule ?? L.color.ink, 1))
+  order.forEach((i, row) => {
+    const t0 = head + row * rowH, yc = t0 + rowH / 2, c = pr.categories[i]!, isF = c === focusName, a = A.values[i], b = B.values[i]
+    if (isF) out.push(rect('frr-band focus', { x: 0, y: t0 + 1, w: W, h: rowH - 2 }, L.color.surfaceDeep))
+    if (row > 0) out.push(path(`frr-row ${row}`, [[[0, t0], [W, t0]]], L.color.hair, 0.75))
+    const hasFlag = flag(out, p, c, 6, yc - 6)
+    out.push(text(`frr-cat ${i}`, { x: hasFlag ? 34 : 6, y: yc - 9, w: aX - 40, h: 18 }, c, tp, isF ? L.color.navy : L.color.ink, { bold: isF, font: L.type.cell.font }))
+    if (a != null) out.push({ ...text(markName(0, i, a), { x: aX, y: yc - 9, w: valW, h: 18 }, `${fmt(p, a, A.cells[i]!)}${u}`, tp, L.color.muted, { align: 'r', font: L.type.cell.font }) } as Mark)
+    if (b != null) out.push({ ...text(markName(1, i, b), { x: bX, y: yc - 10, w: valW, h: 20 }, `${fmt(p, b, B.cells[i]!)}${u}`, tp + 0.5, isF ? L.color.navy : L.color.ink, { bold: true, align: 'r', font: L.type.cell.font }) } as Mark)
+    if (a != null && b != null) {
+      const ch = b - a, t = `${ch > 0 ? '+' : ''}${fmt(p, ch, B.cells[i]!)} ${du}`.replace('-', '−')
+      out.push(text(`frr-label chg ${i}`, { x: W - chgW, y: yc - 9, w: chgW, h: 18 }, t, tp, isF ? L.color.navy : L.color.muted, { bold: isF, align: 'r', font: L.type.cell.font }))
+    }
+  })
+  return out
+}
+
+/** Gate E: a two-period comparison as a ranked table. Rows run in the message's direction (largest deficit, i.e. lowest
+ *  balance, first); columns: rank, entity, a bar of the latest value with its label, the earlier value, the change.
+ *  Both periods' values are named marks (the earlier one a text mark), so integrity checks every figure in the table. */
+function rankTable(g: G): Mark[] {
+  const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
+  const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined, n = pr.categories.length
+  const order = pr.categories.map((_, i) => i).sort((a, b) => (B.values[a] ?? Infinity) - (B.values[b] ?? Infinity))
+  const tp = L.type.cell.pt, hp = L.type.cellHead.pt, vp = L.type.dataLabel.pt, ink = L.color.ink
+  const u = unitShort(pr.unit), du = deltaUnit(pr.unit)
+  const rankW = 26, nameW = Math.max(...pr.categories.map((c) => lw(c, tp, c === focusName))) + 16 + (style.flags ? 26 : 0), prevW = Math.max(lw(A.name, hp, true), 58) + 14, chgW = Math.max(lw('Change', hp, true), 78) + 22
+  const barX0 = rankW + nameW, barX1 = W - prevW - chgW - 12, head = 30, rowH = (H - head) / n, barH = Math.min(32, rowH * L.chart.barHeight)
+  const valW = Math.max(...B.values.map((v, i) => (v == null ? 0 : lw(`${fmt(p, v, B.cells[i]!)}${u}`, vp, true)))) + 12
+  const neg = B.values.some((v) => v != null && v < 0), pos = B.values.some((v) => v != null && v > 0)
+  const d = domain(B.values, true, 0.02), sx = scale(d[0], d[1], barX0 + (neg ? valW : 0), barX1 - (pos ? valW : 0)), z = sx(0)
+  const ht = (name: string, x: number, w: number, t: string, align: 'l' | 'r' | 'ctr' = 'l') => out.push(text(name, { x, y: head - 22, w, h: 18 }, t, hp, ink, { bold: true, align, font: L.type.cellHead.font }))
+  ht('frr-head rank', 0, rankW, '#'), ht('frr-head bar', barX0, barX1 - barX0, `${B.name}`, 'r'), ht('frr-head prev', barX1 + 12, prevW, A.name, 'r'), ht('frr-head chg', W - chgW, chgW, 'Change', 'r')
+  out.push(path('frr-head rule', [[[0, head], [W, head]]], ink, 1))
+  order.forEach((i, row) => {
+    const top = head + row * rowH, yc = top + rowH / 2, c = pr.categories[i]!, isF = c === focusName, a = A.values[i], b = B.values[i]
+    if (isF) out.push(rect('frr-band focus', { x: 0, y: top + 1, w: W, h: rowH - 2 }, L.color.surfaceDeep))
+    if (row > 0) out.push(path(`frr-row ${row}`, [[[0, top], [W, top]]], L.color.hair, 0.75))
+    out.push(text(`frr-rank ${i}`, { x: 4, y: yc - 9, w: rankW - 4, h: 18 }, String(row + 1), tp, isF ? L.color.navy : L.color.muted, { bold: isF, font: L.type.cell.font }))
+    const fl = style.flags ? flag(out, p, c, rankW, yc - 6) : false
+    out.push(text(`frr-cat ${i}`, { x: rankW + (fl ? 26 : 0), y: yc - 9, w: nameW - 8, h: 18 }, c, tp, isF ? L.color.navy : ink, { bold: isF, font: L.type.cell.font }))
+    if (b != null) {
+      const x0 = Math.min(z, sx(b)), x1 = Math.max(z, sx(b)), t = `${fmt(p, b, B.cells[i]!)}${u}`, w = lw(t, vp, isF) + 2
+      out.push(rect(markName(1, i, b), { x: x0, y: yc - barH / 2, w: Math.max(1, x1 - x0), h: barH }, isF ? L.color.navy : L.color.peerSoft, `${c}, ${B.name}: ${t}`))
+      // the value inside the bar at its outer end when it fits (white on the focus bar), else just outside it
+      const inside = x1 - x0 > w + 18
+      out.push(text(`frr-label 1 ${i}`, inside ? (b < 0 ? { x: x0 + 9, y: yc - 9, w, h: 18 } : { x: x1 - 9 - w, y: yc - 9, w, h: 18 }) : (b < 0 ? { x: x0 - 8 - w, y: yc - 9, w, h: 18 } : { x: x1 + 8, y: yc - 9, w, h: 18 }),
+        t, vp, inside && isF ? '#FFFFFF' : ink, { bold: true, align: inside ? (b < 0 ? 'l' : 'r') : (b < 0 ? 'r' : 'l'), font: L.type.dataLabel.font }))
+    } else out.push(axisText(g, `frr-gap 1 ${i}`, { x: barX0, y: yc - 7, w: 80, h: 14 }, 'no value'))
+    if (a != null) out.push({ ...text(markName(0, i, a), { x: barX1 + 12, y: yc - 9, w: prevW, h: 18 }, `${fmt(p, a, A.cells[i]!)}${u}`, tp, L.color.muted, { align: 'r', font: L.type.cell.font }) } as Mark)
+    if (a != null && b != null) {
+      const ch = b - a, t = `${ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : ''}${fmt(p, ch, B.cells[i]!)} ${du}`.replace('-', '−')
+      out.push(text(`frr-label chg ${i}`, { x: W - chgW, y: yc - 9, w: chgW, h: 18 }, t, tp, ch < 0 ? L.color.navy : L.color.muted, { align: 'r', bold: isF, font: L.type.cell.font }))
+    }
+  })
+  out.push(path('frr-zero', [[[z, head + 4], [z, H - 2]]], L.color.muted, 0.75))
+  return out
+}
+
+const DRAW: Record<string, (g: G) => Mark[]> = { line, bar: rankBar, dumbbell: (g) => (g.style.form === 'rankTable' ? rankTable(g) : g.style.form === 'delta' ? deltaColumns(g) : g.style.form === 'benchList' ? benchList(g) : dumbbell(g)) }
+
+/** The designed drawing of a spec, or null when the design engine doesn't draw this family. */
+export function designedLayout(p: Project, spec: VizSpec, pr: Projected, size: Size, style: ElementStyle): Mark[] | null {
+  if (!drawsDesigned(spec, style)) return null
+  if (spec.family === 'line' && pr.shape !== 'time') return null
+  if (spec.family === 'bar' && (pr.shape !== 'cross' || pr.series.length !== 1)) return null
+  if (spec.family === 'dumbbell' && pr.series.length !== 2) return null
+  const g: G = { p, spec, pr, W: size.w, H: size.h, L: languageOf(style.lang), style }
+  const round = (b: Mark['box']) => ({ x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10, w: Math.round(b.w * 10) / 10, h: Math.round(b.h * 10) / 10 })
+  return DRAW[spec.family]!(g).map((m) => ({ ...m, box: round(m.box) }))
+}

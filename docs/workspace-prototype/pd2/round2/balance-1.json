@@ -1,0 +1,15 @@
+{
+ "kind": "candidate",
+ "brief": "balance",
+ "cand": 1,
+ "label": "Wide change chart under the headline",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "wide"
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

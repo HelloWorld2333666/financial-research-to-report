@@ -30,3 +30,11 @@ editor/projects/.history/
 
 editor/research/
 editor/transfers/
+editor/static/assets/
+
+# Phase 3 app
+node_modules/
+vendor/genoffice/src/
+app/web/dist/
+app/server/projects/
+.patch-snapshot/

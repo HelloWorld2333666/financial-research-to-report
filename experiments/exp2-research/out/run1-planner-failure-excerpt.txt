@@ -1,0 +1,6 @@
+pydantic_core._pydantic_core.ValidationError: 2 validation errors for ResearchPlan
+  Field required [type=missing, input_value={'name': 'eurostat_series... 'since': '2020-01-01'}}, input_type=dict]
+  Field required [type=missing, input_value={'name': 'eurostat_series... 'since': '2020-01-01'}}, input_type=dict]
+  Field required [type=missing, input_value={'name': 'eurostat_series', 'arguments': {'dataset': 'gov_10dd_edpt1', 'filters': {'unit': 'PC_GDP', 'sector': 'S13', 'na_item': 'GD', 'geo': 'FR'}, 'since': '2020-01-01'}}]
+  Field required [type=missing, input_value={'name': 'eurostat_series', 'arguments': {'dataset': 'gov_10dd_edpt1', 'filters': {'unit': 'PC_GDP', 'sector': 'S13', 'na_item': 'GD', 'geo': 'FR'}, 'since': '2020-01-01'}}]
+pydantic_ai.exceptions.UnexpectedModelBehavior: Exceeded maximum output retries (3)

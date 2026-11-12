@@ -1,0 +1,21 @@
+{
+ "kind": "candidate",
+ "brief": "risk",
+ "cand": 0,
+ "label": "Three figure bands, debt leading",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "bands",
+   "params": {
+    "emphasis": "first"
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "warning:small_primary_visual: the main visual uses 11% of the content area; the slide reads as mostly empty",
+  "warning:unused_space: an empty region covers 28% of the content area (29% unused overall)"
+ ]
+}

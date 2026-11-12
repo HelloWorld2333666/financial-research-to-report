@@ -1,0 +1,70 @@
+--- a/packages/pptx-engine/src/index.ts
++++ b/packages/pptx-engine/src/index.ts
+@@ -2918,7 +2918,7 @@
+     /** Bar direction for an explicit type change ('bar' = horizontal) */
+     barDir?: 'col' | 'bar'
+     categories?: string[]
+-    series?: Array<{ name: string; values: number[] }>
++    series?: Array<{ name: string; values: (number | null)[] }>
+     title?: string
+     colorScheme?: string[]
+     legendPos?: 'b' | 't' | 'r' | 'l' | 'none'
+@@ -2999,7 +2999,9 @@
+     patch.series ??
+     existing.series.map((s) => ({
+       name: s.name ?? '',
+-      values: s.values.map((v) => v ?? 0),
++      // frr patch 0005: a missing value stays missing through a rebuild (type change, style-only
++      // edit, row/column swap); the writer omits it from the cache and dispBlanksAs="gap" applies
++      values: s.values.map((v) => v ?? null),
+     }))
+   // Per-point colors survive every rebuild (parsed <c:dPt> back-fill), with patch overrides on top
+   let pointColors: Array<Array<string | undefined> | undefined> = existing.series.map((s) =>
+@@ -3019,7 +3021,7 @@
+         ? pointColors.map((row) => row?.[ci])
+         : undefined,
+     )
+-    series = cats.map((cat, ci) => ({ name: cat, values: series.map((s) => s.values[ci] ?? 0) }))
++    series = cats.map((cat, ci) => ({ name: cat, values: series.map((s) => s.values[ci] ?? null) }))
+     pointColors = transposed
+   }
+   const title = patch.title ?? existing.title
+@@ -3103,7 +3105,7 @@
+   kind: string
+   title: string
+   categories: string[]
+-  series: Array<{ name: string; values: number[] }>
++  series: Array<{ name: string; values: (number | null)[] }>
+   seriesColors: Array<string | undefined>
+   pointColors: Array<Array<string | undefined> | undefined>
+ } | null {
+@@ -3116,7 +3118,7 @@
+     categories: chartEl.chart.categories,
+     series: chartEl.chart.series.map((s) => ({
+       name: s.name ?? '',
+-      values: s.values.map((v) => v ?? 0),
++      values: s.values.map((v) => v ?? null), // frr patch 0005: blanks are not zeros
+     })),
+     seriesColors: chartEl.chart.series.map((s) => s.color),
+     pointColors: chartEl.chart.series.map((s) => (s.pointColors ? [...s.pointColors] : undefined)),
+--- a/packages/pptx-engine/src/chart-insert.ts
++++ b/packages/pptx-engine/src/chart-insert.ts
+@@ -64,7 +64,8 @@
+   kind: NewChartKind
+   title?: string
+   categories: string[]
+-  series: Array<{ name: string; values: number[] }>
++  /** null = no value: omitted from the cache, plotted per dispBlanksAs (frr patch 0005) */
++  series: Array<{ name: string; values: (number | null)[] }>
+   offset: EmuRect
+   /** Bar direction (bar = horizontal bar chart; no insert entry point, used to preserve the direction when rebuilding an externally created chart during edits) */
+   barDir?: 'col' | 'bar'
+@@ -160,7 +161,7 @@
+     return out
+   }
+   // Single-series fragment (idx/order use global ordinals so colors stay in order when a combo chart splits into two plots)
+-  const serXml = (ser: { name: string; values: number[] }, i: number): string => {
++  const serXml = (ser: { name: string; values: (number | null)[] }, i: number): string => {
+     const col = colLetter(i)
+     return (
+       `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>` +

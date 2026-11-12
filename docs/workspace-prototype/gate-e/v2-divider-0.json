@@ -1,0 +1,19 @@
+{
+ "kind": "candidate",
+ "brief": "v2-divider",
+ "cand": 0,
+ "label": "Section divider (R9)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "divider",
+   "params": {
+    "current": 1
+   },
+   "recipe": "divider"
+  }
+ },
+ "candidates": 1,
+ "qa": []
+}

@@ -1,0 +1,19 @@
+{
+ "kind": "candidate",
+ "brief": "balance",
+ "cand": 0,
+ "label": "Ranked bars with an evidence rail",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "rail",
+   "params": {
+    "side": "right",
+    "chartCols": 8
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": []
+}

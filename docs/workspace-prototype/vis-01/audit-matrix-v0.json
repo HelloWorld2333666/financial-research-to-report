@@ -1,0 +1,236 @@
+[
+ {
+  "type": "bar (clustered column)",
+  "insert": "ok",
+  "parsedAs": "bar/col/clustered",
+  "gapParsed": true,
+  "renderPrims": {
+   "bars": 6,
+   "labels": 15
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "barStacked",
+  "insert": "ok",
+  "parsedAs": "bar/col/stacked",
+  "gapParsed": true,
+  "renderPrims": {
+   "bars": 4,
+   "labels": 18
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "barPercentStacked",
+  "insert": "ok",
+  "parsedAs": "bar/col/percentStacked",
+  "gapParsed": true,
+  "renderPrims": {
+   "bars": 4,
+   "labels": 13
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "horizontal bar",
+  "insert": "ok",
+  "parsedAs": "bar/bar/clustered",
+  "gapParsed": true,
+  "renderPrims": {
+   "bars": 6,
+   "labels": 15
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "line",
+  "insert": "ok",
+  "parsedAs": "line/standard",
+  "gapParsed": true,
+  "renderPrims": {
+   "polylines": 4,
+   "markers": 8,
+   "labels": 15
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "area",
+  "insert": "ok",
+  "parsedAs": "area/standard",
+  "gapParsed": true,
+  "renderPrims": {
+   "polylines": 2,
+   "labels": 15
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "pie",
+  "insert": "ok",
+  "parsedAs": "pie",
+  "gapParsed": true,
+  "renderPrims": {
+   "wedges": 3,
+   "labels": 5
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "doughnut",
+  "insert": "ok",
+  "parsedAs": "pie/hole50",
+  "gapParsed": true,
+  "renderPrims": {
+   "wedges": 3,
+   "labels": 5
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "scatter",
+  "insert": "ok",
+  "parsedAs": "scatter",
+  "gapParsed": true,
+  "renderPrims": {
+   "polylines": 2,
+   "markers": 6,
+   "labels": 17
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "radar",
+  "insert": "ok",
+  "parsedAs": "radar",
+  "gapParsed": true,
+  "renderPrims": {
+   "polylines": 9,
+   "labels": 15
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "comboBarLine",
+  "insert": "ok",
+  "parsedAs": "bar/col/clustered",
+  "gapParsed": true,
+  "renderPrims": {
+   "bars": 3,
+   "polylines": 2,
+   "markers": 4,
+   "labels": 23
+  },
+  "renders": true,
+  "saveReopen": true,
+  "undoRedo": true,
+  "dataEdit": true,
+  "typeChangeToBar": true,
+  "typeChangeKeepsGap": true,
+  "typeChangeFromBar": true,
+  "styleEditKeepsGap": true,
+  "boundCompose": "ok",
+  "boundGapEdit": true
+ },
+ {
+  "type": "pie3D",
+  "excluded": true,
+  "insert": "refused: 3-D charts distort comparisons and are not offered; use a pie or doughnut"
+ },
+ {
+  "type": "bar3D",
+  "excluded": true,
+  "insert": "refused: 3-D charts distort comparisons and are not offered; use a column chart"
+ }
+]

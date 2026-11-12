@@ -1,0 +1,21 @@
+{
+ "kind": "candidate",
+ "brief": "balance",
+ "cand": 1,
+ "label": "Ranked bars on a panel with rank numerals (R2)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "rail",
+   "params": {
+    "side": "right",
+    "chartCols": 8,
+    "rail": "plain"
+   },
+   "recipe": "ranked-bars"
+  }
+ },
+ "candidates": 3,
+ "qa": []
+}

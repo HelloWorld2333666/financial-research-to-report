@@ -12,6 +12,26 @@
 - The full license texts are in `editor/static/vendor/licenses/`.
 - Moveable and Selecto were last pushed in mid-2024, so they are stable but not actively developed.
 
+## Workspace prototype libraries (`editor/static/workspace/vendor/`)
+
+| Library | Version | License | File | SHA-256 |
+|---|---|---|---|---|
+| Preact (+ hooks) | 10.29.8 | MIT | `preact.module.js`, `hooks.module.js` | `c30e721ebfdc6e2ad4c18c14d2dfb82667829c8aec27de1207774e3fc16858a8`, `a6ee626f2d01570592dd569a792e3f050154aa02890eead8c223fa3ed5aa3d5a` |
+| htm | 3.1.1 | Apache-2.0 | `htm.module.js` | `ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4` |
+| Immer | 11.1.21 | MIT | `immer.production.mjs` | `25b6f977bce9f776b18fa555a1e4fb5b9589f1ea0de06c45d63efed2875394d2` |
+| Apache ECharts | 6.1.0 | Apache-2.0 | `echarts.min.js` | `b66b25aeb4df84e33199dc21694014d336d222cbd9deb0e5a7c14bd6aa0d0fd0` |
+
+These are unmodified ESM/UMD builds from the npm registry tarballs, downloaded on 2026-11-01. License and NOTICE files are in `workspace/vendor/licenses/`. The prototype also uses the Moveable build listed above.
+
+## Benchmark-only libraries (`editor/static/bench/vendor/`, not used by the editor)
+
+| Library | Version | License | File | SHA-256 |
+|---|---|---|---|---|
+| Apache ECharts | 6.1.0 | Apache-2.0 (LICENSE and NOTICE in `bench/vendor/licenses/`) | `echarts.min.js` | `b66b25aeb4df84e33199dc21694014d336d222cbd9deb0e5a7c14bd6aa0d0fd0` |
+| Konva | 10.8.0 | MIT | `konva.min.js` | `dc77264b77311f161cc459656b7f4e70f2f787164f0449cdb162638c524f7b9d` |
+
+These are unmodified builds from the npm registry tarballs, downloaded on 2026-11-01, and used only by the rendering benchmark (`docs/workspace-study/07-benchmark.md`).
+
 ## Design patterns studied (no code copied)
 
 | Project | License | What informed this spike |

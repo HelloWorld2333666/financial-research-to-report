@@ -1,0 +1,21 @@
+{
+ "kind": "candidate",
+ "brief": "debt",
+ "cand": 1,
+ "label": "Statement column with a change chart",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "statement",
+   "params": {
+    "side": "left"
+   }
+  }
+ },
+ "candidates": 2,
+ "qa": [
+  "error:text_overflow: Text overflow: e_4660a957\"The gap between Fr…\" content exceeds the box height by 29px (make the box taller or reduce the font size)",
+  "error:small_text: \"Source:\" is 7.5 pt; the minimum is 8 pt"
+ ]
+}

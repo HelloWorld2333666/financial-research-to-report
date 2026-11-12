@@ -1,0 +1,15 @@
+--- a/packages/pptx-engine/src/slide-transfer.ts
++++ b/packages/pptx-engine/src/slide-transfer.ts
+@@ -318,7 +318,11 @@
+   parts: Readonly<Record<string, string>>,
+   contentTypes: Readonly<Record<string, string>>,
+ ): Map<string, string> {
+-  return writeParts(archive, parts, contentTypes, reusableParts(archive, parts))
++  // Charts (and their embedded workbooks, styles, colours) are never shared: a pasted chart
++  // must be editable on its own. Shared parts made "edit one chart" silently edit both.
++  const reuse = reusableParts(archive, parts)
++  for (const p of [...reuse]) if (/^ppt\/(charts|embeddings)\//.test(p)) reuse.delete(p)
++  return writeParts(archive, parts, contentTypes, reuse)
+ }
+ 
+ export function materializeSlideBundle(

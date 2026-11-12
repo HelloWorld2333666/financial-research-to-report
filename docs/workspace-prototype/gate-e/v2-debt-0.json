@@ -1,0 +1,38 @@
+{
+ "kind": "candidate",
+ "brief": "v2-debt",
+ "cand": 0,
+ "label": "Chart with a commentary column (burgundy)",
+ "composition": {
+  "family": "composed",
+  "params": {},
+  "composition": {
+   "kind": "columns",
+   "recipe": "chart-commentary",
+   "params": {
+    "columns": [
+     {
+      "span": 8,
+      "slots": [
+       "exhibit",
+       "chart"
+      ]
+     },
+     {
+      "span": 4,
+      "slots": [
+       "side",
+       "notes",
+       "so"
+      ],
+      "tint": true
+     }
+    ]
+   }
+  }
+ },
+ "candidates": 1,
+ "qa": [
+  "warning:near_miss_alignment: 9 near-miss alignment(s): right edges 4 px apart; right edges 8 px apart"
+ ]
+}

@@ -1,0 +1,516 @@
+{
+  "schema": "frr-recipes/1",
+  "note": "Layout recipes written for this project. They abstract recurring patterns seen in professional research decks into parameters of our own compositions and charts; no reference deck's text, artwork, marks or exact composition is reproduced. The design library (private) links its layout archetypes to these ids; the planner (TypeScript) and the agent tools (Python) both read this file.",
+  "recipes": [
+    {
+      "id": "chart-rail",
+      "pattern": "R1",
+      "name": "Chart with a figures rail",
+      "when": "One chart carries the message; one hero figure, at most two supporting figures and one short note say what it means.",
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two",
+        "kpi_row/single",
+        "kpi_row/two"
+      ],
+      "purpose": [
+        "trend",
+        "comparison",
+        "kpi"
+      ],
+      "composition": {
+        "kind": "rail",
+        "params": {
+          "side": "right",
+          "chartCols": 8,
+          "rail": "tinted"
+        }
+      },
+      "variants": {
+        "plain": {
+          "rail": "plain"
+        },
+        "tinted": {
+          "rail": "tinted"
+        },
+        "dark": {
+          "rail": "dark"
+        }
+      },
+      "rules": [
+        "Action title: the conclusion in one sentence of 16 words or fewer, over the chart columns only.",
+        "The rail runs the full height beside the chart, tinted or dark, with a short heading naming what the figures mean.",
+        "One hero figure, then at most two supporting figures, each with a label that says what it measures and when.",
+        "Rail figures add a level, a change or a gap; the hero may restate the latest level as the focal figure, nothing else is repeated.",
+        "Footnote on the paper side, 8 pt, sources and definitions only."
+      ],
+      "principles": [
+        "LY2",
+        "TY4",
+        "CH1"
+      ],
+      "language": "institutional"
+    },
+    {
+      "id": "ranked-bars",
+      "pattern": "R2",
+      "name": "Ranked bars with end values",
+      "when": "One metric across many entities at one period, where the focus entity's rank is the message.",
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two"
+      ],
+      "purpose": [
+        "comparison"
+      ],
+      "composition": {
+        "kind": "rail",
+        "params": {
+          "side": "right",
+          "chartCols": 8,
+          "rail": "plain"
+        }
+      },
+      "draw": {
+        "panel": true,
+        "ranks": true
+      },
+      "rules": [
+        "Bars sorted by value; the focus bar in the structure colour on a tinted row, every other bar one quiet grey.",
+        "Values written at the bar ends; no axis, gridlines or legend.",
+        "Rank numerals at the left edge when the rank is the message.",
+        "A light panel behind the bars groups them as one exhibit."
+      ],
+      "principles": [
+        "CH1",
+        "CH2",
+        "TB1"
+      ],
+      "language": "institutional"
+    },
+    {
+      "id": "trend-annotated",
+      "pattern": "R3",
+      "name": "Annotated trend with a shaded period",
+      "when": "A metric over time for a focus entity against peers, where one period or one extreme carries the message.",
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two",
+        "chart_led/many"
+      ],
+      "purpose": [
+        "trend"
+      ],
+      "composition": {
+        "kind": "rail",
+        "params": {
+          "side": "right",
+          "chartCols": 8,
+          "rail": "tinted"
+        }
+      },
+      "draw": {
+        "band": "window",
+        "callout": "extreme"
+      },
+      "rules": [
+        "Series labelled at their ends with name and latest value; no legend.",
+        "The focus series heavy with every point marked; peers thin and quiet.",
+        "A light band marks the period the headline is about, labelled with the period only.",
+        "One callout at most, on the focus series' extreme, computed from the data."
+      ],
+      "principles": [
+        "CH6",
+        "CH1"
+      ],
+      "language": "institutional"
+    },
+    {
+      "id": "agenda",
+      "pattern": "R9",
+      "name": "Agenda with the current section marked",
+      "when": "Opening a deck or a section: the sections in order, the one that follows highlighted.",
+      "archetypes": [
+        "agenda"
+      ],
+      "purpose": [
+        "section"
+      ],
+      "composition": {
+        "kind": "agenda",
+        "params": {
+          "current": 0
+        }
+      },
+      "rules": [
+        "A paper column with the word Contents in the display face; the sections on navy.",
+        "Two-digit numerals in the display face; the current section in gold and bold, the others muted.",
+        "Section names of five words or fewer; no figures on navigation slides."
+      ],
+      "principles": [
+        "ST5",
+        "TY6"
+      ],
+      "language": "institutional"
+    },
+    {
+      "id": "divider",
+      "pattern": "R9",
+      "name": "Section divider",
+      "when": "Between sections of a deck of eight slides or more.",
+      "archetypes": [
+        "divider"
+      ],
+      "purpose": [
+        "section"
+      ],
+      "composition": {
+        "kind": "divider",
+        "params": {
+          "current": 0
+        }
+      },
+      "rules": [
+        "Full navy slide; the section numeral in gold, the section title in the display face, one line saying what the section answers.",
+        "No photographs unless licensed for this deck; no figures."
+      ],
+      "principles": [
+        "ST5",
+        "LY8"
+      ],
+      "language": "institutional"
+    },
+    {
+      "id": "chart-commentary",
+      "pattern": "R4",
+      "name": "Chart with a commentary column",
+      "when": "One chart carries the evidence and three facts explain it; the slide closes on a stated implication.",
+      "archetypes": [
+        "chart_led/single",
+        "chart_led/two"
+      ],
+      "purpose": [
+        "trend",
+        "comparison"
+      ],
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 7,
+              "slots": [
+                "exhibit",
+                "chart"
+              ]
+            },
+            {
+              "span": 5,
+              "slots": [
+                "side",
+                "notes",
+                "so"
+              ]
+            }
+          ]
+        }
+      },
+      "rules": [
+        "The exhibit title states the chart's finding; a unit line names measure, unit and period; a charcoal hairline closes the exhibit header.",
+        "Three commentary blocks, each a bold lead-in of two to four words and one sentence with its figures; hairlines between blocks.",
+        "The conclusion sits at the foot of the column under a heavier rule, level with the chart's baseline.",
+        "Figures for the focus entity in the primary colour; peers' figures in charcoal."
+      ],
+      "principles": [
+        "TY2",
+        "TY5",
+        "ST1",
+        "LY2",
+        "CH6"
+      ],
+      "language": "burgundy"
+    },
+    {
+      "id": "rank-table",
+      "pattern": "R5",
+      "name": "Ranked table with a figures column",
+      "when": "Many entities compared at two periods, where rank, level and change all matter.",
+      "archetypes": [
+        "table/single",
+        "chart_led/single",
+        "chart_led/two"
+      ],
+      "purpose": [
+        "comparison",
+        "detail_table"
+      ],
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 8,
+              "slots": [
+                "exhibit",
+                "table"
+              ]
+            },
+            {
+              "span": 4,
+              "slots": [
+                "fig",
+                "notes",
+                "so"
+              ],
+              "tint": true
+            }
+          ]
+        }
+      },
+      "draw": {
+        "form": "rankTable"
+      },
+      "rules": [
+        "One row per entity, ranked in the message's direction: rank, name, a bar of the latest value with its label, the earlier value, the change.",
+        "Charcoal header over a charcoal rule; hairline rows; the focus row tinted, its bar in the primary colour, the others in light grey.",
+        "The figures column is tinted and bleeds to the slide edge; the source line keeps to the table side."
+      ],
+      "principles": [
+        "TB1",
+        "CH10",
+        "LY2",
+        "TY4"
+      ],
+      "language": "burgundy"
+    },
+    {
+      "id": "risk-matrix",
+      "pattern": "R6",
+      "name": "Scorecard matrix",
+      "when": "Several measures assessed for one entity against a reference, each with level, gap, change and trend.",
+      "archetypes": [
+        "table/single",
+        "table/two",
+        "text_list/three",
+        "text_list/many",
+        "kpi_row/single"
+      ],
+      "purpose": [
+        "summary",
+        "kpi",
+        "framework",
+        "matrix"
+      ],
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 12,
+              "slots": [
+                "exhibit",
+                "matrix",
+                "so"
+              ]
+            }
+          ],
+          "matrix": {
+            "widths": [
+              2.0,
+              1.15,
+              1.05,
+              1.1,
+              1.1,
+              2.1,
+              2.4
+            ],
+            "header": true
+          }
+        }
+      },
+      "rules": [
+        "One numbered row per measure, read left to right: name and unit, focus level, reference level, gap, change, trend, reading.",
+        "Focus figures in the primary serif; reference figures in charcoal; sparklines over the same window as the header states.",
+        "Every reading is computed; the conclusion row states what the whole matrix shows, under a heavier rule."
+      ],
+      "principles": [
+        "TB2",
+        "CH14",
+        "TY6",
+        "ST1"
+      ],
+      "language": "burgundy"
+    },
+    {
+      "id": "multi-module",
+      "pattern": "R7",
+      "name": "Two analytical modules and a figures panel",
+      "when": "One subject seen two ways (own change and peer comparison), with the headline figures alongside.",
+      "archetypes": [
+        "chart_led/two",
+        "chart_led/three",
+        "kpi_row/two"
+      ],
+      "purpose": [
+        "trend",
+        "comparison",
+        "kpi"
+      ],
+      "language": "burgundy",
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "dividers": true,
+          "columns": [
+            {
+              "span": 4,
+              "slots": [
+                "ex1",
+                "m1"
+              ]
+            },
+            {
+              "span": 4,
+              "slots": [
+                "ex2",
+                "m2"
+              ]
+            },
+            {
+              "span": 4,
+              "slots": [
+                "fig",
+                "so",
+                "art"
+              ],
+              "tint": true
+            }
+          ]
+        }
+      },
+      "principles": [
+        "LY3",
+        "CH7",
+        "TB6",
+        "CH10",
+        "LY2",
+        "BG2",
+        "TY4"
+      ],
+      "rules": [
+        "Each module has its own finding-led header and unit line; a hairline divider separates modules.",
+        "The focus entity's increment in the primary colour; peers as a benchmark list with flags.",
+        "The figures panel carries the lead figure, one supporting figure, the conclusion and at most one motif."
+      ]
+    },
+    {
+      "id": "exec-split",
+      "pattern": "R8",
+      "name": "Executive summary on a split background",
+      "when": "Three to five findings that together make the case, each with one figure.",
+      "archetypes": [
+        "text_list/single",
+        "kpi_row/single",
+        "text_list/many"
+      ],
+      "purpose": [
+        "summary",
+        "kpi",
+        "recommendation"
+      ],
+      "language": "burgundy",
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "split": true,
+          "columns": [
+            {
+              "span": 4,
+              "slots": [
+                "art"
+              ]
+            },
+            {
+              "span": 8,
+              "slots": [
+                "matrix",
+                "so"
+              ]
+            }
+          ],
+          "matrix": {
+            "widths": [
+              3.6,
+              1
+            ],
+            "header": false
+          }
+        }
+      },
+      "principles": [
+        "LY4",
+        "TY6",
+        "TY5",
+        "TY4",
+        "BG2",
+        "ST1"
+      ],
+      "rules": [
+        "The title and a thematic motif in the ivory field; the findings on white.",
+        "Each finding: an outlined number, a bold verdict lead-in and one sentence, its figure large in primary serif to the right.",
+        "A conclusion under a gold rule."
+      ]
+    },
+    {
+      "id": "causal-chain",
+      "pattern": "R9b",
+      "name": "Causal chain with feedback",
+      "when": "The argument is how pressures connect (transmission, debt dynamics, ownership).",
+      "archetypes": [
+        "text_list/many",
+        "image_text/three"
+      ],
+      "purpose": [
+        "framework",
+        "process",
+        "trend"
+      ],
+      "language": "burgundy",
+      "composition": {
+        "kind": "columns",
+        "params": {
+          "columns": [
+            {
+              "span": 12,
+              "slots": [
+                "exhibit",
+                "flow",
+                "so"
+              ]
+            }
+          ],
+          "diagram": {
+            "cols": 4,
+            "rows": 1,
+            "edges": []
+          }
+        }
+      },
+      "principles": [
+        "DG1",
+        "DG2",
+        "TY4",
+        "ST1"
+      ],
+      "rules": [
+        "Nodes show bound figures; edges carry short verb phrases (words only) stating accounting or institutional links.",
+        "One feedback edge routed under the row.",
+        "The unit line says the arrows are links, not estimated effects."
+      ]
+    }
+  ],
+  "languages": {
+    "institutional": "Navy, gold and ivory with a masthead band (PD2)",
+    "burgundy": "Wine, antique gold and ivory with a title rule and no band (Gate E); colour roles in core/design/language.ts"
+  }
+}

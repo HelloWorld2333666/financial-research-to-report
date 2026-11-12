@@ -1,0 +1,16 @@
+{
+ "seconds": 324,
+ "questions": 7,
+ "answered": 6,
+ "accepted": 64,
+ "rejected": 0,
+ "gaps": 1,
+ "tool_calls": 12,
+ "blocked": [
+  "https://www.moodysdaily.com/pages/rating-action-history.aspx?country=FRANCE&ratingAgency=moodys",
+  "https://www.spglobal.com/ratings/en/research/articles/20091124-3eppq2p77510rh3lpmxwpr-standard-and-poors-s-sovereign-ranking-and-rating-history-of-france-1987-to-the-present-day",
+  "https://www.fitchratings.com/research/sovereigns/france-rating-history"
+ ],
+ "rejections": [],
+ "plan_usage": "RunUsage(cache_read_tokens=6, input_tokens=191, output_tokens=493, requests=1)"
+}

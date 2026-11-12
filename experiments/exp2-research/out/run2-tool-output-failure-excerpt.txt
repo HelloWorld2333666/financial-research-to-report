@@ -1,0 +1,2 @@
+[question_failed] {"id": "q1", "error": "Exceeded maximum output retries (3)"}
+[question_done] {"id": "q1", "seconds": 501, "candidates": 0, "unanswered": "agent error: UnexpectedModelBehavior"}

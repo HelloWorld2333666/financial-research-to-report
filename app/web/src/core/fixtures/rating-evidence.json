@@ -1,0 +1,32 @@
+[
+ {
+  "id": "ev.pdf.e698f0b8.1",
+  "source_id": "src.pdf.e698f0b8a8",
+  "kind": "fact",
+  "subject": "France",
+  "statement": "Example Ratings affirmed France at AA-, outlook negative (2025-03-14)",
+  "page": 1,
+  "excerpt": "Example Ratings affirms France at AA-; Outlook Negative",
+  "locator": "example-ratings-france.pdf, p. 1",
+  "verification": "verified",
+  "verified_by": "frr-sourcecheck (excerpt on page; found by pattern)",
+  "verified_on": "2026-11-02",
+  "rating": {
+   "agency": "Example Ratings",
+   "action": "affirmed",
+   "rating": "AA-",
+   "outlook": "negative",
+   "date": "2025-03-14"
+  },
+  "source_title": "Example Ratings press release (example-ratings-france.pdf)",
+  "source_url": null,
+  "retrieval": {
+   "method": "pdf_upload",
+   "query_url": null,
+   "retrieved_at": "2026-11-02T00:00:00+00:00",
+   "content_sha256": "e698f0b8a8efe5dd7f76932c7be2e0da658325eae58779f64bf3c5f1f07f4183",
+   "series_key": null,
+   "note": "uploaded by the user: example-ratings-france.pdf; origin user_provided"
+  }
+ }
+]
