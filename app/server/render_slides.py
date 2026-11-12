@@ -36,6 +36,8 @@ def render(base: str, project: str, target: str, out: Path) -> dict:
         query, name = f"slide={rest[0]}", f"slide-{rest[0]}"
     elif kind == "brief":
         query, name = f"brief={rest[0]}&cand={rest[1]}", f"{rest[0]}-{rest[1]}"
+    elif kind == "plan":  # Stage 4: a plan file in <project>/plans/<name>.json
+        query, name = f"plan={rest[0]}", rest[0]
     elif kind in ("sheet", "stats", "tslide"):  # design-library template: contact sheet of slides from..to (stats: its
         # JSON only, with per-cell pixel statistics, no screenshot), or one slide
         if kind == "tslide":

@@ -8,6 +8,7 @@ import type { DesignObject, DesignText, SlideDesign } from './spec'
 import { languageOf, type Language, type TypeRole } from './language'
 import { H, lineCount, W, type Box, type Laid } from './layout'
 import { MOTIFS } from './motifs'
+import { iconMarks, mapMarks, picture, projector, type Treatment } from './assets'
 
 const px = (pt: number) => (pt * 96) / 72
 const textOf = (o: DesignObject) => (o.kind === 'text' ? [o.text, ...(o.items ?? [])].filter((t) => t.text).map((t) => t.text).join('\n') : '')
@@ -46,11 +47,59 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
   const setFigure = (o: DesignObject, role: keyof Language['type'], x: number, y: number, w: number) => {
     if (o.kind !== 'kpi') return y
     const v = L.type[role], cap = L.type.caption
-    const h = Math.ceil(lineH(v) * 1.04) + 4 + height(o.label, cap, w) + (o.context ? height(o.context.text, L.type.bodySmall, w) + 4 : 0) + 4
+    // a long figure ("13,676.7 US$/t") may wrap in a narrow column: measure its lines instead of assuming one
+    const vl = Math.max(1, lineCount(m, v.font, o.value.text, v.pt, w, !!v.bold))
+    const h = Math.ceil(lineH(v) * 1.04 * vl) + 4 + height(o.label, cap, w) + (o.context ? height(o.context.text, L.type.bodySmall, w) + 4 : 0) + 4
     boxes[o.id] = { x, y, w, h }; sizes[o.id] = v.pt; roles[o.id] = role
     return y + h
   }
   const rule = (id: string, b: Box, fill: string) => decor.push({ id, kind: 'rule', box: b, fill })
+  // ---- visual assets (assets.ts): pictures, icons and maps; a missing asset is reported, never silently replaced
+  /** a picture in a box: a photograph cropped to it (cover), a logo or flag fitted in it (centred, or at its left) */
+  const pic = (id: string, key: string, b: Box, o: { fit?: 'cover' | 'contain'; focus?: [number, number]; treatment?: Treatment[]; align?: 'left' | 'center' } = {}) => {
+    const r = picture(key, b.w, b.h, { fit: o.fit, focus: o.focus, treatment: o.treatment, L })
+    if (!r) { notes.push(`${id}: asset ${key} is not loaded`); return null }
+    const box = { x: o.align === 'left' ? b.x : b.x + (b.w - r.w) / 2, y: b.y + (b.h - r.h) / 2, w: r.w, h: r.h }
+    decor.push({ id: `pic-${id}`, kind: 'asset', box, dataUrl: r.dataUrl, descr: r.descr })
+    return box
+  }
+  /** a line icon as an editable vector shape */
+  const icon = (id: string, key: string, b: Box, color: string) => {
+    const mk = iconMarks(key, b, color)
+    if (!mk) { notes.push(`${id}: icon ${key} is not loaded`); return }
+    decor.push({ id: `icon-${id}`, kind: 'graphic', box: b, marks: mk, name: `frr-icon ${key.slice(5)}` })
+  }
+  /** an icon centred in a filled disc */
+  const disc = (id: string, key: string, b: Box, fill: string, color: string) => {
+    decor.push({ id: `disc-${id}`, kind: 'badge', box: b, fill, text: '' })
+    const k = b.w * 0.56
+    icon(id, key, { x: b.x + (b.w - k) / 2, y: b.y + (b.h - k) / 2, w: k, h: k }, color)
+  }
+  /** an identifier at an object's left: a flag (4:3) or an icon */
+  const markAt = (id: string, key: string, x: number, y: number, size = 28) =>
+    key.startsWith('flag:') ? pic(`mark-${id}`, key, { x, y, w: size, h: size * 0.75 }, { fit: 'contain', align: 'left' }) : icon(`mark-${id}`, key, { x, y, w: size, h: size }, L.color.navy)
+  const MARK = 40
+  const markOf = (o: DesignObject) => (o as any).mark as string | undefined
+  /** a map as editable shapes in a box; the text and figures anchored to it set on paper cards beside their points */
+  const placeMap = (o: DesignObject, b: Box) => {
+    if (o.kind !== 'map') return
+    boxes[o.id] = b
+    const mk = mapMarks(o.map, b, L)
+    if (!mk) { notes.push(`${o.id}: map geometry is not loaded`); return }
+    decor.push({ id: `map-${o.id}`, kind: 'graphic', box: b, marks: mk, name: `frr-map ${o.id}`, descr: 'map: Natural Earth country geometry (public domain), drawn as editable shapes' })
+    const P = projector(o.map.view, b), dark = o.map.theme === 'dark'
+    for (const a of d.objects.filter((x) => (x as any).anchor?.map === o.id)) {
+      const an = (a as any).anchor as { lon: number; lat: number; w?: number; side?: 'left' | 'right' }, [px0, py0] = P(an.lon, an.lat), w = an.w ?? 200
+      const x = an.side === 'left' ? px0 - 16 - w : px0 + 16
+      if (a.kind === 'kpi') setFigure(a, 'cellFigure', x + 12, py0 - 12, w - 24); else setText(a, 'bodySmall', x + 12, py0 - 10, w - 24)
+      const bb = boxes[a.id]!
+      // keep the card on the map
+      const dx = Math.min(0, b.x + b.w - 8 - (bb.x + bb.w + 12)) + Math.max(0, b.x + 8 - (bb.x - 12)), dy = Math.min(0, b.y + b.h - 8 - (bb.y + bb.h + 8)) + Math.max(0, b.y + 8 - (bb.y - 10))
+      bb.x += dx; bb.y += dy
+      decor.push({ id: `pin-card-${a.id}`, kind: 'card', box: { x: bb.x - 12, y: bb.y - 10, w: bb.w + 24, h: bb.h + 18 }, fill: dark ? L.color.navyDeep : L.color.paper, stroke: dark ? '#2C6580' : L.color.hair })
+      decor.push({ id: `pin-edge-${a.id}`, kind: 'rule', box: { x: bb.x - 12, y: bb.y - 10, w: 3, h: bb.h + 18 }, fill: L.color.navy })
+    }
+  }
 
   // ---- frame: masthead band (navy, gold line), section label, footnote with a hairline above it
   const mast = one((o) => o.kind === 'shape' && o.role === 'masthead'), mh = L.frame.masthead?.height ?? 0
@@ -121,17 +170,35 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     const R = Math.max(...cells.map((o) => o.cell.r)) + 1
     const roleIn = (o: DesignObject, r: number): keyof Language['type'] => r === 0 && mp.header ? 'cellHead' : o.kind === 'text' && o.accent === 'focus' ? 'cellFigure' : 'cell'
     const textH = (o: DesignObject, r: number, w: number) => o.kind === 'text' ? height(itemsOf(o).map((i) => i.text).join('\n'), L.type[roleIn(o, r)], w, itemsOf(o).length, 3) : o.kind === 'kpi' ? Math.ceil(lineH(L.type.cellFigure)) + height(o.label, L.type.caption, w) + 4 : 0
-    const badgeW = (o: DesignObject) => ((o as any).cell?.badge ? 34 : 0)
-    const headH = mp.header ? Math.max(0, ...cells.filter((o) => o.cell.r === 0).map((o) => textH(o, 0, colW[o.cell.c]!))) + 10 : 0
+    const badgeW = (o: DesignObject) => { const c = (o as any).cell; return c?.icon ? 44 : c?.badge || c?.flag ? 34 : 0 }
+    const logos = cells.some((o) => o.cell.r === 0 && (o.cell as any).logo)
+    const headH = mp.header ? Math.max(logos ? 40 : 0, ...cells.filter((o) => o.cell.r === 0).map((o) => textH(o, 0, colW[o.cell.c]!))) + 10 : 0
+    const CHIP = { 1: L.color.navyDeep, 2: L.color.navy, 3: L.color.gold, 4: L.color.goldSoft } as Record<number, string>
     const rows = R - (mp.header ? 1 : 0), rowH = (b.h - headH) / Math.max(1, rows)
     for (const o of cells) {
       const { r, c: ci } = o.cell, x0 = colX[ci]! + badgeW(o), w0 = colW[ci]! - badgeW(o)
-      if (r === 0 && mp.header) { const h = textH(o, 0, w0); setText(o, 'cellHead', x0, b.y + headH - 10 - h, w0); continue }
+      if (r === 0 && mp.header) {
+        const h = textH(o, 0, w0), logo = (o.cell as any).logo as string | undefined
+        setText(o, 'cellHead', x0, b.y + headH - 10 - h, w0)
+        if (logo) { // logos at equal visual area (a stacked mark is taller than a wide wordmark), on the header baseline
+          const r = picture(logo, 1000, 100, { fit: 'contain' }), asp = r ? r.w / r.h : 5, lh = Math.min(30, Math.max(16, Math.sqrt(2200 / asp)))
+          pic(`logo-${o.id}`, logo, { x: x0, y: b.y + headH - 12 - lh, w: Math.min(w0, lh * asp), h: lh }, { fit: 'contain', align: 'left' })
+        }
+        continue
+      }
       const top = b.y + headH + (r - (mp.header ? 1 : 0)) * rowH
       if (o.kind === 'viz') { boxes[o.id] = { x: x0, y: top + 12, w: w0, h: rowH - 24 }; continue }
       const h = Math.min(rowH - 8, textH(o, r, w0)), yy = top + (rowH - h) / 2
       if (o.kind === 'kpi') { setFigure(o, 'cellFigure', x0, yy, w0); continue }
+      const chip = (o.cell as any).chip as number | undefined
+      if (chip && o.kind === 'text') { // a pill as wide as its words, in the tier's tone (decoration under the text)
+        const t = L.type.cell, tw0 = Math.min(w0, m.measure(itemsOf(o).map((i) => (i.lead ? i.lead + ' ' : '') + i.text).join(' '), { fontFamily: t.font, fontSizePx: px(t.pt), bold: true, italic: false }) + 6)
+        decor.push({ id: `chip-${o.id}`, kind: 'card', box: { x: x0 - 9, y: yy - 5, w: tw0 + 18, h: h + 8 }, fill: CHIP[chip] ?? L.color.surface, round: true })
+      }
       setText(o, roleIn(o, r), x0, yy, w0)
+      const cf = (o.cell as any).flag as string | undefined, ci0 = (o.cell as any).icon as string | undefined, dark = (o as any).tone === 'onDark'
+      if (cf) pic(`flag-${o.id}`, `flag:${cf.toLowerCase()}`, { x: colX[ci]!, y: top + rowH / 2 - 10, w: 26, h: 19.5 }, { fit: 'contain', align: 'left' })
+      if (ci0) disc(`cell-${o.id}`, `icon:${ci0}`, { x: colX[ci]!, y: top + rowH / 2 - 17, w: 34, h: 34 }, dark ? L.color.goldSoft : L.color.navy, dark ? L.color.navyDeep : '#FFFFFF')
       if (o.cell.badge) decor.push({ id: `badge-${o.id}`, kind: 'badge', box: { x: colX[ci]! + 1, y: top + rowH / 2 - 13, w: 26, h: 26 }, text: o.cell.badge, ...(L.frame.panelMarker === 'line' ? { stroke: L.color.navy } : { fill: L.color.navy }) })
     }
     if (mp.header) rule('matrix-head-rule', { x: b.x, y: b.y + headH - 1, w: b.w, h: 1 }, (L.color.rule ?? L.color.ink))
@@ -152,7 +219,8 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
     const dg = P.diagram ?? { cols: 3, rows: 1, edges: [] }, gx = 112, gy = 56
     const nw = (b.w - gx * (dg.cols - 1)) / dg.cols, back = dg.edges.some((e) => e.back)
     // nodes as tall as their content needs (figure, label, context), never more than the slot allows
-    const need = Math.max(...objs.filter((o) => (o as any).node).map((o) => o.kind === 'kpi' ? Math.ceil(lineH(L.type.cellFigure)) + 10 + height(o.label, L.type.caption, nw - 36) + (o.context ? height(o.context.text, L.type.bodySmall, nw - 36) + 6 : 0) + 28 : 120))
+    const iconH = (o: DesignObject) => ((o as any).node?.icon ? 52 : 0)
+    const need = Math.max(...objs.filter((o) => (o as any).node).map((o) => iconH(o) + (o.kind === 'kpi' ? Math.ceil(lineH(L.type.cellFigure)) + 10 + height(o.label, L.type.caption, nw - 36) + (o.context ? height(o.context.text, L.type.bodySmall, nw - 36) + 6 : 0) + 28 : 120)))
     const nh = Math.min(need, (b.h - (back ? 70 : 0) - gy * (dg.rows - 1)) / dg.rows)
     const at: Record<string, Box> = {}
     for (const o of objs) {
@@ -160,10 +228,13 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
       if (!n) continue
       const nb = { x: b.x + n.c * (nw + gx), y: b.y + n.r * (nh + gy), w: nw, h: nh }
       at[o.id] = nb
-      decor.push({ id: `node-${o.id}`, kind: 'card', box: nb, fill: L.color.paper, stroke: L.color.gold })
+      // a tinted card with a structure-coloured head rule; an icon disc names the link before its figure
+      decor.push({ id: `node-${o.id}`, kind: 'card', box: nb, fill: L.color.surface })
       decor.push({ id: `node-top-${o.id}`, kind: 'rule', box: { x: nb.x, y: nb.y, w: nb.w, h: 3 }, fill: L.color.navy })
-      if (o.kind === 'kpi') setFigure(o, 'cellFigure', nb.x + 18, nb.y + 20, nb.w - 36)
-      else setText(o, 'body', nb.x + 18, nb.y + 20, nb.w - 36)
+      const ic = (o as any).node?.icon as string | undefined
+      if (ic) disc(`node-${o.id}`, `icon:${ic}`, { x: nb.x + 18, y: nb.y + 20, w: 40, h: 40 }, L.color.navy, '#FFFFFF')
+      if (o.kind === 'kpi') setFigure(o, 'cellFigure', nb.x + 18, nb.y + 20 + iconH(o), nb.w - 36)
+      else setText(o, 'body', nb.x + 18, nb.y + 20 + iconH(o), nb.w - 36)
     }
     dg.edges.forEach((e, i) => {
       const A = at[e.from], B = at[e.to]
@@ -178,7 +249,7 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
         lab(Math.min(x1, x2) + 20, yb + 6, Math.abs(x1 - x2) - 40, e.label)
       } else if (Math.abs(A.y - B.y) < 2 && B.x > A.x) {
         const ym = A.y + A.h / 2
-        decor.push({ id: `edge-${i}`, kind: 'arrow', box: { x: A.x + A.w + 6, y: ym, w: B.x - (A.x + A.w) - 12, h: 0 }, color: L.color.gold })
+        decor.push({ id: `edge-${i}`, kind: 'arrow', box: { x: A.x + A.w + 6, y: ym, w: B.x - (A.x + A.w) - 12, h: 0 }, color: L.color.navy })
         { const lw0 = B.x - (A.x + A.w) - 8, lh = Math.ceil(height(e.label ?? '', { ...L.type.caption, pt: 9.5 }, lw0)) + 4; lab(A.x + A.w + 4, ym - lh - 6, lw0, e.label) }
       } else {
         const xm = A.x + A.w / 2
@@ -298,13 +369,15 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
         if (so.some(isMatrix) || so.some((o) => !!(o as any).node)) { items.push({ o: so, h: 0, fill: true, slot: sl }); continue }
         if (so.every((o) => o.kind === 'shape' && (o as any).role === 'asset')) { items.push({ o: so, h: 0, fill: true, slot: sl }); continue }
         for (const o of so) {
-          if (o.kind === 'viz') items.push({ o: [o], h: 0, fill: true, slot: sl })
-          else if (o.kind === 'kpi') items.push({ o: [o], h: Math.ceil(lineH(L.type[o.variant === 'hero' ? 'hero' : 'heroSmall']) * 1.04) + 8 + height(o.label, L.type.caption, ow) + (o.context ? height(o.context.text, L.type.bodySmall, ow) + 4 : 0), fill: false, slot: sl })
+          const mw = ow - (markOf(o) ? MARK : 0)
+          if (o.kind === 'viz' || o.kind === 'map' || (o.kind === 'image' && o.role === 'photo')) items.push({ o: [o], h: 0, fill: true, slot: sl })
+          else if (o.kind === 'image') items.push({ o: [o], h: 34, fill: false, slot: sl })
+          else if (o.kind === 'kpi') items.push({ o: [o], h: Math.ceil(lineH(L.type[o.variant === 'hero' ? 'hero' : 'heroSmall']) * 1.04) + 8 + height(o.label, L.type.caption, mw) + (o.context ? height(o.context.text, L.type.bodySmall, mw) + 4 : 0), fill: false, slot: sl })
           else if (o.kind === 'text') {
             const items0 = itemsOf(o), t = L.type[roleOf(o)], lead = items0[0]?.lead ? items0[0].lead + ' ' : ''
             const extra = o.role === 'exhibit' || o.role === 'conclusion' ? 12 : 0
             const tb = lead ? { ...t, bold: true } : t // a bold lead-in widens the first line: measure the block bold
-            items.push({ o: [o], h: height(lead + items0.map((i) => i.text).join('\n'), tb, ow, items0.length, 6) + extra, fill: false, slot: sl })
+            items.push({ o: [o], h: height(lead + items0.map((i) => i.text).join('\n'), tb, mw, items0.length, 6) + extra, fill: false, slot: sl })
           }
         }
       }
@@ -329,10 +402,15 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
         if (it.fill && it.o.some(isMatrix)) { matrix(it.o, { x: ox, y: cy, w: ow, h: share }); cy += share }
         else if (it.fill && it.o.some((o) => !!(o as any).node)) { diagram(it.o, { x: ox, y: cy, w: ow, h: share }); cy += share }
         else if (it.fill && it.o[0]!.kind === 'shape') { for (const a of it.o) asset(a as any, { x: ox, y: cy, w: ow, h: share }); cy += share }
+        else if (it.fill && o.kind === 'map') { placeMap(o, { x: ox, y: cy, w: ow, h: share }); cy += share }
+        else if (it.fill && o.kind === 'image') { const b0 = { x: ox, y: cy, w: ow, h: share }; pic(o.id, o.asset, b0, { fit: o.fit ?? 'cover', focus: o.focus, treatment: o.treatment }); boxes[o.id] = b0; cy += share }
+        else if (o.kind === 'image') { const b0 = { x: ox, y: cy, w: ow, h: 30 }; pic(o.id, o.asset, b0, { fit: 'contain', align: 'left' }); boxes[o.id] = b0; cy += 30 }
         else if (it.fill) { placeChart(o, { x: ox, y: cy, w: ow, h: share }); cy += share }
-        else if (o.kind === 'kpi') { cy = setFigure(o, o.variant === 'hero' ? 'hero' : 'heroSmall', ox, cy, ow) }
+        else if (o.kind === 'kpi') { const mk = markOf(o); if (mk) markAt(o.id, mk, ox, cy + 6); cy = setFigure(o, o.variant === 'hero' ? 'hero' : 'heroSmall', ox + (mk ? MARK : 0), cy, ow - (mk ? MARK : 0)) }
         else if (o.kind === 'text') {
-          cy = setText(o, roleOf(o), ox, cy, ow)
+          const mk = markOf(o)
+          if (mk) markAt(o.id, mk, ox, cy + 1, mk.startsWith('flag:') ? 26 : 24)
+          cy = setText(o, roleOf(o), ox + (mk ? MARK : 0), cy, ow - (mk ? MARK : 0))
           if (o.kind === 'text' && o.role === 'conclusion') cy += 2
           // the exhibit's hairline goes under its unit line when one follows, else under the exhibit title
           const next = items[i + 1]?.o[0]
@@ -342,6 +420,35 @@ export function composeLayout(d: SlideDesign, m: FontMetricsProvider): ComposedL
       })
       if (cy - GAP > bottom + 2) notes.push(`column ${cx}: content runs past the foot of the slide`)
     }
+  } else if (k === 'cover') {
+    // a cover or section opener: the art (a photograph or a map) on one side, or across the slide behind a faded left
+    // side; the title block on the deep panel colour in the display face; questions or items as a matrix under it
+    background = L.color.navyDeep
+    const art = one((o) => (o.kind === 'image' && o.role === 'photo') || o.kind === 'map')
+    const full = P.art === 'full', ac = P.artCols ?? 7, artX = full ? 0 : W - (cols(ac) + M + 12)
+    const artBox = full ? { x: 0, y: 0, w: W, h: H } : { x: artX, y: 0, w: W - artX, h: H }
+    if (art?.kind === 'image') { pic(art.id, art.asset, artBox, { fit: 'cover', focus: art.focus, treatment: art.treatment ?? (full ? ['fade-left'] : []) }); boxes[art.id] = artBox }
+    else if (art) placeMap(art, artBox)
+    const tw = full ? cols(6) : artX - M - 44
+    let y = 64
+    const kick = one((o) => o.kind === 'text' && (o.role === 'kicker' || o.role === 'label') && !(o as any).cell && !(o as any).anchor)
+    if (kick) y = setText(kick, 'label', M, y, tw) + 20
+    rule('cover-rule', { x: M, y, w: 56, h: 2.5 }, L.color.goldSoft); y += 22
+    const big = lineCount(m, L.type.display.font, textOf(headline), L.type.display.pt, tw, true) <= 4
+    y = setText(headline, big ? 'display' : 'headline', M, y, tw) + 10
+    if (stand) y = setText(stand, 'standfirst', M, y, tw) + 22
+    const cells = of((o) => !!(o as any).cell)
+    if (source) {
+      const h = height(textOf(source), L.type.footnote, tw)
+      boxes[source.id] = { x: M, y: H - 26 - h, w: tw, h }; footTop = H - 26 - h - 12
+      const fl = decor.find((x) => x.id === 'foot-line'); if (fl) { fl.box = { x: M, y: footTop, w: tw, h: 0.75 }; fl.fill = '#2C6580' }
+    }
+    if (cells.length) {
+      const rows = Math.max(...cells.map((o) => (o as any).cell.r)) + 1, need = 58 * rows
+      if (y + need > footTop - 16) notes.push('the cover items do not fit under the title; shorten the title or the items')
+      matrix(cells, { x: M, y: Math.max(y, footTop - 16 - need), w: tw, h: need })
+    }
+    else { const body = one((o) => o.kind === 'text' && (o.role === 'body' || o.role === 'note') && !(o as any).anchor); if (body) setText(body, 'body', M, y, tw) }
   } else if (k === 'statement') {
     // the message carries the slide: a tall headline column, the chart beside it at full height
     const tc = 5, textW = cols(tc), chartX = M + textW + G + 24, chartW = W - M - chartX

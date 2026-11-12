@@ -18,7 +18,7 @@ interface G { p: Project; spec: VizSpec; pr: Projected; W: number; H: number; L:
 const PX = (pt: number) => (pt * 96) / 72
 const lw = (t: string, pt: number, bold = false) => Math.ceil(tw(t, pt) * (bold ? 1.06 : 1))
 const deltaUnit = (unit: string) => (/%/.test(unit) ? 'pp' : unit)
-const unitShort = (unit: string) => (unit === '% of GDP' ? '%' : unit === '%' ? '%' : ` ${unit}`)
+const unitShort = (unit: string) => (unit.startsWith('% of ') || unit === '%' ? '%' : ` ${unit}`) // % of GDP, % of revenue
 
 function axisText(g: G, name: string, box: { x: number; y: number; w: number; h: number }, t: string, align: 'l' | 'ctr' | 'r' = 'l') {
   const a = g.L.type.axis
@@ -186,8 +186,9 @@ const FLAGS: Record<string, { dir: 'v' | 'h'; c: string[]; w?: number[] }> = {
 }
 const geoOf = (p: Project, entity: string) => Object.values(p.datasets).find((d) => d.entity === entity)?.geo?.toUpperCase()
 function flag(out: Mark[], p: Project, entity: string, x: number, y: number, w = 18, h = 12) {
-  const f = FLAGS[geoOf(p, entity) ?? '']
-  if (!f) return false
+  const geo = geoOf(p, entity) ?? '', f = FLAGS[geo]
+  // no native design: an empty, named slot; the build places the flag picture from the asset library over it
+  if (!f) { if (!geo) return false; out.push({ ...rect(`frr-flagslot ${geo}`, { x, y: y - 1.5, w, h: h + 3 }, 'none') } as Mark); return true }
   const ws = f.w ?? f.c.map(() => 1), sum = ws.reduce((a, b) => a + b, 0)
   let at = 0
   f.c.forEach((col, i) => {
@@ -260,7 +261,7 @@ function benchList(g: G): Mark[] {
 function rankTable(g: G): Mark[] {
   const { pr, p, W, H, L, style } = g, out: Mark[] = [], [A, B] = pr.series as [Projected['series'][0], Projected['series'][0]]
   const focusName = style.emphasis ? p.datasets[style.emphasis]?.entity : undefined, n = pr.categories.length
-  const order = pr.categories.map((_, i) => i).sort((a, b) => (B.values[a] ?? Infinity) - (B.values[b] ?? Infinity))
+  const desc = style.order === 'desc', order = pr.categories.map((_, i) => i).sort((a, b) => desc ? (B.values[b] ?? -Infinity) - (B.values[a] ?? -Infinity) : (B.values[a] ?? Infinity) - (B.values[b] ?? Infinity))
   const tp = L.type.cell.pt, hp = L.type.cellHead.pt, vp = L.type.dataLabel.pt, ink = L.color.ink
   const u = unitShort(pr.unit), du = deltaUnit(pr.unit)
   const rankW = 26, nameW = Math.max(...pr.categories.map((c) => lw(c, tp, c === focusName))) + 16 + (style.flags ? 26 : 0), prevW = Math.max(lw(A.name, hp, true), 58) + 14, chgW = Math.max(lw('Change', hp, true), 78) + 22
@@ -269,7 +270,9 @@ function rankTable(g: G): Mark[] {
   const neg = B.values.some((v) => v != null && v < 0), pos = B.values.some((v) => v != null && v > 0)
   const d = domain(B.values, true, 0.02), sx = scale(d[0], d[1], barX0 + (neg ? valW : 0), barX1 - (pos ? valW : 0)), z = sx(0)
   const ht = (name: string, x: number, w: number, t: string, align: 'l' | 'r' | 'ctr' = 'l') => out.push(text(name, { x, y: head - 22, w, h: 18 }, t, hp, ink, { bold: true, align, font: L.type.cellHead.font }))
-  ht('frr-head rank', 0, rankW, '#'), ht('frr-head bar', barX0, barX1 - barX0, `${B.name}`, 'r'), ht('frr-head prev', barX1 + 12, prevW, A.name, 'r'), ht('frr-head chg', W - chgW, chgW, 'Change', 'r')
+  // monthly periods read as "Oct 2026" (e.g. two editions of a forecast), not "2026-10"
+  const pn = (s: string) => { const m = /^(\d{4})-(\d{2})$/.exec(s); return m ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m[2]) - 1]} ${m[1]}` : s }
+  ht('frr-head rank', 0, rankW, '#'), ht('frr-head bar', barX0, barX1 - barX0, pn(B.name), 'r'), ht('frr-head prev', barX1 + 12, prevW, pn(A.name), 'r'), ht('frr-head chg', W - chgW, chgW, 'Change', 'r')
   out.push(path('frr-head rule', [[[0, head], [W, head]]], ink, 1))
   order.forEach((i, row) => {
     const top = head + row * rowH, yc = top + rowH / 2, c = pr.categories[i]!, isF = c === focusName, a = A.values[i], b = B.values[i]

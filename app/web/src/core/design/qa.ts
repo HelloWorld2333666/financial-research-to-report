@@ -7,7 +7,7 @@ import { NAVIGATION, type CompositionKind } from './spec'
 import { auditSlideFindings } from '@genoffice/pipelines/slides/layout-audit'
 import type { FontMetricsProvider, RenderNode, RenderSlide } from '@genoffice/pptx-render'
 import type { OpenedPptx } from '@genoffice/pptx-engine'
-import { durableOfSource, render, slideList } from '../deck'
+import { durableOfSource, findEl, render, slideList } from '../deck'
 import type { Project, Sidecar } from '../types'
 import { profileOf, PROFILES } from './profiles'
 
@@ -43,7 +43,12 @@ export function qaSlide(ctx: Ctx, index: number, metrics: FontMetricsProvider): 
   const roleOf = (n: RenderNode) => { const d = idOf(n.sourceId), b: any = ctx.sidecar.bindings[d]; return b ? (b.kind === 'text' ? b.role : b.kind) : null }
   const out: QaFinding[] = []
   // 1. GenOffice's geometry audit: off the slide, out of bounds, text overflow (height and width), overlaps
-  for (const f of auditSlideFindings(slide, idOf)) out.push({ code: f.code, level: f.level, message: f.message, el: f.el })
+  // a map or icon group under pinned text is intended (a figure card on a map): those overlaps are not findings
+  const graphicIds = new Set(Object.entries(ctx.sidecar.bindings).filter(([id, b]) => b.kind === 'decor' && b.slide === sId && /"frr-(map|icon)/.test(JSON.stringify(findEl(ctx.deck, id)?.el?.name ?? ''))).map(([id]) => id))
+  for (const f of auditSlideFindings(slide, idOf)) {
+    if (f.code === 'overlap' && [...graphicIds].some((g) => f.message.includes(g))) continue
+    out.push({ code: f.code, level: f.level, message: f.message, el: f.el })
+  }
   const all = flat(slide.nodes)
   const top = slide.nodes.filter((n) => !(n as any).decoration)
   // 2. type size: no text (slide text or chart labels) below the profile's minimum

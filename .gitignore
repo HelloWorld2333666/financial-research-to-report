@@ -38,3 +38,6 @@ vendor/genoffice/src/
 app/web/dist/
 app/server/projects/
 .patch-snapshot/
+
+# visual assets fetched from licensed public sources (manifest records provenance)
+app/server/assets_cache/

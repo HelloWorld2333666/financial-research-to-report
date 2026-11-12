@@ -14,6 +14,8 @@ import { summaryFor } from './core/wording'
 import { planSlide, PLAN_VERSION, type DesignCandidate, type DesignRequest } from './core/design/planner'
 import { qaSlide, type QaFinding } from './core/design/qa'
 import { PROFILES } from './core/design/profiles'
+import { planAssets, resolvePlan } from './core/design/plans'
+import { prepareAssets } from './core/design/assets'
 import type { Command } from './core/commands'
 import { findEl, render, slideIndex, textOf } from './core/deck'
 import { textNumbers } from './core/evidence'
@@ -276,6 +278,43 @@ function DesignTool(props: any) {
   )
 }
 
+/** The design Skill's knowledge retrieved for one slide: which cards the AI is planning from (shown, not applied). */
+function GuidanceTool(props: any) {
+  const r = parse(props.result)
+  if (!r) return <Running what="Retrieving design knowledge" />
+  if (r.kind !== 'design_guidance') return <ErrorNote r={r} />
+  return <details className="small" data-design-guidance><summary className="muted">Design Skill: {r.cards.map((c: any) => `${c.id} ${c.name}`).join(' · ')}</summary>
+    {r.cards.map((c: any) => <div key={c.id} className="muted"><b>{c.id}</b> {c.name}</div>)}</details>
+}
+
+/** A slide plan written by the AI from the Skill's cards: assets loaded, figures resolved from evidence and validated
+ *  (resolvePlan + validateDesign), previewed on a copy with layout QA; Apply is one undoable design.apply. */
+function PlanTool(props: any) {
+  const { store } = useContext(HostCtx)
+  useRev(store)
+  const r = parse(props.result)
+  const [ready, setReady] = useState<string[] | null>(null)
+  useEffect(() => { if (r?.kind === 'plan_request') prepareAssets(planAssets(store.project, r.plan)).then(setReady) }, [props.result])
+  if (!r) return <Running what="Planning the slide with the design Skill" />
+  if (r.kind !== 'plan_request') return <ErrorNote r={r} />
+  if (!ready) return <Running what="Loading visual assets" />
+  const c = store.card(`${props.toolCallId}:aiplan`, () => { try { return resolvePlan(store.project, r.plan) } catch (e: any) { return { label: 'plan', design: null as any, problems: [String(e?.message ?? e)] } } })
+  const slide = r.slide && slideIndex(store.deck, r.slide) >= 0 ? r.slide as string : undefined
+  const cmd: Command | null = c.problems.length ? null : { kind: 'design.apply', design: c.design, ...(slide ? { slide } : {}) }
+  const qa = store.card(`${props.toolCallId}:aiplan:qa`, () => cmd ? store.preview(cmd, (o) => qaSlide(store, slideIndex(store.deck, o.slides[0]!), store.metrics)).value ?? null : null)
+  return (
+    <div data-plan-request>
+      <Summary r={r} />
+      {ready.length > 0 && <div className="warn small">Assets not loaded: {ready.join('; ')}</div>}
+      <Card pid={props.toolCallId} title={`Slide plan · Skill cards ${(r.cards ?? []).join(', ') || 'not named'}`} cmd={cmd} blocked={c.problems.length ? `Not valid: ${c.problems.join('; ')}` : null}>
+        <div className="p-summary" data-claim>{c.design?.claim.text ?? r.plan.claim}</div>
+        <QaList findings={qa} />
+        {c.design && <details className="small"><summary className="muted">How it was planned</summary><ol className="rationale">{c.design.rationale.map((x: string, k: number) => <li key={k}>{x}</li>)}</ol></details>}
+      </Card>
+    </div>
+  )
+}
+
 function ProfileTool(props: any) {
   const r = parse(props.result)
   if (!r) return <Running what="Checking the style" />
@@ -286,7 +325,7 @@ function ProfileTool(props: any) {
 }
 
 const Fallback = (p: any) => <div className="muted small">tool {p.toolName}</div>
-const tools = { by_name: { compose_deck: DeckTool, add_comparison: SeriesTool, rewrite_text: RewriteTool, layout_suggestion: LayoutTool, start_research: ResearchTool, propose_visual: VisualTool, change_visual: ChangeVisualTool, design_slide: DesignTool, set_design_profile: ProfileTool }, Fallback }
+const tools = { by_name: { compose_deck: DeckTool, add_comparison: SeriesTool, rewrite_text: RewriteTool, layout_suggestion: LayoutTool, start_research: ResearchTool, propose_visual: VisualTool, change_visual: ChangeVisualTool, design_slide: DesignTool, set_design_profile: ProfileTool, design_guidance: GuidanceTool, plan_slide: PlanTool }, Fallback }
 
 const UserMessage = () => <MessagePrimitive.Root className="msg-user"><MessagePrimitive.Parts components={{ Text }} /></MessagePrimitive.Root>
 function AssistantMessage() {

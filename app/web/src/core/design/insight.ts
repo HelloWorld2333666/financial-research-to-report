@@ -32,12 +32,13 @@ export function value(p: Project, ds: string, date: string): number | null {
 const evidenceAt = (p: Project, ds: string, date: string) => effectiveObs(p.datasets[ds]).find((o) => o.date === date)?.evidence_id
 
 function fmt(v: number, dec: number, signed = false) {
-  const s = Math.abs(v).toFixed(dec)
+  // thousands grouped (13,676.7): the figure parsers on both sides strip commas before matching
+  const s = Math.abs(v) >= 10000 ? Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : Math.abs(v).toFixed(dec)
   return (v < 0 ? MINUS : signed && v > 0 ? '+' : '') + s
 }
 /** "% of GDP" is written "115.7% of GDP" on first use and "115.7%" after; "%" stays; "pp"/"bp" are spaced. */
 function unitSuffix(unit: string, long: boolean) {
-  if (unit === '% of GDP') return long ? '% of GDP' : '%'
+  if (unit.startsWith('% of ')) return long ? unit : '%' // % of GDP, % of revenue
   if (unit === '%') return '%'
   return unit ? ' ' + unit : ''
 }
@@ -89,6 +90,14 @@ export class Writer {
     if (!existing && !this.derivations.some((x) => x.id === id)) this.derivations.push({ id, statement, formula, inputs, value: Number(v.toFixed(dec)), unit, rounding: dec })
     const t = fmt(Number(v.toFixed(dec)), dec, o.signed) + unitSuffix(unit, !!o.long)
     this.refs.push({ text: t, derivation: id })
+    return t
+  }
+  /** A sourced fact that is not part of a dataset (e.g. a figure quoted from an agency or authority release). */
+  ev(id: string): string {
+    const e = this.p.evidence[id]
+    if (!e || typeof e.value !== 'number') throw new Error(`no evidence value ${id}`)
+    const t = String(e.value)
+    this.refs.push({ text: t, evidence: id })
     return t
   }
   /** Package text with the references collected since the last call. */

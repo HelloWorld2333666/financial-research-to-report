@@ -28,7 +28,9 @@ from pydantic_ai.ui import StateDeps  # noqa: E402
 from pydantic_ai.ui.ag_ui import AGUIAdapter  # noqa: E402
 from starlette.applications import Starlette  # noqa: E402
 from starlette.requests import Request  # noqa: E402
-from starlette.responses import FileResponse, JSONResponse  # noqa: E402
+from starlette.responses import FileResponse, JSONResponse, Response  # noqa: E402
+from urllib.parse import quote as urlquote  # noqa: E402
+import assets as asset_library  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 from starlette.staticfiles import StaticFiles  # noqa: E402
 from starlette.middleware.gzip import GZipMiddleware  # noqa: E402
@@ -75,6 +77,29 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=
 
     async def get_project(request: Request):
         return JSONResponse(store.load(request.path_params["pid"]))
+
+    async def get_plan(request: Request):
+        # Stage 4: a slide plan written by the design model (extended frr-design, figure tokens), kept beside the project
+        pid, name = request.path_params["pid"], request.path_params["name"]
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or not (store.root / pid / "current").exists():
+            raise BundleError("not found")
+        f = store.root / pid / "plans" / f"{name}.json"
+        if not f.exists():
+            raise BundleError("not found")
+        return JSONResponse(json.loads(f.read_text()))
+
+    async def get_asset(request: Request):
+        # a visual asset by key (flag:, icon:, geo:, commons:), fetched once from its allowlisted, licensed source and
+        # cached; its provenance travels in X-Asset-Meta so the slide records where each picture came from
+        key = request.query_params.get("key", "")
+        try:
+            body, meta = asset_library.read(key)
+        except ValueError as e:
+            return JSONResponse({"error": str(e)}, status_code=400)
+        except Exception as e:  # noqa: BLE001
+            return JSONResponse({"error": f"{key}: {e}"}, status_code=502)
+        info = {k: meta.get(k) for k in ("key", "kind", "license", "attribution", "source_url", "media_type", "description")}
+        return Response(body, media_type=meta["media_type"], headers={"X-Asset-Meta": urlquote(json.dumps(info, ensure_ascii=False)), "Cache-Control": "max-age=86400"})
 
     async def put_project(request: Request):
         pid, bundle = request.path_params["pid"], await request.json()
@@ -166,6 +191,8 @@ def create_app(web_dist: Path = WEB_DIST, projects_root: Path = PROJECTS, model=
         Route("/api/projects", list_projects, methods=["GET"]),
         Route("/api/projects", guarded(create_project), methods=["POST"]),
         Route("/api/projects/{pid}", guarded(get_project), methods=["GET"]),
+        Route("/api/projects/{pid}/plans/{name}", guarded(get_plan), methods=["GET"]),
+        Route("/api/assets", get_asset, methods=["GET"]),
         Route("/api/projects/{pid}", guarded(put_project), methods=["PUT"]),
         Route("/api/projects/{pid}/versions", guarded(list_versions), methods=["GET"]),
         Route("/api/projects/{pid}/versions", guarded(post_version), methods=["POST"]),
