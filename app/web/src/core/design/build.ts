@@ -5,7 +5,10 @@
 import { elementDurableId, materializeSlide, slideDurableId } from '@genoffice/pptx-engine'
 import type { Op } from '@genoffice/pptx-ops'
 import type { FontMetricsProvider } from '@genoffice/pptx-render'
-import { EMU, realizeAt, TABLE_STYLE, tableFill, txn, type Ctx, type Outcome } from '../commands'
+import { EMU, placeGroup, realizeAt, TABLE_STYLE, tableFill, txn, type Ctx, type Outcome } from '../commands'
+import { layout as compositeLayout, type Mark } from '../composite'
+import { check } from '../viz'
+import { picture } from './assets'
 import { findEl, slideIndex } from '../deck'
 import { isComposite, realize } from '../viz'
 import type { Binding, ElementStyle } from '../types'
@@ -22,7 +25,9 @@ const ins = (px: number) => ({ l: px * EMU, t: px * EMU, r: px * EMU, b: px * EM
 
 interface ElPlan {
   key: string
-  kind: 'text' | 'shape' | 'chart' | 'composite' | 'table' | 'decor'
+  kind: 'text' | 'shape' | 'chart' | 'composite' | 'table' | 'decor' | 'graphic'
+  /** graphic: the vector shapes (slide px) that replace the placeholder once it exists */
+  marks?: Mark[]; name?: string
   box: Box
   create: Op
   /** the text content, for an in-place text update when the user owns the position */
@@ -129,20 +134,23 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
       case 'badge': // a numbered or marker circle: filled, or outlined when it has a stroke
         return { op: 'addElement', kind: 'ellipse', offset: at, fill: x.stroke ? c.paper : (x.fill ?? c.navy), ...(x.stroke ? { stroke: stroke(x.stroke, 1.25) } : {}),
           paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: x.pt ?? 10.5, bold: true, color: x.stroke ? x.stroke : c.onDark, fontFamily: V.fonts.text }], align: 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 'ctr' } }
-      case 'card': // a bordered box behind a diagram node or module
-        return { op: 'addElement', kind: 'rect', offset: at, fill: x.fill ?? c.paper, ...(x.stroke ? { stroke: stroke(x.stroke, 1) } : {}) }
+      case 'card': // a bordered box behind a diagram node or module; a rounded pill for a tier chip
+        return { op: 'addElement', kind: x.round ? 'roundRect' : 'rect', offset: at, fill: x.fill ?? c.paper, ...(x.stroke ? { stroke: stroke(x.stroke, 1) } : {}) }
+      case 'graphic': // a placeholder, replaced by the group of vector shapes once created (applyDesign)
+        return { op: 'addElement', kind: 'rect', offset: at, fill: 'none' }
       case 'arrow': return { op: 'addElement', kind: 'lineArrow', offset: at, stroke: stroke(x.color ?? c.gold, 1.25) }
       case 'line': return { op: 'addElement', kind: 'line', offset: at, stroke: stroke(x.color ?? c.gold, 1.25) }
       case 'head': return { op: 'addElement', kind: 'triangle', offset: at, fill: x.color ?? c.gold } // an upward arrowhead
       case 'label': // an edge or section label: words only (validated), not bound to evidence
         return { op: 'addElement', kind: 'textbox', offset: at, paragraphs: [{ runs: [{ text: x.text ?? '', fontSize: x.pt ?? 10, bold: !!x.bold, color: x.color ?? c.muted, fontFamily: V.fonts.text }], align: x.align ?? 'center' }], bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } }
       case 'asset': // a decorative picture (self-authored motif or a licensed asset); provenance in descr
-        return { op: 'addPicture', offset: at, bytes: x.dataUrl, ext: 'png', name: `decor ${x.id}`, ...(x.descr ? { descr: x.descr } : {}) }
+        return { op: 'addPicture', offset: at, bytes: x.dataUrl, ext: /^data:image\/jpe?g/.test(x.dataUrl ?? '') ? 'jpg' : 'png', name: `decor ${x.id}`, ...(x.descr ? { descr: x.descr } : {}) }
       default:
         return { op: 'addElement', kind: 'rect', offset: box({ ...x.box, h: Math.max(x.box.h, 0.75) }), fill: x.fill ?? c.hair }
     }
   }
-  for (const x of L.decor) out.push({ key: `decor:${x.id}`, kind: 'decor', box: x.box, create: decorOp(x), bind: (slide) => ({ kind: 'decor', slide }) })
+  for (const x of L.decor) out.push({ key: `decor:${x.id}`, kind: x.kind === 'graphic' ? 'graphic' : 'decor', box: x.box, create: decorOp(x), bind: (slide) => ({ kind: 'decor', slide }),
+    ...(x.kind === 'graphic' ? { marks: x.marks, name: x.name ?? `frr-graphic ${x.id}` } : {}) })
   for (const o of d.objects) if (o.kind === 'shape' && L.boxes[o.id]) {
     const fill = o.role === 'panel' ? c.navyDeep : o.role === 'masthead' ? c.navy : c.gold
     out.push({ key: o.id, kind: 'decor', box: L.boxes[o.id]!, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(L.boxes[o.id]!), fill }, bind: (slide) => ({ kind: 'decor', slide }) })
@@ -151,13 +159,16 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
     const b = L.boxes[o.id]
     if (!b || o.kind === 'shape') continue
     if (o.kind === 'viz') {
-      const spec = o.viz, style: ElementStyle = { render: 'designed', lang: V.id, ...(o.emphasis ? { emphasis: o.emphasis } : {}), ...structuredClone(o.draw ?? {}) }
+      const spec = o.viz, style: ElementStyle = { render: 'designed', lang: V.id, ...(o.emphasis ? { emphasis: o.emphasis } : {}),
+        // a chart in a figure band is a sparkline unless the plan says otherwise
+        ...(d.layout.composition?.kind === 'bands' && o.role === 'secondary' && !o.draw ? { mini: true } : {}), ...structuredClone(o.draw ?? {}) }
       const shapes = isComposite(spec.family) || drawsDesigned(spec, style)
       if (shapes) out.push({ key: o.id, kind: 'composite', box: b, obj: o, create: { op: 'addElement', kind: 'rect', offset: box(b) }, bind: (slide) => ({ kind: 'viz', slide, spec, style }) })
       else {
         const r = realize(ctx.project, spec), st: ElementStyle = { gridlines: true, gapWidthPct: 70, colors: r.colorScheme, ...(o.emphasis ? { emphasis: o.emphasis, peer: c.peer } : {}) }
         out.push({ key: o.id, kind: 'chart', box: b, obj: o, bind: (slide) => ({ kind: 'viz', slide, spec, style: st }),
-          create: { op: 'addChart', kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: box(b), title: r.title, categories: r.categories, series: r.series, colorScheme: r.colorScheme },
+          create: { op: 'addChart', kind: r.kind, ...(r.barDir === 'bar' ? { barDir: 'bar' } : {}), offset: box(b), title: '', // composed slides title their exhibits in text (exhibit/unit); the chart repeats nothing
+           categories: r.categories, series: r.series, colorScheme: r.colorScheme },
           fill: (el, i) => [{ op: 'setChart', target: { slide: i, el }, patch: chartStylePatch(ctx.project, r, st) }] })
       }
       continue
@@ -174,10 +185,11 @@ function planComposed(ctx: Ctx, d: SlideDesign, L: ComposedLaid): ElPlan[] {
     }
     if (o.kind !== 'text') continue
     const role = (L.roles[o.id] ?? 'body') as keyof Language['type'], dark = o.tone === 'onDark', items = o.items?.length ? o.items : [o.text]
-    const color = o.accent === 'gold' ? c.gold : o.accent === 'focus' ? c.navy : o.accent === 'ink' ? c.ink : o.accent === 'muted' ? (dark ? c.onDarkMuted : c.muted) : dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
+    const chip = (o as any).cell?.chip as number | undefined
+    const color = chip && chip <= 3 ? c.onDark : o.accent === 'gold' ? c.gold : o.accent === 'focus' ? c.navy : o.accent === 'ink' ? c.ink : o.accent === 'muted' ? (dark ? c.onDarkMuted : c.muted) : dark ? (role === 'label' ? c.goldSoft : c.onDark) : undefined
     const multi = o.role === 'note' || o.role === 'body' || o.role === 'narrative' || o.role === 'observations'
     // a bold lead-in ("France rose.") opens the paragraph in the text colour; figures stay emphasised in the primary colour
-    const leadRun = (t: DesignText) => (t.lead ? [{ ...runFor(V, role, t.lead + ' ', { color: dark ? c.onDark : c.ink }), bold: true }] : [])
+    const leadRun = (t: DesignText) => (t.lead ? [{ ...runFor(V, role, t.lead + ' ', { color: dark || (chip && chip <= 3) ? c.onDark : c.ink }), bold: true }] : [])
     const paragraphs = items.map((t, i) => para([...leadRun(t), ...runs(t, role, { color, figColor: dark ? c.onDark : role === 'standfirst' || o.accent === 'ink' ? c.ink : c.navy })], role, multi && i < items.length - 1 ? { spaceAfterPt: 7 } : {}))
     out.push({ key: o.id, kind: 'text', box: b, obj: o, paragraphs,
       create: { op: 'addElement', kind: 'textbox', offset: box(b), paragraphs, bodyPr: { wrap: 'square', insetsEmu: ins(0), anchor: 't' } },
@@ -284,16 +296,36 @@ export function applyDesign(ctx: Ctx, design: SlideDesign, slide?: string): Outc
   if (toCreate.length) {
     txn(ctx, toCreate.map((p) => ({ ...p.create, target: { slide: si } })))
     materializeSlide(ctx.deck, si)
-    const added = (ctx.deck.deck.slides[si] as any).elements.slice(-toCreate.length), fills: Op[] = [], composites: [string, ElPlan][] = []
+    const added = (ctx.deck.deck.slides[si] as any).elements.slice(-toCreate.length), fills: Op[] = [], composites: [string, ElPlan][] = [], graphics: [string, ElPlan][] = []
     added.forEach((el: any, i: number) => {
       const p = toCreate[i]!, id = elementDurableId(el)!
       keep[p.key] = id; ctx.sidecar.bindings[id] = p.bind(sId)
       if (p.fill) fills.push(...p.fill(el.id, si))
       if (p.kind === 'composite') composites.push([id, p])
+      if (p.kind === 'graphic') graphics.push([id, p])
       if ((prev || slide) && !p.key.startsWith('decor:')) diff.push(`${p.key}: ${redrawn.has(p.key) ? 'redrawn' : 'added'}`)
     })
     txn(ctx, fills); materializeSlide(ctx.deck, si)
     for (const [id, p] of composites) { const b = ctx.sidecar.bindings[id] as any; realizeAt(ctx, findEl(ctx.deck, id)!, b.spec, { w: Math.round(p.box.w), h: Math.round(p.box.h) }) }
+    // maps and icons: the placeholder becomes a group of editable vector shapes
+    for (const [id, p] of graphics) placeGroup(ctx, findEl(ctx.deck, id)!, p.marks ?? [], p.name ?? 'frr-graphic')
+    // flags beside entity names in designed tables: pictures over the slots the table leaves for them (decoration)
+    const flagOps: any[] = [], flagKeys: string[] = []
+    for (const [, p] of composites) {
+      if (p.obj?.kind !== 'viz' || !p.obj.draw?.flags) continue
+      const bnd = p.bind(sId) as any, size = { w: Math.round(p.box.w), h: Math.round(p.box.h) }
+      for (const mk of compositeLayout(ctx.project, bnd.spec, check(ctx.project, bnd.spec), size, bnd.style).filter((x) => x.name.startsWith('frr-flagslot '))) {
+        const geo = mk.name.slice(13).toLowerCase(), r = picture(`flag:${geo}`, mk.box.w, mk.box.h, { fit: 'contain' })
+        if (!r) continue
+        flagOps.push({ op: 'addPicture', target: { slide: si }, offset: off({ x: p.box.x + mk.box.x, y: p.box.y + mk.box.y + (mk.box.h - r.h) / 2, w: r.w, h: r.h }), bytes: r.dataUrl, ext: 'png', name: `decor flag ${geo}`, descr: r.descr })
+        flagKeys.push(`decor:flag-${p.key}-${geo}`)
+      }
+    }
+    if (flagOps.length) {
+      txn(ctx, flagOps); materializeSlide(ctx.deck, si)
+      const els = (ctx.deck.deck.slides[si] as any).elements.slice(-flagOps.length)
+      els.forEach((el: any, i: number) => { const id = elementDurableId(el)!; keep[flagKeys[i]!] = id; ctx.sidecar.bindings[id] = { kind: 'decor', slide: sId } })
+    }
   }
   materializeSlide(ctx.deck, si)
   ctx.sidecar.designs[sId] = { design: structuredClone(design), elements: keep } satisfies AppliedDesign

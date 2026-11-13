@@ -1,5 +1,6 @@
 // The workspace store: one open project (deck + Evidence Core project + bindings sidecar + journal +
 // threads), selection by durable id, snapshot undo/redo, and bundle save/load through the service.
+import { registerIdentity } from './design/language'
 import { createBlankPptx, openPptx, savePptx, copyElementData, type OpenedPptx } from '@genoffice/pptx-engine'
 import { HeuristicMetrics, type FontMetricsProvider } from '@genoffice/pptx-render'
 import { run, themeOps, txn, type ClipItem, type Command, type Outcome } from './commands'
@@ -39,6 +40,7 @@ export class Store {
   static async fromBundle(b: Bundle): Promise<Store> {
     const s = new Store()
     s.project = b.project
+    if (b.project.identity?.id) registerIdentity(b.project.identity)
     s.sidecar = migrateSidecar(b.sidecar)
     s.journal = b.journal ?? []
     s.threads = b.threads ?? {}

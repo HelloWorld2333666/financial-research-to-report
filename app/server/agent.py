@@ -41,6 +41,7 @@ from composer import compose
 from design_library.retrieve import recipes, suggest
 from evidence import CURVES, EU27, GROUPS, MATURITY, METRICS, NAMES, measure_for
 from projects import ProjectStore
+import skill_knowledge
 
 EUROSTAT = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/"
 UA = {"User-Agent": "frr-workspace/0.3 (research-to-report prototype)"}
@@ -313,6 +314,36 @@ def build_rewrite(new_text: str, figures: list[Figure], original: str, periods: 
 LAYOUT = Literal["align_left", "align_right", "align_top", "align_bottom", "align_center", "align_middle", "distribute_horizontal", "distribute_vertical"]
 
 
+def normalize_plan(plan: dict) -> tuple[dict, list[str]]:
+    """Repair the structural slips a local model makes in a slide plan (objects nested in the composition, objects without a slot
+    or with a slot the composition lacks), so its design decisions reach the validator. Every repair is reported to the user."""
+    fixed: list[str] = []
+    comp = dict(plan.get("composition") or {})
+    if isinstance(comp.get("objects"), list):
+        plan["objects"] = [*(plan.get("objects") or []), *comp.pop("objects")]; fixed.append("objects moved out of the composition")
+    if "columns" in comp and "params" not in comp:
+        comp["params"] = {"columns": comp.pop("columns")}; fixed.append("columns moved into params")
+    plan["composition"] = comp
+    cols = (comp.get("params") or {}).get("columns") or []
+    if comp.get("kind", "columns") == "columns" and cols:
+        slots = [sl for c in cols for sl in c.get("slots", [])]
+        has_viz = next((c for c in cols if any(o.get("slot") in c.get("slots", []) and o.get("kind") == "viz" for o in plan.get("objects") or [])), cols[0])
+        def guess(o: dict) -> str:
+            role, kind = o.get("role", ""), o.get("kind", "")
+            for sl in slots:  # a slot named after the role or kind ("exhibit", "notes", "kpi", "chart")
+                if sl.rstrip("s") in (role.rstrip("s"), kind) or (kind == "viz" and sl in ("chart", "main", "table")):
+                    return sl
+            if role in ("exhibit", "unit"):
+                return has_viz["slots"][0]
+            return cols[-1]["slots"][-1]
+        for o in plan.get("objects") or []:
+            if not isinstance(o, dict) or o.get("role") in ("headline", "source") or o.get("anchor") or o.get("cell") or o.get("node"):
+                continue
+            if o.get("slot") not in slots:
+                o["slot"] = guess(o); fixed.append(f"{o.get('id', o.get('kind'))} placed in slot {o['slot']}")
+    return plan, fixed
+
+
 def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = http_get, center=None) -> Agent:
     agent = Agent(model or model_from_env(), deps_type=Deps, retries=2, name="frr-workspace")
 
@@ -353,7 +384,11 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "change_visual (turn the selected chart into another type, e.g. a dumbbell, slope, lollipop, waterfall bridge, small multiples or step line); "
                 "design_slide (plan and design a whole slide from verified data: purpose trend, comparison or risk, the countries, your one-sentence message, "
                 "density, and optionally a preferred layout; redesign=true redesigns the current slide and keeps what the user edited); "
-                "set_design_profile (change the visual style of the deck: institutional or editorial; data never changes).\n"
+                "set_design_profile (change the visual style of the deck: institutional or editorial; data never changes); "
+                "design_guidance then plan_slide (the design Skill: for any slide the fixed purposes of design_slide do not cover, or when the user asks for "
+                "a particular composition, map, cover or visual technique — FIRST call design_guidance with the slide's objective, its analytical intents and "
+                "its role; it returns the few design cards that apply, the hard rules and the datasets you may cite; THEN call plan_slide with a plan that "
+                "follows those cards; the app resolves every figure from evidence, validates, renders a preview and the user applies it).\n"
                 "If a request does not make the intent clear (e.g. 'compare France with the PIIGS' could mean the trend, the current ranking or the change "
                 "since a year), ask ONE short question offering those options instead of guessing.")
 
@@ -602,6 +637,86 @@ def create_agent(store: ProjectStore, model=None, get: Callable[[str], bytes] = 
                 "summary": f"{'Redesign this slide' if target else 'Plan a new slide'}: {purpose} for {NAMES.get(f, f)}"
                            + (f" (message proposed: \"{message.strip()}\")" if message.strip() else "")
                            + ". The app builds designs from verified data and checks each one; preview and apply. Nothing has changed yet."}
+
+    @agent.tool
+    def design_guidance(ctx: RunContext[Deps], objective: str, intents: Optional[list[Literal["trend", "ranking", "change", "composition", "relationship",
+                        "distribution", "curve", "maturity", "sensitivity", "spotlight", "drivers", "geography", "causality", "sequence", "framework",
+                        "assessment"]]] = None, role: Optional[Literal["cover", "divider", "closing", "summary", "evidence", "dashboard", "chart_table",
+                        "statement", "comparison"]] = None, places_matter: bool = False) -> dict:
+        """Retrieve the design Skill's knowledge for ONE slide before planning it. objective: what the slide must show, in words (the user's
+        content and message); intents: the analytical questions it answers; role: its place in the deck; places_matter: true when geography is
+        part of the mechanism (routes, chokepoints, exposure by place). Returns at most five condensed cards (when to use a technique, when not,
+        hard constraints, how to plan and execute it), the router's hard rules, and the project's datasets (ids for figure tokens and chart
+        requests). Follow the cards in plan_slide and name the card ids you used in the plan's rationale."""
+        project = project_of(ctx)
+        g = skill_knowledge.guidance(objective, intents or [], role or "", places_matter)
+        by: dict[str, dict] = {}
+        for d in project["datasets"].values():
+            obs = [o["date"] for o in d.get("observations", []) if o.get("value") is not None]
+            if not obs:
+                continue
+            k = by.setdefault(d["metric"], {"unit": d.get("unit"), "geos": set(), "from": obs[0], "to": obs[-1]})
+            k["geos"].add((d.get("geo") or "").lower()); k["from"] = min(k["from"], obs[0]); k["to"] = max(k["to"], obs[-1])
+        data = [f"{m} ({v['unit']}): ds.<geo>.{m} for {','.join(sorted(v['geos']))}; periods {v['from']}–{v['to']}" for m, v in sorted(by.items())][:40]
+        facts = [f"{e['id']}: {e.get('statement', '')[:90]}" for e in project["evidence"].values() if e.get("retrieval", {}).get("method") == "web"][:12]
+        return {"kind": "design_guidance", **g, "datasets": data, "facts": facts,
+                "summary": f"Design guidance from the Skill: cards {', '.join(c['id'] for c in g['cards'])}. Plan the slide with plan_slide."}
+
+    @agent.tool
+    def plan_slide(ctx: RunContext[Deps], plan: dict, cards: Optional[list[str]] = None, redesign: bool = False) -> dict:
+        """Submit a slide plan written from design_guidance. The plan is JSON:
+        {"claim": "the action title (no typed figures)", "composition": {"kind": "columns", "params": {"columns": [{"span": 8, "slots": ["exhibit", "chart"]},
+        {"span": 4, "slots": ["notes"], "tint": false}]}}, "objects": [...], "rationale": ["card ids used and why"]}.
+        Objects (each with "id", "kind" and a "slot" of the composition): text {"role": exhibit|unit|lead|conclusion|note|body|source, "text": "..." or
+        {"lead": "Bold lead-in.", "text": "..."}}; kpi {"value": "{{num ds.br.debt 2026}}", "label": "what it measures", "context": "...", "variant": hero|stat};
+        viz {"request": {"intent": trend|ranking|change|composition|relationship|distribution|curve|maturity|sensitivity, "family": line|bar|column|
+        dumbbell|slope|multiples|yield_curve|heatmap|scatter|..., "datasets": ["ds.br.inflation", ...], "at": "2026", "between": ["2019", "2026"],
+        "from": "2019", "to": "2027"}, "emphasis": "ds.co.inflation", "draw": {"form": "rankTable"|"benchList", "flags": true, "band": {"from": "2026", "to": "2027"}}};
+        image {"role": "photo", "asset": "commons:<File>"}; map {"map": {"view": [W, S, E, N], "regions": [{"geo": "BR", "tone": "focus"}], ...}}.
+        Markers: "mark": "flag:br" or "icon:ship" on a text or kpi. Compositions: columns (spans of 12, optional tint, dividers), statement, wide,
+        bands, cover. NEVER type a figure: write {{num ds.<geo>.<metric> <period>}}, {{change ds… <start> <end>}} or {{ev <evidence id>}}.
+        cards: the Skill card ids the plan follows. redesign: replace the current slide instead of adding one."""
+        project = project_of(ctx)
+        if not isinstance(plan, dict):
+            return {"kind": "error", "message": "plan must be a JSON object."}
+        plan, fixed = normalize_plan(dict(plan))
+        claim = (plan.get("claim") or "").strip() or next((o.get("text") for o in plan.get("objects", []) if o.get("role") == "headline" and isinstance(o.get("text"), str)), "")
+        if not claim:
+            return {"kind": "error", "message": "A plan needs a claim: the slide's action title."}
+        comp = plan.get("composition") or {"kind": "columns", "params": {"columns": [{"span": 12, "slots": sorted({o.get("slot") for o in plan.get("objects", []) if o.get("slot")}) or ["main"]}]}}
+        if comp.get("kind") not in ("columns", "cover", "statement", "wide", "bands", "rail", "lead_panel", "agenda", "divider"):
+            return {"kind": "error", "message": f"Unknown composition {comp.get('kind')!r}: use columns, statement, wide, bands or cover."}
+        objs, problems = [], []
+        for i, o in enumerate(plan.get("objects") or []):
+            if not isinstance(o, dict) or o.get("kind") not in ("text", "kpi", "viz", "image", "map", "shape"):
+                problems.append(f"object {i}: kind must be text, kpi, viz, image or map"); continue
+            o = {"id": o.get("id") or f"o{i}", **o}
+            if o["kind"] == "text" and o.get("role") == "headline":
+                continue
+            if o["kind"] == "viz":
+                req = o.get("request") or {}
+                missing = [d for d in req.get("datasets", []) if d not in project["datasets"]]
+                if missing or not req.get("datasets"):
+                    problems.append(f"{o['id']}: datasets not in the project: {', '.join(missing) or 'none given'}"); continue
+                o.setdefault("role", "primary")
+            if o["kind"] == "kpi":
+                o.setdefault("role", "kpi"); o.setdefault("variant", "stat")
+            for t in re.findall(r"\{\{\s*(?:num|change|gap|spread)\s+(ds\.[\w.]+)", json.dumps(o)):
+                if t not in project["datasets"]:
+                    problems.append(f"{o['id']}: {t} is not a dataset in the project")
+            objs.append(o)
+        if problems:
+            return {"kind": "error", "message": "Plan not accepted: " + "; ".join(problems[:6]) + ". Use the datasets design_guidance listed."}
+        if not any(o.get("role") == "source" for o in objs):
+            used = {d for o in objs for d in (o.get("request") or {}).get("datasets", [])} | set(re.findall(r"ds\.[\w.]+", json.dumps(objs)))
+            notes = sorted({project["datasets"][d].get("source_note") for d in used if d in project["datasets"] and project["datasets"][d].get("source_note")})
+            objs.append({"id": "source", "kind": "text", "role": "source", "text": "Source: " + ("; ".join(notes) or "project evidence") + ". Values verified by independent re-fetch."})
+        out = {"id": plan.get("id") or "ai-plan", "objective": plan.get("objective") or claim, "claim": claim, "density": plan.get("density", "medium"),
+               "composition": comp, "objects": [{"id": "headline", "kind": "text", "role": "headline", "text": claim}, *objs],
+               "rationale": list(plan.get("rationale") or []) + ([f"Skill cards: {', '.join(cards)}"] if cards else [])}
+        return {"kind": "plan_request", "plan": out, "cards": cards or [], "slide": ctx.deps.state.slide if redesign else None, "repaired": fixed,
+                "summary": f"Planned with the design Skill ({', '.join(cards or []) or 'cards not named'}): “{claim}”. The app resolves every figure from evidence, "
+                           "validates and previews it; apply to add it. Nothing has changed yet." + (f" Repaired: {'; '.join(fixed)}." if fixed else "")}
 
     @agent.tool_plain
     def find_layout_references(purpose: list[Literal["summary", "trend", "comparison", "kpi", "survey", "framework", "process", "matrix", "case",

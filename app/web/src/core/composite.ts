@@ -17,7 +17,9 @@ export interface Box { x: number; y: number; w: number; h: number }
 type Pt = [number, number]
 export type Mark =
   | { name: string; kind: 'rect' | 'ellipse'; box: Box; fill: string; stroke?: string; strokeW?: number; descr?: string }
-  | { name: string; kind: 'path'; paths: Pt[][]; box: Box; stroke: string; width: number; dash?: boolean; descr?: string }
+  | { name: string; kind: 'path'; paths: Pt[][]; box: Box; stroke: string; width: number; dash?: boolean; descr?: string
+      /** a filled outline (a country on a map): each run is closed and filled; width 0 draws no outline */
+      fill?: string; closed?: boolean }
   | { name: string; kind: 'text'; box: Box; text: string; size: number; color: string; bold?: boolean; align?: 'l' | 'ctr' | 'r'; descr?: string; font?: string; track?: number }
 
 /** Bumped whenever a layout changes, so integrity can tell a stale drawing from wrong data (see integrity.ts). */
@@ -38,7 +40,7 @@ const decimalsFor = (p: Project, cell: Cell) => {
   return Math.min(2, Math.max(1, decimalsOf(ds ? p.datasets[ds] : undefined)))
 }
 /** A value as the composite writes it (the same decimals rule as tables and chart labels). */
-export const fmt = (p: Project, v: number | null, cell: Cell, signed = false) => (v == null ? 'n/a' : `${signed && v > 0 ? '+' : ''}${v.toFixed(decimalsFor(p, cell))}`.replace('-', '−'))
+export const fmt = (p: Project, v: number | null, cell: Cell, signed = false) => (v == null ? 'n/a' : `${signed && v > 0 ? '+' : ''}${Math.abs(v) >= 10000 ? v.toLocaleString('en-US', { minimumFractionDigits: decimalsFor(p, cell), maximumFractionDigits: decimalsFor(p, cell) }) : v.toFixed(decimalsFor(p, cell))}`.replace('-', '−'))
 const deltaUnit = (unit: string) => (/%/.test(unit) ? 'pp' : unit)
 
 export function niceTicks(lo: number, hi: number, n = 4): number[] {
@@ -260,7 +262,7 @@ function multiples(g: Ctx): Mark[] {
     out.push(text(`frr-panel ${si}`, { x: px, y: py, w: pw, h: 16 }, s.name, 9.5, c.ink, { bold: true }))
     out.push(path(`frr-axis ${si}`, [[[x0, y1], [x1, y1]]], c.grid, 1))
     if (d[0] < 0 && d[1] > 0) out.push(path(`frr-zero ${si}`, [[[x0, sy(0)], [x1, sy(0)]]], c.muted, 0.75, true))
-    if (k === 0) for (const t of [d[0], d[1]]) out.push(text(`frr-tick ${si} ${t === d[0] ? 'lo' : 'hi'}`, { x: px, y: sy(t) - 7, w: 34, h: 14 }, String(Number(t.toFixed(1))), 7.5, c.muted, { align: 'r' }))
+    if (k === 0) for (const t of [d[0], d[1]]) out.push(text(`frr-tick ${si} ${t === d[0] ? 'lo' : 'hi'}`, { x: px, y: sy(t) - 7, w: 34, h: 14 }, String(Number(t.toFixed(1))), 8.5, c.muted, { align: 'r' }))
     const runs: Pt[][] = []
     let cur: Pt[] | null = null
     s.values.forEach((v, i) => { if (v == null) { cur = null; return } if (!cur) { cur = []; runs.push(cur) } cur.push([sx(i), sy(v)]) })
@@ -269,8 +271,8 @@ function multiples(g: Ctx): Mark[] {
     s.values.forEach((v, i) => { if (v != null) out.push(dot(markName(si, i, v), sx(i), sy(v), 2.5, c.series[0]!, `${s.name}, ${pr.categories[i]}: ${fmt(p, v, s.cells[i]!)} ${pr.unit}`)) })
     const li = s.values.map((v) => v != null).lastIndexOf(true)
     if (li >= 0) { const t = fmt(p, s.values[li]!, s.cells[li]!); out.push(text(`frr-label ${si} ${li}`, { x: sx(li) + 6, y: sy(s.values[li]!) - 8, w: tw(t, 8.5), h: 16 }, t, 8.5, c.ink)) }
-    out.push(text(`frr-cat ${si} first`, { x: x0 - 20, y: y1 + 2, w: 40, h: 12 }, pr.categories[0]!, 7.5, c.muted, { align: 'ctr' }))
-    out.push(text(`frr-cat ${si} last`, { x: x1 - 20, y: y1 + 2, w: 40, h: 12 }, pr.categories.at(-1)!, 7.5, c.muted, { align: 'ctr' }))
+    out.push(text(`frr-cat ${si} first`, { x: x0 - 20, y: y1 + 2, w: 40, h: 12 }, pr.categories[0]!, 8.5, c.muted, { align: 'ctr' }))
+    out.push(text(`frr-cat ${si} last`, { x: x1 - 20, y: y1 + 2, w: 40, h: 12 }, pr.categories.at(-1)!, 8.5, c.muted, { align: 'ctr' }))
   })
   out.push(text('frr-note', { x: 0, y: H - 14, w: W, h: 14 }, `Same scale in every panel (${pr.unit}); gaps are periods without data`, 8, c.muted))
   return out
@@ -442,7 +444,7 @@ function rangePlot(g: Ctx): Mark[] {
 function heatmap(g: Ctx): Mark[] {
   const { pr, p, W, H, c } = g, out: Mark[] = [], G = pr.grid!
   const rows = pr.series.length, cols = pr.categories.length, x0 = 190, y0 = TOP + 44
-  const cw = Math.min(130, (W - x0 - 20) / cols), ch = Math.min(40, (H - y0 - 64) / rows)
+  const cw = Math.min(130, (W - x0 - 20) / cols), ch = Math.min(40, (H - y0 - 80) / rows)
   out.push(text('frr-axis cols', { x: x0, y: TOP + 4, w: cw * cols, h: 16 }, 'Nominal GDP growth, g (assumed, % a year)', 9, c.muted, { align: 'ctr' }))
   out.push(text('frr-axis rows', { x: 0, y: y0 - 22, w: x0 - 12, h: 16 }, 'Interest rate on debt, i (assumed)', 9, c.muted, { align: 'r' }))
   pr.categories.forEach((t, k) => out.push(text(`frr-colhead ${k}`, { x: x0 + k * cw, y: y0 - 20, w: cw, h: 16 }, `${num(G.growth[k]!)}%`, 9.5, c.ink, { align: 'ctr', bold: true })))
@@ -459,7 +461,10 @@ function heatmap(g: Ctx): Mark[] {
   })
   const ny = y0 + rows * ch + 12
   out.push(text('frr-note 1', { x: 0, y: ny, w: W, h: 14 }, `Scenario arithmetic, not a forecast: debt(t+1) = debt(t) × (1 + i) / (1 + g) − primary balance, ${G.years} years from ${G.at}.`, 8.5, c.ink))
-  out.push(text('frr-note 2', { x: 0, y: ny + 16, w: W, h: 14 }, `Verified ${G.at} inputs (${G.entity}): debt ${num(G.start)}, balance ${num(G.balance)}, interest ${num(G.interest)} → primary balance ${num(G.primary)}, held constant (${pr.unit}). Shading: above (red) or below (blue) today's debt ratio.`, 8, c.muted))
+  // the assumptions on two lines (a single line ran past narrow chart boxes); the shading named by role, not by hue,
+  // because the deck identity decides the colours
+  out.push(text('frr-note 2', { x: 0, y: ny + 16, w: W, h: 14 }, `Verified ${G.at} inputs (${G.entity}): debt ${num(G.start)}, balance ${num(G.balance)}, interest ${num(G.interest)} → primary balance ${num(G.primary)}, held constant (${pr.unit}).`, 8, c.muted))
+  out.push(text('frr-note 3', { x: 0, y: ny + 31, w: W, h: 14 }, `Shading: the further from today's ratio (${num(G.start)}), the darker; above it in the accent colour, below it in the structure colour.`, 8, c.muted))
   return out
 }
 
@@ -496,9 +501,11 @@ function shapeXml(m: Mark, id: number, font: string): string {
   }
   if (m.kind === 'path') {
     const b = m.box, rel = (q: Pt) => `<a:pt x="${E(q[0] - b.x)}" y="${E(q[1] - b.y)}"/>`
-    const cmds = m.paths.map((run) => `<a:moveTo>${rel(run[0]!)}</a:moveTo>${run.slice(1).map((q) => `<a:lnTo>${rel(q)}</a:lnTo>`).join('')}`).join('')
-    return `<p:sp>${nv}<p:spPr>${xfrm(b)}<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="${Math.max(1, E(b.w))}" h="${Math.max(1, E(b.h))}" fill="none">${cmds}</a:path></a:pathLst></a:custGeom>` +
-      `<a:noFill/><a:ln w="${Math.round(m.width * 12700 * 0.75)}" cap="rnd"><a:solidFill><a:srgbClr val="${hex(m.stroke)}"/></a:solidFill>${m.dash ? '<a:prstDash val="dash"/>' : ''}<a:round/></a:ln></p:spPr></p:sp>`
+    const filled = !!m.fill && m.fill !== 'none'
+    const cmds = m.paths.map((run) => `<a:moveTo>${rel(run[0]!)}</a:moveTo>${run.slice(1).map((q) => `<a:lnTo>${rel(q)}</a:lnTo>`).join('')}${m.closed ? '<a:close/>' : ''}`).join('')
+    const ln = m.width > 0 ? `<a:ln w="${Math.round(m.width * 12700 * 0.75)}" cap="rnd"><a:solidFill><a:srgbClr val="${hex(m.stroke)}"/></a:solidFill>${m.dash ? '<a:prstDash val="dash"/>' : ''}<a:round/></a:ln>` : '<a:ln><a:noFill/></a:ln>'
+    return `<p:sp>${nv}<p:spPr>${xfrm(b)}<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="${Math.max(1, E(b.w))}" h="${Math.max(1, E(b.h))}"${filled ? '' : ' fill="none"'}>${cmds}</a:path></a:pathLst></a:custGeom>` +
+      `${filled ? `<a:solidFill><a:srgbClr val="${hex(m.fill!)}"/></a:solidFill>` : '<a:noFill/>'}${ln}</p:spPr></p:sp>`
   }
   return `<p:sp>${nv}<p:spPr>${xfrm(m.box)}<a:prstGeom prst="${m.kind === 'ellipse' ? 'ellipse' : 'rect'}"><a:avLst/></a:prstGeom>${m.fill === 'none' ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${hex(m.fill)}"/></a:solidFill>`}` +
     `${m.stroke ? `<a:ln w="${Math.round((m.strokeW ?? 0.75) * 12700)}"><a:solidFill><a:srgbClr val="${hex(m.stroke)}"/></a:solidFill></a:ln>` : '<a:ln><a:noFill/></a:ln>'}</p:spPr></p:sp>`

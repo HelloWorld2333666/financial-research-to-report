@@ -4,6 +4,7 @@
 import type { FontMetricsProvider } from '@genoffice/pptx-render'
 import type { DesignObject, DesignText, SlideDesign } from './spec'
 import type { DesignProfile } from './profiles'
+import type { Mark } from '../composite'
 
 export const W = 1280, H = 720
 export interface Box { x: number; y: number; w: number; h: number }
@@ -15,8 +16,10 @@ export interface Laid {
   /** the takeaway band/line and header rule, drawn as decoration */
   /** decoration (never data): rules, bands, cards (optionally stroked), badges, connector arrows and lines, arrowheads,
    *  edge labels (words only) and decorative pictures (self-authored or licensed assets, with their provenance in descr) */
-  decor: { id: string; box: Box; kind: 'rule' | 'band' | 'card' | 'badge' | 'arrow' | 'line' | 'head' | 'label' | 'asset'
-    fill?: string; stroke?: string; text?: string; pt?: number; color?: string; bold?: boolean; align?: 'left' | 'center' | 'right'; dataUrl?: string; descr?: string }[]
+  decor: { id: string; box: Box; kind: 'rule' | 'band' | 'card' | 'badge' | 'arrow' | 'line' | 'head' | 'label' | 'asset' | 'graphic'
+    fill?: string; stroke?: string; text?: string; pt?: number; color?: string; bold?: boolean; align?: 'left' | 'center' | 'right'; dataUrl?: string; descr?: string
+    /** graphic: editable vector shapes (a map, an icon) in slide px, drawn as one group */
+    marks?: Mark[]; name?: string; round?: boolean }[]
   notes: string[]
 }
 

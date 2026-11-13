@@ -7,6 +7,7 @@ import type { Derivation, NumberRef, Project, TableSpec } from '../types'
 import { assess, vizDatasets, type VizSpec } from '../viz'
 import { figures, textNumbers } from '../evidence'
 import { PROFILES } from './profiles'
+import type { MapSpec, Treatment } from './assets'
 
 export const DESIGN_SCHEMA = 'frr-design/1'
 export type LayoutFamily = 'analytical_hero' | 'comparative' | 'executive_insight' | 'composed'
@@ -19,6 +20,8 @@ export type CompositionKind = 'rail' | 'statement' | 'wide' | 'bands' | 'lead_pa
   | 'columns'
   // Gate C (recipe R9): deck navigation, no evidence
   | 'agenda' | 'divider'
+  // a cover or section opener over a picture or map: the art fills one side (or the whole slide) on the deep panel colour
+  | 'cover'
 export const NAVIGATION: CompositionKind[] = ['agenda', 'divider']
 export interface Composition {
   kind: CompositionKind
@@ -38,6 +41,8 @@ export interface Composition {
     dividers?: boolean
     /** columns: a diagram slot's grid and its edges (node ids); 'back' routes a feedback edge under the row */
     diagram?: { cols: number; rows: number; edges: { from: string; to: string; label?: string; back?: boolean }[] }
+    /** cover: where the art sits (right columns, or the full slide behind a faded left side) and how many columns it takes */
+    art?: 'right' | 'full'; artCols?: number
   }
   /** the recipe (recipes.json) this composition was built from, for the rationale and for retrieval feedback */
   recipe?: string
@@ -82,10 +87,25 @@ export type DesignObject =
   | { id: string; kind: 'shape'; role: 'masthead' | 'panel' | 'rule' }
   /** a decorative visual asset (never data): a self-authored motif from motifs.ts, or a licensed image with provenance */
   | { id: string; kind: 'shape'; role: 'asset'; motif: string; slot?: string; place?: 'bottom' | 'top' | 'fill'; opacity?: number }
+  /** a picture from the asset library (assets.ts): a photograph (cropped to its box, optionally treated in the language's
+   *  colours), a logo or a flag (fitted); decoration or identification, never data; provenance in the picture's description */
+  | { id: string; kind: 'image'; role: 'photo' | 'logo' | 'flag'; asset: string; fit?: 'cover' | 'contain'; focus?: [number, number]; treatment?: Treatment[]; group?: string } & Placed
+  /** a map drawn as editable shapes (assets.ts MapSpec): countries shaded by tier, routes, chokepoints, place names (words
+   *  only); figures on a map are text or KPI objects anchored to it */
+  | { id: string; kind: 'map'; role: 'primary' | 'backdrop'; map: MapSpec; group?: string } & Placed
 
 /** Where an object sits in a 'columns' composition: its slot, and for a matrix slot its cell (row, column); a cell in
  *  column 0 may carry a badge (a numeral in a filled circle, a position, not a figure). */
-export interface Placed { slot?: string; cell?: { r: number; c: number; badge?: string }; node?: { r: number; c: number } }
+export interface Placed { slot?: string
+  /** a matrix cell; column 0 may carry a badge (numeral), a flag (ISO alpha-2), an icon (in a filled circle) or a logo; a
+   *  tier chip (1 strongest to 4 lightest) sets the cell on a pill in the intensity ramp of the structure colour */
+  cell?: { r: number; c: number; badge?: string; flag?: string; icon?: string; logo?: string; chip?: 1 | 2 | 3 | 4 }
+  /** a diagram node; an icon sits in a filled circle at the node's head */
+  node?: { r: number; c: number; icon?: string }
+  /** a text or KPI pinned to a map point (degrees); the box opens to the right of the point unless `side` says otherwise */
+  anchor?: { map: string; lon: number; lat: number; w?: number; side?: 'left' | 'right' }
+  /** an identifier set at the object's left: an asset key, "flag:bh" or "icon:ship" */
+  mark?: string }
 
 /** How a designed chart is drawn (presentation only; the spec is the meaning). Recipes R2 and R3 add the last four. */
 export interface ChartDraw {
@@ -100,6 +120,8 @@ export interface ChartDraw {
   flags?: boolean
   /** a sparkline in a matrix cell: no end labels (the cell's figures carry the values) */
   spark?: boolean
+  /** rankTable: rows largest first (debt, interest burden) instead of smallest first (deficits) */
+  order?: 'desc'
 }
 
 export interface SlideDesign {
@@ -191,7 +213,7 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
   } else if (d.layout?.family === 'composed') {
     if (!d.layout.composition) errs.push('a composed slide needs a composition')
     if (!(d.objects ?? []).some((o) => o.kind === 'text' && o.role === 'headline')) errs.push('a composed slide needs a headline')
-    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band') || !!(o as any).cell || !!(o as any).node)) errs.push('a composed slide needs a focal point: a hero figure, a primary chart, figure bands, a matrix or a diagram')
+    if (!(d.objects ?? []).some((o) => (o.kind === 'kpi' && o.variant === 'hero') || (o.kind === 'viz' && o.role === 'primary') || (o.kind === 'kpi' && o.variant === 'band') || !!(o as any).cell || !!(o as any).node || o.kind === 'map' || (o.kind === 'image' && o.role === 'photo'))) errs.push('a composed slide needs a focal point: a hero figure, a primary chart, figure bands, a matrix or a diagram')
     if (d.layout.composition?.kind === 'columns') {
       const slots = new Set((d.layout.composition.params?.columns ?? []).flatMap((c) => c.slots))
       const span = (d.layout.composition.params?.columns ?? []).reduce((a, c) => a + c.span, 0)
@@ -215,6 +237,20 @@ export function validateDesign(project: Project, d: SlideDesign): string[] {
     }
   }
   for (const e of d.layout?.composition?.params?.diagram?.edges ?? []) if (e.label && figures(e.label).length) errs.push(`edge ${e.from}→${e.to}: an edge label carries words only`)
+  // pictures and maps are decoration or identification: asset keys only, and every word on a map is a name, never a figure
+  const ASSET = /^(flag:[a-z]{2}|icon:[a-z0-9-]+|commons:.+|geo:[a-z0-9-]+)$/
+  for (const o of d.objects ?? []) {
+    const x = o as any
+    if (o.kind === 'image' && !ASSET.test(o.asset)) errs.push(`${o.id}: "${o.asset}" is not an asset key (flag:, icon:, commons:)`)
+    if (x.mark && !/^(flag:[a-z]{2}|icon:[a-z0-9-]+)$/.test(x.mark)) errs.push(`${o.id}: a mark is a flag or an icon ("flag:bh", "icon:ship")`)
+    if (x.anchor && !(d.objects ?? []).some((m) => m.id === x.anchor.map && m.kind === 'map')) errs.push(`${o.id}: anchored to "${x.anchor.map}", which is not a map on this slide`)
+    if (o.kind === 'map') {
+      const v = o.map?.view
+      if (!Array.isArray(v) || v.length !== 4 || !(v[0] < v[2] && v[1] < v[3])) errs.push(`${o.id}: a map needs a view [west, south, east, north]`)
+      const words = [...(o.map.labels ?? []).map((l) => l.text), ...(o.map.points ?? []).map((p) => p.label ?? ''), ...(o.map.legend ?? []).map((l) => l.text)]
+      for (const t of words) if (figures(t).length) errs.push(`${o.id}: "${t}": map labels carry names only; figures go in anchored text bound to evidence`)
+    }
+  }
   for (const { where, t } of designTexts(d)) if (t.lead && figures(t.lead).length) errs.push(`${where}: a lead-in carries words only, not figures`)
   for (const { where, t } of designTexts(d)) for (const n of textNumbers(t.text, t.numbers, p)) {
     if (n.status === 'unsourced') errs.push(`${where}: "${n.text}" has no evidence behind it`)

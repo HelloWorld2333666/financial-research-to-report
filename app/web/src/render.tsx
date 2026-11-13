@@ -14,6 +14,8 @@ import { render, slideList } from './core/deck'
 import { qaSlide } from './core/design/qa'
 import { loadImages } from './core/images'
 import { BRIEFS, composeBrief } from './core/design/briefs'
+import { planAssets, resolvePlan } from './core/design/plans'
+import { prepareAssets } from './core/design/assets'
 
 function b64(bytes: Uint8Array) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s) }
 
@@ -86,8 +88,39 @@ export function RenderView() {
       const [live, metrics] = await Promise.all([Store.open(params.get('project')!), loadFonts()])
       live.metrics = metrics
       let s = live, index = Math.max(0, Number(params.get('slide') ?? 1) - 1), meta: any = { kind: 'slide', index: index + 1 }
-      const brief = params.get('brief')
-      if (brief) {
+      const brief = params.get('brief'), plan = params.get('plan'), plans = params.get('plans')
+      if (plans && params.get('apply') === '1') {
+        // a whole deck: every plan resolved, validated and applied to the LIVE project in order, then saved, so the
+        // slides open in the app as editable, evidence-bound slides (the app's own commands and integrity apply)
+        const names = plans.split(',').filter(Boolean), out: any[] = []
+        const jsons = await Promise.all(names.map(async (n) => { const r = await fetch(`/api/projects/${params.get('project')}/plans/${n}`); if (!r.ok) throw new Error(`plan ${n}: HTTP ${r.status}`); return r.json() }))
+        const missing = await prepareAssets(jsons.flatMap((j) => planAssets(live.project, j)))
+        for (const [k, j] of jsons.entries()) {
+          const c = resolvePlan(live.project, j)
+          if (c.problems.length) { out.push({ plan: names[k], problems: c.problems }); continue }
+          const r = live.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
+          out.push({ plan: names[k], ok: r.ok, ...(r.ok ? {} : { error: r.error }) })
+        }
+        const saved = await live.save()
+        const pre = document.createElement('pre'); pre.id = 'render'; pre.hidden = true
+        pre.textContent = JSON.stringify({ kind: 'apply', slides: out, saved, ...(missing.length ? { assetsMissing: missing } : {}) }); document.body.appendChild(pre); return
+      }
+      if (plan) {
+        // Stage 4: a plan written by the design model, resolved and validated, applied to a COPY of the project
+        s = await Store.fromBundle(JSON.parse(JSON.stringify(await live.toBundle())))
+        s.metrics = metrics
+        const r0 = await fetch(`/api/projects/${params.get('project')}/plans/${plan}`)
+        if (!r0.ok) throw new Error(`plan ${plan}: HTTP ${r0.status}`)
+        const planJson = await r0.json()
+        // visual assets first (pictures, maps, flags, icons): layout uses them synchronously
+        const missing = await prepareAssets(planAssets(s.project, planJson))
+        const c = resolvePlan(s.project, planJson)
+        if (c.problems.length) throw new Error(`plan ${plan} is not valid: ${c.problems.join('; ')}`)
+        const r = s.exec({ kind: 'design.apply', design: c.design }, { actor: 'ai' })
+        if (!r.ok) throw new Error(r.error)
+        index = slideList(s.deck).length - 1
+        meta = { kind: 'plan', plan, label: c.label, composition: c.design.layout, ...(missing.length ? { assetsMissing: missing } : {}) }
+      } else if (brief) {
         if (!BRIEFS[brief]) throw new Error(`unknown brief ${brief}`)
         s = await Store.fromBundle(JSON.parse(JSON.stringify(await live.toBundle()))) // a copy: nothing is saved
         s.metrics = metrics

@@ -5,7 +5,7 @@ import { appendRawElements, materializeSlide, slideDurableId, elementDurableId, 
 import { runTxn, type Op } from '@genoffice/pptx-ops'
 import { cellText, RATING_COLUMNS, ratingCells, setWorking, verifyWorking } from './evidence'
 import { check, fromChartSpec, gate, isComposite, newVizId, realize, vizDatasets, VizError, type Family, type Subtype, type Transform, type VizSpec } from './viz'
-import { groupName, groupXml, layout, readGroup } from './composite'
+import { groupName, groupXml, layout, readGroup, type Mark } from './composite'
 import { headingFor, isGeneratedSubtitle, kickerFor, legacyKicker, recommend, subtitleFor } from './recommend'
 import { findEl, slideIndex, textOf, walk, type Found } from './deck'
 import { chartKindRefusal } from './vocabulary'
@@ -131,6 +131,18 @@ function settle(ctx: Ctx, index: number, idx: number, guid: string | null) {
   slide.elements.splice(Math.min(idx, slide.elements.length), 0, el)
   slide.structureDirty = true
   materializeSlide(ctx.deck, index)
+}
+
+/** Replace a placeholder element with a group of shapes drawn in its box (a map or an icon: decoration, never data).
+ *  The group keeps the placeholder's creationId, so its durable id and z-order stay. Marks are in slide px. */
+export function placeGroup(ctx: Ctx, f: Found, marks: Mark[], name: string) {
+  const slide = ctx.deck.deck.slides[f.index]! as any, idx = slide.elements.indexOf(f.el), guid = guidOf(f.el), o = f.el.transform.offset
+  const bx = o.x / EMU, by = o.y / EMU, size = { w: Math.max(1, Math.round(o.cx / EMU)), h: Math.max(1, Math.round(o.cy / EMU)) }
+  const local = marks.map((m) => ({ ...m, box: { ...m.box, x: m.box.x - bx, y: m.box.y - by }, ...(m.kind === 'path' ? { paths: m.paths.map((r) => r.map(([x, y]) => [x - bx, y - by] as [number, number])) } : {}) })) as Mark[]
+  const xml = groupXml(local, { guid: guid ?? crypto.randomUUID().toUpperCase(), id: nextShapeId(slide), name, place: o, size, font: ctx.project.design_dna.font })
+  txn(ctx, [{ op: 'deleteElement', target: { slide: f.index, el: f.el.id } }])
+  if (!appendRawElements(ctx.deck, f.index, [xml])) throw new Error(`${name} could not be drawn`)
+  settle(ctx, f.index, idx, guid)
 }
 
 /**

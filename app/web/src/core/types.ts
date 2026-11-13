@@ -14,6 +14,8 @@ export interface DesignDNA { font: string; ink: string; accent: string; muted: s
 export interface Project {
   schema: 'frr-project/1'; id: string; title: string; record_id?: string
   datasets: Record<string, Dataset>; evidence: Record<string, any>; derivations?: Record<string, Derivation>; gaps: any[]; design_dna: DesignDNA
+  /** the deck identity chosen for this project (design/language.ts Identity); registered as a language when the project opens */
+  identity?: import('./design/language').Identity
 }
 /** A number computed from evidence (schema 0.2 Derivation): formula over named inputs (evidence or derivation ids). */
 export interface Derivation { id: string; statement: string; formula: string; inputs: Record<string, string>; value: number; unit: string; period?: string; rounding?: number }
@@ -41,7 +43,7 @@ export interface ElementStyle {
   /** PD2: draw the chart with the design engine (core/design/charts.ts) in a visual language, instead of the native chart */
   render?: 'designed'; lang?: string; annotate?: 'change' | 'gap'; mini?: boolean; reference?: string
   /** Gate C recipes: R2 panel and rank numerals on ranked bars; R3 a shaded period and one callout on a trend */
-  panel?: boolean; ranks?: boolean; band?: { from: string; to: string }; callout?: 'max' | 'min'; form?: 'rankTable' | 'delta' | 'benchList'; spark?: boolean; flags?: boolean
+  panel?: boolean; ranks?: boolean; band?: { from: string; to: string }; callout?: 'max' | 'min'; form?: 'rankTable' | 'delta' | 'benchList'; spark?: boolean; flags?: boolean; order?: 'desc'
 }
 
 export const SIDECAR_SCHEMA = 'frr-sidecar/1'
